@@ -1,0 +1,75 @@
+name: Cloudflare Worker veröffentlichen
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Zielumgebung
+        required: true
+        default: development
+        type: choice
+        options:
+          - development
+          - production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-worker-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: cloudflare-${{ inputs.environment }}
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v5
+
+      - name: pnpm einrichten
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.11.0
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Abhängigkeiten installieren
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Worker-Typen prüfen
+        run: pnpm --dir worker check
+
+      - name: Worker-Tests ausführen
+        run: pnpm --dir worker test
+
+      - name: Unfertige KV-Konfiguration blockieren
+        run: |
+          if grep -q 'TODO_.*_KV_ID' worker/wrangler.jsonc; then
+            echo 'In worker/wrangler.jsonc fehlen noch echte KV-Namespace-IDs.' >&2
+            exit 1
+          fi
+
+      - name: Cloudflare-Anmeldedaten prüfen
+        run: |
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || {
+            echo 'CLOUDFLARE_ACCOUNT_ID fehlt im GitHub-Environment.' >&2
+            exit 1
+          }
+          test -n "$CLOUDFLARE_API_TOKEN" || {
+            echo 'CLOUDFLARE_API_TOKEN fehlt im GitHub-Environment.' >&2
+            exit 1
+          }
+
+      - name: Worker veröffentlichen
+        working-directory: worker
+        run: pnpm exec wrangler deploy --env "${{ inputs.environment }}"
