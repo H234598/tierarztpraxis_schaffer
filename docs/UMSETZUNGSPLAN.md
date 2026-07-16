@@ -1,21 +1,24 @@
 # Umsetzungsplan – Website der Tierarztpraxis Dr. Schäffer
 
 **Repository:** `H234598/tierarztpraxis_schaffer`  
-**Status:** Entwicklungs- und Testphase  
+**Status:** Bootstrap- und Einrichtungsphase  
 **Technik:** Astro, TypeScript, CSS, GitHub Pages und Cloudflare Workers  
-**Grundsatz:** kein Java, keine erfundenen Praxisangaben, produktive Builds nur mit bestätigten Pflichtdaten
+**Grundsatz:** kein Java, keine erfundenen Praxisangaben, produktive Builds nur
+mit bestätigten Pflichtdaten
 
 ## 1. Zielbild
 
-Die Website wird als statische Astro-Seite gebaut und über GitHub Pages veröffentlicht. Cloudflare übernimmt DNS, TLS, Weiterleitungen, Sicherheitsregeln, Turnstile und den Worker für das Kontaktformular.
+Die Website wird als schnelle statische Astro-Seite gebaut und über GitHub
+Pages veröffentlicht. Cloudflare übernimmt DNS, TLS, Weiterleitungen,
+Sicherheitsregeln, Turnstile, Workers KV und den Worker für das
+Kontaktformular.
 
 ```text
 Besucherin oder Besucher
         │
         ├── tierarztpraxis-schaffer.telacore.org
         │         │
-        │         ├── Cloudflare DNS, TLS, Redirects, Security Header
-        │         │
+        │         ├── Cloudflare DNS, TLS, Redirects und Security Header
         │         └── GitHub Pages
         │                    └── statische Astro-Website
         │
@@ -24,153 +27,120 @@ Besucherin oder Besucher
                   └── Cloudflare Worker
                          ├── Origin- und Eingabeprüfung
                          ├── Honeypot und Mindest-Ausfüllzeit
-                         ├── Turnstile-Verifizierung
                          ├── Rate Limit
+                         ├── Turnstile-Verifizierung
                          ├── Empfänger aus Workers KV
-                         └── E-Mail-Versand
+                         └── E-Mail an eine verifizierte Zieladresse
 ```
 
-Die Startseite beantwortet zuerst die praktischen Fragen:
+Die Startseite beantwortet zuerst:
 
 1. Wie erreiche ich die Praxis?
 2. Wann ist geöffnet?
 3. Was ist in einem Notfall zu tun?
 4. Wo liegt die Praxis?
-5. Wie kann eine normale Anfrage gestellt werden?
+5. Wie stelle ich eine normale Anfrage?
 
-Die Telefonnummer ist deshalb im Kopfbereich, im Hero, im Notfallbereich, bei den Sprechzeiten, im Footer und mobil in einer Schnellaktionsleiste sichtbar.
+Die Telefonnummer erscheint im Kopfbereich, im Hero, im Notfallbereich, bei
+den Sprechzeiten, im Footer und mobil in einer Schnellaktionsleiste.
 
-## 2. GitHub-Pages- und Domainstrategie
-
-### 2.1 Technische Projektadresse
-
-GitHub stellt für dieses Repository die Projektseiten-Adresse bereit:
-
-```text
-https://h234598.github.io/tierarztpraxis_schaffer/
-```
-
-Das ist ein repository-spezifischer **Pfad**, keine eigene GitHub-Subdomain. GitHub bietet für einzelne Projekt-Repositories keinen Zielhost nach dem Muster `tierarztpraxis-schaffer.h234598.github.io` an.
-
-### 2.2 Öffentliche Subdomain
-
-Im Repository wird als Custom Domain eingetragen:
-
-```text
-https://tierarztpraxis-schaffer.telacore.org
-```
-
-Der DNS-CNAME der öffentlichen Subdomain zeigt technisch auf:
-
-```text
-h234598.github.io
-```
-
-Das vermischt mehrere GitHub-Pages-Projekte nicht. GitHub ordnet den eingehenden Hostnamen derjenigen Site zu, in deren Repository genau diese Custom Domain konfiguriert ist. Weitere Repositories des Accounts können eigene Custom Domains erhalten.
-
-### 2.3 Rollen der Domains
+## 2. Adressen und GitHub Pages
 
 | Zweck | Adresse | Rolle |
 |---|---|---|
-| Website | `https://tierarztpraxis-schaffer.telacore.org` | kanonische Produktionsadresse |
-| Alias | `https://tierarztpraxisschaffer.telacore.org` | permanente Weiterleitung auf die kanonische Adresse |
-| GitHub-Projektseite | `https://h234598.github.io/tierarztpraxis_schaffer/` | Entwicklungs-/Fallback-Adresse |
+| Website | `https://tierarztpraxis-schaffer.telacore.org` | kanonische Adresse |
+| Alias | `https://tierarztpraxisschaffer.telacore.org` | permanente Weiterleitung |
+| GitHub-Projektseite | `https://h234598.github.io/tierarztpraxis_schaffer/` | Entwicklung und Fallback |
 | API | `https://api.tierarztpraxis-schaffer.telacore.org` | Worker Custom Domain |
 | Repository | `H234598/tierarztpraxis_schaffer` | Quellcode und Deployments |
 
-Unterstrichvarianten werden nicht als öffentliche HTTPS-Hostnamen verwendet.
+GitHub stellt für ein Projekt-Repository keine eigene technische Subdomain wie
+`projekt.h234598.github.io` bereit. Die repository-spezifische GitHub-Adresse
+ist ein Pfad. Die öffentliche Subdomain wird diesem konkreten Repository als
+Custom Domain zugeordnet. Ihr CNAME zeigt technisch auf `h234598.github.io`;
+GitHub ordnet die Anfrage anhand des Hostnamens der richtigen Pages-Site zu.
+Weitere Repositories desselben Accounts können eigene Custom Domains verwenden.
 
-### 2.4 Einrichtungsreihenfolge
+Unterstrichvarianten werden nicht als öffentliche HTTPS-Hostnamen eingesetzt.
 
-1. `telacore.org` beziehungsweise die benötigte Subdomain bei GitHub verifizieren.
-2. Im Repository unter **Settings → Pages** die Custom Domain `tierarztpraxis-schaffer.telacore.org` hinterlegen.
-3. In Cloudflare den CNAME der Subdomain auf `h234598.github.io` setzen.
-4. Zertifikatsausstellung abwarten und anschließend HTTPS erzwingen.
-5. Alias-Domain per `301` oder `308` inklusive Pfad und Query weiterleiten.
-6. Canonical-Tags, Sitemap und strukturierte Daten ausschließlich auf die kanonische Domain ausrichten.
-7. Keine Wildcard-DNS-Einträge verwenden.
-
-## 3. Verbindliche technische Entscheidungen
+## 3. Technische Entscheidungen
 
 | Bereich | Entscheidung | Begründung |
 |---|---|---|
-| Frontend | Astro mit TypeScript im Strict Mode | statische Ausgabe, sehr wenig Client-JavaScript |
-| Styling | modernes CSS mit Custom Properties, Layers und Container Queries | kein schweres UI-Framework |
+| Frontend | Astro mit strengem TypeScript | statische Ausgabe und wenig JavaScript |
+| Styling | modernes CSS mit Custom Properties und Layers | kein schweres UI-Framework |
 | Paketmanager | pnpm | reproduzierbare Installation |
-| Hosting | GitHub Pages | kostenlos, stabil und passend zum Repository |
+| Hosting | GitHub Pages | kostenlos und passend zum Repository |
 | Deployment | GitHub Actions | automatisierter und prüfbarer Build |
 | DNS und Edge | Cloudflare Free Tier | TLS, Redirects, Header, Worker und Turnstile |
-| Kontaktformular | Cloudflare Worker | kein eigener Server nötig |
-| Spam-Schutz | Honeypot, Mindestzeit, Turnstile und Rate Limit | mehrschichtiger Schutz |
-| Empfänger-Konfiguration | Workers KV | ohne Codeänderung austauschbar |
-| Karte | direkt eingebettete OpenStreetMap-Karte | vom Auftraggeber ausdrücklich gewünscht |
-| Tests | Vitest, Astro Check, spätere Playwright-/axe-Prüfungen | Funktion und Barrierefreiheit |
-| Datenspeicherung | keine Formulardatenbank | Datenminimierung |
+| Formular | Cloudflare Worker | kein eigener Server nötig |
+| Spam-Schutz | Honeypot, Ausfüllzeit, Rate Limit und Turnstile | mehrschichtiger Schutz |
+| Empfänger | Workers KV | ohne Änderung des Worker-Codes austauschbar |
+| Karte | direkter OpenStreetMap-Embed | ausdrücklich gewünschte unmittelbare Anzeige |
+| Datenbank | keine Formulardatenbank | Datenminimierung |
+| Tests | Vitest, Astro Check, später Playwright und axe | Funktion und Barrierefreiheit |
 
-## 4. Warum Workers KV statt Durable Object?
+## 4. Workers KV statt Durable Object
 
-Die Empfängeradresse ist eine einzelne, selten geänderte Konfiguration. Sie benötigt weder zustandsbehaftete Sitzungen noch koordinierte Schreibvorgänge. Ein Durable Object wäre dafür unnötig komplex und würde zusätzliche Klasse, Bindings und Lebenszykluslogik einführen.
+Die Empfängeradresse ist eine einzelne, selten geänderte Konfiguration. Sie
+benötigt keine Sitzungen und keine serialisierten Schreibvorgänge. Ein Durable
+Object wäre hierfür unnötig komplex.
 
-Workers KV passt besser:
-
-- Änderung ohne Anpassung oder Neubau des Worker-Quellcodes;
-- getrennte Schlüssel je Umgebung;
-- Verwaltung über Cloudflare Dashboard oder Wrangler;
-- sehr schnelle, weltweit verteilte Lesezugriffe;
-- kein öffentlicher Konfigurationsendpunkt erforderlich.
-
-Geplante Schlüssel:
+Verwendet werden zwei getrennte KV-Namespaces mit jeweils einem Schlüssel:
 
 ```text
 contact:recipient:development
 contact:recipient:production
 ```
 
-Wichtige Eigenschaft: KV ist global verteilt und nicht für sofort konsistente, häufig koordinierte Änderungen gedacht. Ein Empfängerwechsel kann an einzelnen Standorten kurz verzögert sichtbar werden. Für eine selten geänderte E-Mail-Konfiguration ist das akzeptabel. Falls später sofortige globale Konsistenz oder komplexe Konfigurationszustände benötigt werden, kann auf ein Durable Object oder eine andere Konfigurationsquelle gewechselt werden.
+Vorteile:
 
-Sicherheitsregeln:
+- Empfängerwechsel ohne Änderung des Worker-Quellcodes;
+- klare Trennung von Entwicklung und Produktion;
+- Verwaltung über Dashboard oder Wrangler;
+- kein öffentlicher Konfigurationsendpunkt;
+- der Browser übermittelt niemals eine Empfängeradresse.
 
-- Das Frontend sendet niemals einen Empfänger mit.
-- Es gibt keinen öffentlichen Endpunkt zum Ändern des KV-Werts.
-- Produktions- und Entwicklungsschlüssel sind getrennt.
-- Produktion fällt niemals auf die Testadresse zurück.
-- Ungültige oder fehlende Produktionsadressen führen zu einem kontrollierten Fehler statt zu einem Versand an ein unerwartetes Ziel.
+KV ist global verteilt und Änderungen sind nicht überall augenblicklich
+sichtbar. Eine kurze Propagationsverzögerung ist für einen seltenen
+Empfängerwechsel akzeptabel. Produktion fällt niemals auf die Testadresse
+zurück.
 
 ## 5. Entwicklungs- und Produktionsversand
 
-### 5.1 Entwicklung
+### Entwicklung
 
-Das Entwicklungsformular versendet bereits echte E-Mails. Der Empfänger ist jedoch fest eingeschränkt auf:
+Das Entwicklungsformular versendet echte E-Mails ausschließlich an:
 
 ```text
 tierarztpraxis_schaffer@herr-der-mails.de
 ```
 
-Auflösung im Worker:
+Ablauf:
 
-1. Wert aus `contact:recipient:development` in KV lesen;
+1. `contact:recipient:development` aus KV lesen;
 2. Wert streng als E-Mail-Adresse validieren;
-3. solange KV noch nicht eingerichtet ist, ausschließlich in `development` auf die fest codierte Testadresse zurückfallen;
+3. solange KV noch nicht eingerichtet ist, nur in Entwicklung die feste
+   Testadresse als Fallback verwenden;
 4. Empfänger nie aus der Browseranfrage übernehmen.
 
-### 5.2 Produktion
+### Produktion
 
-In Produktion wird ausschließlich `contact:recipient:production` gelesen. Eine fehlende oder ungültige Adresse blockiert den Versand mit einer generischen Fehlermeldung. Die Testadresse ist dort kein Fallback.
+Produktion liest ausschließlich `contact:recipient:production`. Eine fehlende
+oder ungültige Adresse blockiert den Versand. Es gibt keinen Test-Fallback.
 
-### 5.3 Mailmodus
+Cloudflare Email Service darf nur von einer eingerichteten Senderdomain senden.
+Der geplante Absender lautet:
 
-```dotenv
-ENVIRONMENT=development
-MAIL_DELIVERY=live
-CONTACT_RECIPIENT_KEY=contact:recipient:development
-TEST_CONTACT_RECIPIENT=tierarztpraxis_schaffer@herr-der-mails.de
+```text
+website@tierarztpraxis-schaffer.telacore.org
 ```
 
-Auch im Entwicklungsmodus bleibt Turnstile aktiv. Für lokale und automatisierte Tests werden die offiziellen Cloudflare-Testschlüssel genutzt; ein Produktionsbuild akzeptiert diese Testschlüssel nicht.
+Auf dem Workers-Free-Tarif werden nur verifizierte Zieladressen verwendet.
 
 ## 6. OpenStreetMap
 
-Die Karte wird direkt und ohne Zwei-Klick-Sperre als offizieller OSM-Embed geladen.
+Die Karte wird auf der Kontaktseite direkt als offizieller OSM-Embed geladen.
 
 Gelieferte Koordinaten:
 
@@ -179,29 +149,28 @@ N 49° 29.025'
 E 010° 58.235'
 ```
 
-Umrechnung:
+Umgerechnet:
 
 ```text
-Breitengrad: 49.483750
-Längengrad: 10.9705833333
+49.483750, 10.9705833333
 ```
 
-Umsetzung:
+Anforderungen:
 
-- direkter `iframe` auf `/kontakt/`;
 - Marker auf den gelieferten Koordinaten;
-- sichtbare Adresse oberhalb der Karte;
-- großer externer Link für Karte und Routenplanung;
+- sichtbare Anschrift oberhalb der Karte;
+- Link zur größeren Karte und Routenplanung;
 - sichtbare Attribution „© OpenStreetMap-Mitwirkende“;
-- aussagekräftiger `title`;
-- Adresse, Telefonnummer und Kartenlink funktionieren unabhängig vom iframe;
-- Datenschutzhinweis erklärt, dass bereits beim Aufruf der Kontaktseite eine Verbindung zu OpenStreetMap entsteht.
+- aussagekräftiger `iframe`-Titel;
+- Telefonnummer, Adresse und Kartenlink bleiben unabhängig vom iframe nutzbar;
+- Datenschutzhinweis erklärt die direkte Verbindung zu OpenStreetMap beim
+  Seitenaufruf.
 
-Für Version 1 ist kein Leaflet-Bundle erforderlich.
+Ein Leaflet-Bundle ist für Version 1 nicht erforderlich.
 
-## 7. Übernahme der alten Testseite
+## 7. Inhalte aus der alten Testseite
 
-Aus dem ZIP werden ausschließlich sinnvolle Inhalte und Markenreferenzen übernommen:
+Übernommen werden ausschließlich sinnvolle Inhalte und Markenreferenzen:
 
 - Praxisname;
 - Telefonnummer;
@@ -210,20 +179,16 @@ Aus dem ZIP werden ausschließlich sinnvolle Inhalte und Markenreferenzen übern
 - Eröffnungsdatum;
 - Slogan und Tonalität;
 - grüne, mintfarbene und botanische Bildsprache;
-- Logo- beziehungsweise Tiermotiv als Grundlage eines sauberen Web-Assets;
+- Tier- und Pfotenmotiv;
 - Instagram-Handle und Facebook-Seiten-ID;
 - Eröffnungsplakat als historischer Rückblick.
 
-Nicht übernommen werden:
+Nicht übernommen werden Joomla-Core, altes Template-JavaScript, MHTML-
+Laufzeitbestandteile, Sitzungsdaten, veraltete Aufbauhinweise oder unbestätigte
+medizinische Leistungsversprechen.
 
-- Joomla-Core und Template-JavaScript;
-- altes CSS und Iconfont-Pakete;
-- MHTML-Laufzeitbestandteile;
-- Sitzungs- oder Formulardaten;
-- zeitgebundene Aussagen wie „Homepage im Aufbau“;
-- nicht bestätigte medizinische Leistungsversprechen.
-
-Alle Altangaben erhalten einen Prüfstatus `legacy-unverified` und blockieren den Produktionsbuild, bis sie bestätigt wurden.
+Altangaben erhalten `legacy-unverified` und blockieren den Produktionsbuild,
+bis sie bestätigt wurden.
 
 ## 8. Seitenstruktur
 
@@ -242,11 +207,64 @@ Alle Altangaben erhalten einen Prüfstatus `legacy-unverified` und blockieren de
 └── 404
 ```
 
-FAQ und Stellenangebote sind verbindliche Bestandteile.
+FAQ und Stellenangebote sind verbindlich.
 
-## 9. FAQ und Barrierefreiheit
+## 9. Bestätigte Zugänglichkeit der Praxis
 
-Die FAQ verwendet native `<details>`-Elemente und funktioniert ohne zusätzliches JavaScript.
+**Quelle:** Bestätigung durch den Auftraggeber am 16. Juli 2026
+
+- Die gesamte Praxis befindet sich im Erdgeschoss.
+- Am Eingang befindet sich eine kleine Türschwelle.
+- Die Eingangstür hat Standardbreite.
+- Ein Aufzug wird nicht benötigt.
+- Geeignete Parkplätze befinden sich unmittelbar vor der Praxis.
+- Unterstützung durch das Team wird jederzeit gewährleistet.
+
+Die Website verwendet deshalb nicht pauschal die Aussage „vollständig
+barrierefrei“ oder „schwellenlos“. Sie beschreibt die Situation konkret und
+empfiehlt bei individuellen Anforderungen einen kurzen Anruf vor dem Besuch.
+
+Freigegebener Text:
+
+> Die Praxis befindet sich vollständig im Erdgeschoss. Am Eingang ist eine
+> kleine Türschwelle vorhanden; die Eingangstür hat Standardbreite. Ein Aufzug
+> wird nicht benötigt. Geeignete Parkplätze befinden sich direkt vor der
+> Praxis. Benötigen Sie beim Zugang oder während Ihres Besuchs Unterstützung,
+> hilft Ihnen unser Team jederzeit gerne. Bitte rufen Sie uns bei besonderen
+> Anforderungen vor Ihrem Besuch kurz an, damit wir Sie bestmöglich
+> unterstützen können.
+
+Noch zu ermitteln sind die lichte Türbreite, die genaue Schwellenhöhe, Angaben
+zum Praxis-WC, Bewegungsflächen und Details zur barrierearmen ÖPNV-Anfahrt.
+Nicht bestätigte Punkte bleiben Entwicklungsplatzhalter.
+
+## 10. Digitale Barrierefreiheit
+
+Qualitätsziel ist WCAG 2.2 auf Stufe AA. Eine Zertifizierung wird nicht
+behauptet.
+
+Geplant sind:
+
+- semantisches HTML und korrekte Überschriftenfolge;
+- Skip-Link zum Hauptinhalt;
+- vollständige Tastaturbedienung;
+- deutlich sichtbare Fokusmarkierungen;
+- ausreichende Kontraste;
+- vergrößerbare Texte und reflow-fähiges Layout;
+- keine Information ausschließlich über Farbe;
+- verständliche Formularbeschriftungen und Fehlerhinweise;
+- Statusmeldungen über `aria-live`;
+- Unterstützung von `prefers-reduced-motion`;
+- Tests mit Tastatur, 200- und 400-Prozent-Zoom, Mobilgeräten,
+  Screenreader-Stichprobe und axe-core.
+
+Die FAQ weist sichtbar auf diese Bemühungen und auf einen Kontaktweg zum Melden
+von Barrieren hin.
+
+## 11. FAQ
+
+Die FAQ nutzt native `<details>`-Elemente und funktioniert ohne zusätzliches
+JavaScript.
 
 Verbindliche Fragen:
 
@@ -261,11 +279,7 @@ Verbindliche Fragen:
 - Können Befunde oder Bilder hochgeladen werden?
 - Wo finde ich die Praxis in sozialen Netzwerken?
 
-Die FAQ weist sichtbar darauf hin, dass die Website mit klarer Struktur, Tastaturbedienung, Fokusmarkierungen, Kontrasten, vergrößerbaren Texten, verständlichen Formularen und reduziertem Bewegungsumfang entwickelt wird. Qualitätsziel ist WCAG 2.2 AA; eine Zertifizierung wird nicht behauptet.
-
-Bauliche Barrierefreiheit wird nur anhand konkreter, bestätigter Angaben beschrieben.
-
-## 10. Stellenangebote
+## 12. Stellenangebote
 
 Die Route `/stellenangebote/` bleibt immer erreichbar.
 
@@ -278,54 +292,49 @@ Ohne offene Stelle:
 
 Mit aktiver Stelle:
 
-- strukturierte, bestätigte Daten;
-- Ablaufdatum;
+- strukturierte und bestätigte Angaben;
+- Veröffentlichungs- und Ablaufdatum;
 - eigener Bewerbungsweg;
 - Bewerbungsdatenschutz;
 - `JobPosting`-Schema nur für aktive und verifizierte Einträge.
 
-## 11. Kontaktformular
+## 13. Kontaktformular
 
-### Felder
+Felder:
 
 - Name;
 - E-Mail und/oder Telefonnummer;
 - Anliegenkategorie;
-- Nachricht, maximal 2.000 Zeichen;
+- Nachricht mit maximal 2.000 Zeichen;
 - Datenschutzhinweis;
 - verstecktes Honeypot-Feld;
 - Startzeitpunkt;
 - Turnstile-Token.
 
-Nicht vorgesehen:
+Nicht vorgesehen sind Datei-Uploads, Befunde, Röntgenbilder, Notfallmeldungen,
+frei wählbare Empfänger oder automatische Terminbestätigungen.
 
-- Datei-Uploads;
-- Röntgenbilder und Befunde;
-- allgemeine medizinische Dokumente;
-- Notfallmeldungen;
-- frei wählbarer Empfänger;
-- automatische Terminbestätigung.
-
-### Worker-Ablauf
+Worker-Ablauf:
 
 1. nur `/v1/contact` akzeptieren;
 2. exakte Origin-Allowlist prüfen;
-3. nur `POST` und kontrollierte `OPTIONS` zulassen;
+3. nur `POST` und kontrolliertes `OPTIONS` zulassen;
 4. JSON-Content-Type und maximal 8 KiB prüfen;
 5. JSON sicher parsen und nur erlaubte Felder übernehmen;
-6. Unicode normalisieren und Längen begrenzen;
-7. Header-Injection verhindern;
+6. Unicode normalisieren und Feldlängen begrenzen;
+7. E-Mail-Header-Injection verhindern;
 8. Honeypot und Mindest-Ausfüllzeit prüfen;
-9. gehashten Rate-Limit-Schlüssel verwenden;
+9. Rate-Limit-Schlüssel mit geheimem Salt hashen;
 10. Turnstile serverseitig verifizieren;
-11. erwarteten Hostnamen und Aktion prüfen;
+11. Hostname und Aktion `contact_form` prüfen;
 12. Empfänger serverseitig aus KV auflösen;
 13. reine Text-E-Mail senden;
 14. nur Request-ID, Ergebnis und Laufzeit protokollieren.
 
-Nicht protokolliert werden Name, Nachricht, E-Mail, Telefonnummer, Turnstile-Token oder rohe IP-Adresse.
+Name, Nachricht, E-Mail, Telefonnummer, Turnstile-Token und rohe IP-Adresse
+werden nicht in Anwendungslogs geschrieben.
 
-## 12. Entwicklungsmodus und Pflichtwertprüfung
+## 14. Entwicklungsmodus und Produktionssperre
 
 ```dotenv
 # Entwicklung
@@ -345,36 +354,30 @@ PUBLIC_BASE_PATH=/
 
 Regeln:
 
-- `production` plus `ALLOW_PLACEHOLDERS=true` ist immer ein Fehler;
+- `production` zusammen mit `ALLOW_PLACEHOLDERS=true` ist immer ein Fehler;
 - unbestätigte Pflichtwerte blockieren den Produktionsbuild;
 - `TODO`, `TBD` und `CHANGEME` blockieren den Produktionsbuild;
-- die Entwicklung zeigt sichtbare Prüfhinweise und `noindex,nofollow`;
-- das Entwicklungsformular verschickt echte E-Mails ausschließlich an die Testadresse;
-- Produktion benötigt ein echtes Turnstile-Sitekey;
-- Dokumentation und Tests werden nicht als Inhaltsquelle validiert.
+- Entwicklung zeigt sichtbare Prüfhinweise und `noindex,nofollow`;
+- Entwicklung verschickt echte E-Mails nur an die Testadresse;
+- Produktion benötigt echte Turnstile-Schlüssel;
+- Dokumentation und Tests werden nicht als Praxisinhaltsquelle gewertet.
 
-## 13. Repository-Skeleton
+## 15. Repository-Struktur
 
 ```text
 tierarztpraxis_schaffer/
 ├── .github/
-│   ├── workflows/
-│   │   ├── ci.yml
-│   │   ├── deploy-pages.yml
-│   │   └── deploy-worker.yml
-│   ├── dependabot.yml
-│   └── CODEOWNERS
+│   └── workflows/
+│       ├── ci.yml
+│       ├── deploy-pages.yml
+│       └── deploy-worker.yml
 ├── docs/
 │   ├── ALTSEITEN-INVENTAR.md
 │   ├── CLOUDFLARE-SETUP.md
-│   ├── GITHUB-PAGES-SETUP.md
+│   ├── PRAXISDATEN.md
 │   └── UMSETZUNGSPLAN.md
 ├── public/
-│   ├── assets/
-│   ├── favicon.svg
-│   └── site.webmanifest
 ├── scripts/
-│   └── validate-content.ts
 ├── src/
 │   ├── components/
 │   ├── config/
@@ -389,9 +392,31 @@ tierarztpraxis_schaffer/
     └── wrangler.jsonc
 ```
 
-## 14. CI und Deployments
+## 16. Cloudflare- und Pages-Einrichtung
 
-Jeder Pull Request prüft:
+Status der manuellen Einrichtung:
+
+| Schritt | Aufgabe | Status |
+|---:|---|---|
+| 1 | GitHub Pages auf GitHub Actions stellen | erledigt |
+| 2 | Custom Domain im Repository hinterlegen | erledigt |
+| 3 | Website-CNAME auf `h234598.github.io` setzen | erledigt |
+| 4 | Alias-Domain per 308 weiterleiten | offen |
+| 5 | Development- und Production-KV anlegen | offen |
+| 6 | KV-IDs in `worker/wrangler.jsonc` eintragen | offen |
+| 7 | Development-Empfänger in KV schreiben | offen |
+| 8 | Turnstile-Widget und Secrets anlegen | offen |
+| 9 | getrennte Rate-Limit-Salts setzen | offen |
+| 10 | Testziel und Senderdomain für E-Mail verifizieren | offen |
+| 11 | Cloudflare-Secrets in GitHub-Environments hinterlegen | offen |
+| 12 | Development-Worker manuell veröffentlichen und testen | offen |
+
+Die genaue Klick- und Befehlsanleitung steht in
+[`docs/CLOUDFLARE-SETUP.md`](CLOUDFLARE-SETUP.md).
+
+## 17. CI und Deployments
+
+Pull Requests prüfen mindestens:
 
 ```text
 pnpm format:check
@@ -401,13 +426,16 @@ pnpm worker:check
 pnpm build
 ```
 
-GitHub Pages wird ausschließlich aus `main` veröffentlicht. Der Worker-Deploy bleibt zunächst manuell und verweigert den Start, solange KV-IDs oder Secrets fehlen.
+GitHub Pages wird nur aus `main` veröffentlicht. Der Worker-Deploy wird manuell
+über ein geschütztes GitHub-Environment gestartet. Er blockiert, solange
+KV-ID-Platzhalter oder notwendige Secrets fehlen.
 
-Produktionsrelevante GitHub-Actions werden vor Freigabe auf unveränderliche Commit-SHAs gepinnt. Dependabot hält diese Referenzen und npm-Abhängigkeiten aktuell.
+Produktionsrelevante Actions werden vor der Freigabe auf unveränderliche
+Commit-SHAs gepinnt. Dependabot hält Abhängigkeiten und Actions aktuell.
 
-## 15. Sicherheits- und Härtungsmaßnahmen
+## 18. Härtung
 
-- statische Ausgabe ohne Server-Runtime für Inhaltsseiten;
+- statische Inhaltsseiten ohne Server-Runtime;
 - keine Java-Komponenten;
 - minimale Client-Skripte;
 - keine Wildcard-CORS-Freigabe;
@@ -417,18 +445,19 @@ Produktionsrelevante GitHub-Actions werden vor Freigabe auf unveränderliche Com
 - `frame-src` nur für OpenStreetMap und Turnstile;
 - `object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'none'`;
 - Referrer-, MIME- und Permissions-Header;
-- Secrets ausschließlich in Cloudflare beziehungsweise GitHub Environments;
-- Lockfile vor Produktionsfreigabe;
-- Dependency- und Workflow-Updates durch Dependabot;
+- Secrets nur in Cloudflare oder GitHub Environments;
 - getrennte Entwicklungs- und Produktionskonfiguration;
 - keine personenbezogenen Anwendungslogs;
-- klarer Telefon-Fallback bei Worker- oder Mailausfall.
+- Telefon-Fallback bei Worker- oder Mailausfall.
 
-## 16. Umsetzungsphasen
+## 19. Umsetzungsphasen
 
 ### Phase 0 – Daten und Freigaben
 
-Nicht ermittelbare Angaben erhalten sichtbare Platzhalter. Zu klären sind insbesondere Leistungen, Tierarten, Notdienst, öffentliche E-Mail, Team, Qualifikationen, bauliche Barrierefreiheit, Parken, Kammer, Aufsichtsbehörde und Berufshaftpflicht.
+Bestätigte Zugänglichkeitsangaben sind erfasst. Weiter offen sind insbesondere
+Leistungen, Tierarten, Notdienst, öffentliche E-Mail, Team, Qualifikationen,
+genaue Tür- und Schwellenmaße, Praxis-WC, ÖPNV-Angaben, Kammer,
+Aufsichtsbehörde und Berufshaftpflicht.
 
 ### Phase 1 – Bootstrap
 
@@ -436,78 +465,70 @@ Nicht ermittelbare Angaben erhalten sichtbare Platzhalter. Zu klären sind insbe
 - zentrale Praxiskonfiguration;
 - Entwicklungs-/Produktionsschalter;
 - Inhaltsvalidator;
-- CI und GitHub-Pages-Workflow;
-- Worker-Skeleton.
+- CI und Pages-Workflow;
+- Kontaktformular-Worker und Tests.
 
 ### Phase 2 – Seiten und Design
 
 - responsive Navigation;
 - prominente Telefonnummer;
-- Startseite;
-- alle Inhaltsseiten;
+- sämtliche Inhaltsseiten;
 - FAQ und Stellenangebote;
 - direkte OSM-Karte;
 - Altmaterial als Marken- und Inhaltsreferenz.
 
-### Phase 3 – Kontakt-Backend
+### Phase 3 – Cloudflare
 
-- KV-Empfängerkonfiguration;
-- echter Entwicklungsversand an die Testadresse;
+- Alias-Redirect;
+- KV-Namespaces und Schlüssel;
 - Turnstile;
 - Rate Limit;
-- E-Mail-Binding;
-- Tests für Missbrauchs- und Fehlerszenarien.
+- E-Mail-Service;
+- GitHub-Environment-Secrets;
+- Development-Worker-Deploy.
 
-### Phase 4 – Cloudflare und Pages
-
-- Domain verifizieren;
-- Custom Domain im Repository setzen;
-- DNS konfigurieren;
-- Alias weiterleiten;
-- Worker Custom Domain anlegen;
-- KV-Namespace und Schlüssel einrichten;
-- Secrets und E-Mail-Ziel verifizieren;
-- Sicherheitsheader testen.
-
-### Phase 5 – Qualität und Produktion
+### Phase 4 – Qualität und Produktion
 
 - reale Inhalte bestätigen;
-- Rechtsseiten prüfen;
+- Rechtstexte prüfen;
 - Tastatur-, Zoom-, Screenreader- und Mobiltests;
 - Formular-Smoke-Test;
 - Produktionsbuild ohne Platzhalter;
 - Indexierung freigeben.
 
-## 17. Definition of Done
+## 20. Definition of Done
 
 Die erste produktive Version ist fertig, wenn:
 
 - alle Pflichtdaten bestätigt sind;
-- kein `TODO` oder unbestätigter Pflichtwert im Produktionsbuild verbleibt;
+- kein `TODO` oder unbestätigter Pflichtwert verbleibt;
 - die Telefonnummer sofort sichtbar und anklickbar ist;
-- FAQ und Stellenangebotsseite vollständig vorhanden sind;
-- die FAQ digitale und physische Barrierefreiheit transparent behandelt;
+- FAQ und Stellenangebote vollständig vorhanden sind;
+- die FAQ digitale und physische Zugänglichkeit präzise beschreibt;
+- Türschwelle und Teamunterstützung transparent genannt werden;
 - die OSM-Karte direkt mit dem gelieferten Marker angezeigt wird;
-- die Datenschutzseite den direkten OSM-Aufruf beschreibt;
-- das Entwicklungsformular echte E-Mails nur an die Testadresse sendet;
-- Produktion den Empfänger ausschließlich aus dem Produktions-KV-Schlüssel liest;
-- der Browser den Empfänger nicht beeinflussen kann;
-- Turnstile ausschließlich serverseitig akzeptiert wird;
+- die Datenschutzseite den direkten OSM-Abruf beschreibt;
+- Entwicklung echte E-Mails nur an die Testadresse sendet;
+- Produktion den Empfänger nur aus dem Produktions-KV liest;
+- der Browser keinen Empfänger beeinflussen kann;
+- Turnstile serverseitig geprüft wird;
 - keine personenbezogenen Inhalte protokolliert werden;
-- kein Datei-Upload möglich ist;
+- keine Datei-Uploads möglich sind;
 - Telefonkontakt auch bei API-Ausfall erhalten bleibt;
-- Custom Domain, Alias, Canonical, Sitemap und HTTPS korrekt funktionieren;
-- Website und Worker reproduzierbar aus dem Repository gebaut werden können.
+- Custom Domain, Alias, Canonical, Sitemap und HTTPS funktionieren;
+- Website und Worker reproduzierbar gebaut und veröffentlicht werden können.
 
-## 18. Referenzen
+## 21. Referenzen
 
-- GitHub Pages Custom Domains: `docs.github.com/pages/configuring-a-custom-domain-for-your-github-pages-site/`
-- Cloudflare Workers KV: `developers.cloudflare.com/kv/`
-- Cloudflare Durable Objects: `developers.cloudflare.com/durable-objects/`
-- Cloudflare Turnstile Siteverify: `developers.cloudflare.com/turnstile/get-started/server-side-validation/`
+- GitHub Pages Custom Domains: `docs.github.com/pages/`
+- Workers KV: `developers.cloudflare.com/kv/`
+- Turnstile: `developers.cloudflare.com/turnstile/`
 - Cloudflare Email Service: `developers.cloudflare.com/email-service/`
-- OpenStreetMap Embed und Attribution: `wiki.openstreetmap.org/wiki/Export` und `openstreetmap.org/copyright`
+- Worker Custom Domains: `developers.cloudflare.com/workers/configuration/routing/custom-domains/`
+- OpenStreetMap: `wiki.openstreetmap.org/wiki/Export`
 
 ---
 
-**Nächster technischer Schritt:** Das in diesem PR enthaltene Astro-/Worker-Gerüst durch CI bauen, anschließend KV-Namespace, Turnstile, E-Mail-Binding und GitHub-Pages-Custom-Domain in den jeweiligen Konten konfigurieren.
+**Nächster technischer Schritt:** Schritte 4 bis 11 aus
+`docs/CLOUDFLARE-SETUP.md` durchführen, danach den Development-Worker über
+GitHub Actions veröffentlichen und eine echte Testmail senden.
