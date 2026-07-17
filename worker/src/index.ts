@@ -66,7 +66,10 @@ class RequestError extends Error {
     super(message);
     this.name = "RequestError";
     this.status = status;
-    this.fields = fields;
+
+    if (fields !== undefined) {
+      this.fields = fields;
+    }
   }
 }
 
@@ -152,6 +155,7 @@ function text(value: unknown, maxLength: number): string {
 
 async function readJson(request: Request): Promise<Record<string, unknown>> {
   const declaredLength = Number(request.headers.get("content-length") ?? "0");
+
   if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
     throw new RequestError("payload_too_large", 413, ["form"]);
   }
@@ -272,6 +276,7 @@ async function verifyTurnstile(
     );
 
     if (!response.ok) return false;
+
     const result = (await response.json()) as TurnstileResponse;
     if (!result.success) return false;
 
@@ -418,19 +423,20 @@ export default {
       const rateLimit = await env.CONTACT_RATE_LIMITER.limit({
         key: rateLimitKey,
       });
+
       if (!rateLimit.success) {
         logResult(requestId, "rate_limited", requestStartedAt, env.ENVIRONMENT);
         return json({ error: "too_many_requests" }, 429, origin);
       }
 
       const submission = validateSubmission(input);
-      if (
-        !(await verifyTurnstile(
-          submission.turnstileToken,
-          requestId,
-          env,
-        ))
-      ) {
+      const turnstileValid = await verifyTurnstile(
+        submission.turnstileToken,
+        requestId,
+        env,
+      );
+
+      if (!turnstileValid) {
         logResult(
           requestId,
           "turnstile_failed",
