@@ -7,6 +7,16 @@ type WorkerEnv = Parameters<typeof worker.fetch>[1];
 const allowedOrigin = "https://tierarztpraxis-schaffer.telacore.org";
 const testRecipient = "tierarztpraxis_schaffer@herr-der-mails.de";
 
+function turnstileResponse(hostname: string, action: string): Response {
+  return new Response(
+    JSON.stringify({ success: true, hostname, action }),
+    {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    },
+  );
+}
+
 function payload(overrides: Record<string, unknown> = {}) {
   return {
     name: "Max Mustermann",
@@ -67,15 +77,7 @@ function environment(overrides: Partial<WorkerEnv> = {}): WorkerEnv {
 beforeEach(() => {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({ success: true, hostname: "test", action: "test" }),
-        {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        },
-      ),
-    ),
+    vi.fn().mockResolvedValue(turnstileResponse("test", "test")),
   );
 });
 
@@ -151,8 +153,19 @@ describe("Kontaktformular-Worker", () => {
   });
 
   it("fällt in Produktion niemals auf die Testadresse zurück", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        turnstileResponse(
+          "tierarztpraxis-schaffer.telacore.org",
+          "contact_form",
+        ),
+      ),
+    );
+
     const env = environment({
       ENVIRONMENT: "production",
+      EXPECTED_HOSTNAMES: "tierarztpraxis-schaffer.telacore.org",
       CONTACT_RECIPIENT_KEY: "contact:recipient:production",
     });
     delete env.TEST_CONTACT_RECIPIENT;
