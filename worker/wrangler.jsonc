@@ -30,7 +30,7 @@
       "kv_namespaces": [
         {
           "binding": "CONTACT_CONFIG",
-          "id": "TODO_DEVELOPMENT_KV_ID"
+          "id": "235cdcfe11094400b6ad27338b7528ac"
         }
       ],
       "ratelimits": [
@@ -71,7 +71,7 @@
       "kv_namespaces": [
         {
           "binding": "CONTACT_CONFIG",
-          "id": "TODO_PRODUCTION_KV_ID"
+          "id": "2f89ac0fb603446d9e4f43f3b938ea41"
         }
       ],
       "ratelimits": [
