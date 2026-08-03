@@ -64,3 +64,6 @@ jobs:
 
       - name: Entwicklungsbuild erstellen
         run: pnpm build
+
+      - name: Erzeugtes Kontaktformular-Bundle diagnostizieren
+        run: pnpm exec tsx scripts/inspect-contact-build.ts
