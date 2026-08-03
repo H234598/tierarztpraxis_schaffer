@@ -25,6 +25,7 @@ jobs:
       CI: "true"
       SITE_DEPLOYMENT_MODE: development
       ALLOW_PLACEHOLDERS: "true"
+      ALLOW_TURNSTILE_TEST_KEYS: "true"
       PUBLIC_SITE_URL: https://tierarztpraxis-schaffer.telacore.org
       PUBLIC_BASE_PATH: /
       PUBLIC_CONTACT_API_URL: https://api.tierarztpraxis-schaffer.telacore.org/v1/contact
