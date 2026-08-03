@@ -59,15 +59,20 @@ for (const source of firstPartySources) {
   const asset = await readFile(assetPath, "utf8");
   const hasFormSelector = asset.includes("data-contact-form");
   const hasPendingMessage = asset.includes("Nachricht wird sicher versendet");
-  const hasFetch = asset.includes("fetch(");
+  const hasSubmitListener = asset.includes("addEventListener");
+  const hasPreventDefault = asset.includes("preventDefault");
 
   console.log(
     `ASSET ${source}: bytes=${Buffer.byteLength(asset, "utf8")}; ` +
       `formSelector=${hasFormSelector}; pendingMessage=${hasPendingMessage}; ` +
-      `fetch=${hasFetch}`,
+      `submitListener=${hasSubmitListener}; preventDefault=${hasPreventDefault}`,
   );
 
-  handlerFound ||= hasFormSelector && hasPendingMessage && hasFetch;
+  handlerFound ||=
+    hasFormSelector &&
+    hasPendingMessage &&
+    hasSubmitListener &&
+    hasPreventDefault;
 }
 
 if (!handlerFound) {
