@@ -1,0 +1,36 @@
+{
+  "name": "tierarztpraxis-schaffer-website",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.13.1+sha512.b2fc7683b8a6525414e7d13e1ba28caaddde96bf66ec540bfaeb7e702b81f3e0be4d1f295edf7f9fe0396740a8dce4509c582ddf79891f4543fea32d37645f25",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "pnpm validate:content && astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "validate:content": "tsx scripts/validate-content.ts",
+    "test": "vitest run && pnpm --dir worker test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "worker:check": "pnpm --dir worker check",
+    "worker:dev": "pnpm --dir worker dev",
+    "worker:deploy:development": "pnpm --dir worker deploy:development",
+    "worker:deploy:production": "pnpm --dir worker deploy:production"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "3.7.3",
+    "astro": "7.1.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.9",
+    "prettier": "3.9.4",
+    "prettier-plugin-astro": "0.14.1",
+    "tsx": "4.23.1",
+    "typescript": "5.8.3",
+    "vitest": "4.1.10"
+  }
+}
