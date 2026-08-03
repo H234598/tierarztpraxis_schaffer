@@ -4,15 +4,16 @@ import { resolve } from "node:path";
 const htmlPath = resolve("dist/kontakt/index.html");
 const html = await readFile(htmlPath, "utf8");
 
-const csp =
-  html.match(
-    /<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]+content=["']([^"']+)["'][^>]*>/iu,
-  )?.[1] ?? "MISSING";
+const cspMeta = html.match(
+  /<meta\b[^>]*http-equiv="Content-Security-Policy"[^>]*>/iu,
+)?.[0];
+const csp = cspMeta?.match(/\bcontent="([^"]*)"/iu)?.[1] ?? "MISSING";
 
 const scripts = [
   ...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/giu),
 ].map((match) => ({
   attributes: match[1] ?? "",
+  body: match[2] ?? "",
   inlineBytes: Buffer.byteLength(match[2] ?? "", "utf8"),
 }));
 
@@ -23,6 +24,18 @@ for (const [index, script] of scripts.entries()) {
   console.log(
     `${index + 1}. ${script.attributes.trim() || "(no attributes)"}; ` +
       `inlineBytes=${script.inlineBytes}`,
+  );
+}
+
+const executableInlineScripts = scripts.filter(
+  ({ attributes, body }) =>
+    !/\bsrc=["'][^"']+["']/iu.test(attributes) && body.trim().length > 0,
+);
+
+if (executableInlineScripts.length > 0) {
+  throw new Error(
+    `Die Kontaktseite enthält ${executableInlineScripts.length} ausführbare ` +
+      "Inline-Skripte, die von der CSP blockiert würden.",
   );
 }
 
@@ -68,5 +81,5 @@ if (!csp.includes("script-src 'self'")) {
 }
 
 console.log(
-  "Kontaktformular-Build enthält einen ausführbaren First-Party-Handler.",
+  "Kontaktformular-Build enthält einen CSP-kompatiblen First-Party-Handler.",
 );
