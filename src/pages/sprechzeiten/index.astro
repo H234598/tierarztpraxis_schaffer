@@ -1,0 +1,15 @@
+---
+import OpeningHours from "../../components/OpeningHours.astro";
+import { siteConfig } from "../../config/site";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Sprechzeiten | Tierarztpraxis Dr. Schäffer"
+  description="Sprechzeiten und telefonische Voranmeldung der Tierarztpraxis Dr. Schäffer."
+  canonicalPath="/sprechzeiten/"
+>
+  <header class="page-header"><div class="content"><p class="eyebrow">Sprechzeiten</p><h1>Bitte immer vorher anrufen</h1><p>{siteConfig.appointmentNote}</p></div></header>
+  <section class="section section--white"><div class="content"><OpeningHours /></div></section>
+  <section class="section section--soft"><div class="content prose"><h2>Feiertage, Urlaub und kurzfristige Änderungen</h2><p>TODO: Verantwortlichkeit und Prozess für aktuelle Hinweise festlegen. Vor jedem dringenden Besuch bitte telefonisch nachfragen.</p><p><a class="button" href={siteConfig.phone.href}>{siteConfig.phone.display} anrufen</a></p></div></section>
+</BaseLayout>

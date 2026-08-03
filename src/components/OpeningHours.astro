@@ -1,0 +1,21 @@
+---
+import { siteConfig } from "../config/site";
+---
+
+<div class="opening-hours">
+  <dl>
+    {siteConfig.openingHours.map((entry) => (
+      <div class="opening-hours__row">
+        <dt>{entry.day}</dt>
+        <dd>
+          <span>{entry.time}</span>
+          {"note" in entry && entry.note ? <small>{entry.note}</small> : null}
+        </dd>
+      </div>
+    ))}
+  </dl>
+  <p class="callout">
+    {siteConfig.appointmentNote}<br />
+    <a class="phone-link" href={siteConfig.phone.href}>{siteConfig.phone.display}</a>
+  </p>
+</div>

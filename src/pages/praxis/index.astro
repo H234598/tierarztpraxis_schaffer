@@ -1,0 +1,29 @@
+---
+import { siteConfig } from "../../config/site";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { withBase } from "../../utils/paths";
+---
+
+<BaseLayout
+  title="Praxis und Team | Tierarztpraxis Dr. Schäffer"
+  description="Vorstellung der Tierarztpraxis Dr. Schäffer in Fürth."
+  canonicalPath="/praxis/"
+>
+  <header class="page-header"><div class="content"><p class="eyebrow">Praxis und Team</p><h1>Persönlich, freundlich und fachlich ehrlich</h1><p>{siteConfig.claim} {siteConfig.subclaim}</p></div></header>
+  <section class="section section--white">
+    <div class="container split">
+      <div class="prose">
+        <h2>Die Praxis</h2>
+        <p>Die Praxis wurde am 2. Februar 2026 eröffnet. Die grüne und mintfarbene Gestaltung greift das Erscheinungsbild der früheren Testseite auf, ohne deren Joomla-Technik zu übernehmen.</p>
+        <p>TODO: Teammitglieder, Qualifikationen, Behandlungsschwerpunkte und freigegebene Praxisfotos ergänzen.</p>
+      </div>
+      <div class="hero-logo"><img src={withBase("logo.svg")} alt="Logo der Tierarztpraxis Dr. Schäffer" width="640" height="640" /></div>
+    </div>
+  </section>
+  <section class="section section--soft">
+    <div class="container cards">
+      <article class="card"><h2>Instagram</h2><p>Der Link stammt aus dem gelieferten Altmaterial und wird vor Produktion noch einmal bestätigt.</p><a href={siteConfig.social.instagram} target="_blank" rel="noopener noreferrer">Instagram öffnen</a></article>
+      <article class="card"><h2>Facebook</h2><p>Der Link stammt aus dem gelieferten Altmaterial und wird vor Produktion noch einmal bestätigt.</p><a href={siteConfig.social.facebook} target="_blank" rel="noopener noreferrer">Facebook öffnen</a></article>
+    </div>
+  </section>
+</BaseLayout>

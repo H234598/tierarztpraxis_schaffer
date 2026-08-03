@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Tierarztpraxis Dr. Schäffer</title>
+  <desc id="desc">Rundes grünes Signet mit stilisiertem Tiergesicht und Pfoten</desc>
+  <defs><radialGradient id="bg" cx="35%" cy="25%" r="80%"><stop offset="0" stop-color="#fbfdf8"/><stop offset="1" stop-color="#d7eee6"/></radialGradient></defs>
+  <circle cx="320" cy="320" r="300" fill="url(#bg)" stroke="#245b43" stroke-width="18"/>
+  <circle cx="320" cy="320" r="265" fill="none" stroke="#6ea083" stroke-width="3" stroke-dasharray="10 12"/>
+  <path d="M191 285l-35-95 87 54c23-15 50-23 79-23 26 0 51 7 73 20l89-55-38 101c23 31 35 69 35 108 0 98-72 176-161 176s-161-78-161-176c0-41 11-78 32-110z" fill="#fff" stroke="#245b43" stroke-width="15" stroke-linejoin="round"/>
+  <circle cx="249" cy="324" r="14" fill="#245b43"/><circle cx="389" cy="324" r="14" fill="#245b43"/>
+  <path d="M298 384h43l-21 22z" fill="#245b43"/>
+  <path d="M319 405v28m0 0c-16 0-29-7-37-20m37 20c16 0 29-7 37-20" fill="none" stroke="#245b43" stroke-width="8" stroke-linecap="round"/>
+  <text x="320" y="100" text-anchor="middle" font-family="system-ui,sans-serif" font-size="38" font-weight="800" fill="#245b43">TIERARZTPRAXIS</text>
+  <text x="320" y="555" text-anchor="middle" font-family="system-ui,sans-serif" font-size="42" font-weight="800" fill="#245b43">DR. SCHÄFFER</text>
+</svg>

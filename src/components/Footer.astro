@@ -1,0 +1,39 @@
+---
+import { siteConfig } from "../config/site";
+import { withBase } from "../utils/paths";
+---
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <section>
+      <h2>{siteConfig.shortName}</h2>
+      <address>
+        {siteConfig.address.street}<br />
+        {siteConfig.address.postalCode} {siteConfig.address.city}
+      </address>
+      <p><a class="phone-link" href={siteConfig.phone.href}>{siteConfig.phone.display}</a></p>
+    </section>
+    <section>
+      <h2>Direkt zu</h2>
+      <ul class="footer-links">
+        <li><a href={withBase("notfall/")}>Notfallhinweise</a></li>
+        <li><a href={withBase("sprechzeiten/")}>Sprechzeiten</a></li>
+        <li><a href={withBase("kontakt/")}>Kontakt und Anfahrt</a></li>
+        <li><a href={withBase("faq/")}>Häufige Fragen</a></li>
+      </ul>
+    </section>
+    <section>
+      <h2>Informationen</h2>
+      <ul class="footer-links">
+        <li><a href={withBase("stellenangebote/")}>Stellenangebote</a></li>
+        <li><a href={withBase("barrierefreiheit/")}>Barrierefreiheit</a></li>
+        <li><a href={withBase("impressum/")}>Impressum</a></li>
+        <li><a href={withBase("datenschutz/")}>Datenschutz</a></li>
+      </ul>
+    </section>
+  </div>
+  <div class="container footer-bottom">
+    <span>© {new Date().getFullYear()} {siteConfig.shortName}</span>
+    <span>Statisch, datensparsam und ohne Java gebaut.</span>
+  </div>
+</footer>

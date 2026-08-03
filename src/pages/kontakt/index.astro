@@ -1,0 +1,46 @@
+---
+import ContactForm from "../../components/ContactForm.astro";
+import OsmMap from "../../components/OsmMap.astro";
+import { siteConfig } from "../../config/site";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Kontakt und Anfahrt | Tierarztpraxis Dr. Schäffer"
+  description="Telefon, Anschrift, direkte OpenStreetMap-Karte und Kontaktformular der Tierarztpraxis Dr. Schäffer in Fürth."
+  canonicalPath="/kontakt/"
+>
+  <header class="page-header">
+    <div class="content">
+      <p class="eyebrow">Kontakt und Anfahrt</p>
+      <h1>Am schnellsten erreichen Sie uns telefonisch</h1>
+      <p><a class="button" href={siteConfig.phone.href}>{siteConfig.phone.display} anrufen</a></p>
+    </div>
+  </header>
+
+  <section class="section section--white">
+    <div class="container split">
+      <article class="card">
+        <h2>Praxisanschrift</h2>
+        <address>
+          <strong>{siteConfig.shortName}</strong><br />
+          {siteConfig.address.street}<br />
+          {siteConfig.address.postalCode} {siteConfig.address.city}
+        </address>
+        <p>Telefon: <a href={siteConfig.phone.href}>{siteConfig.phone.display}</a></p>
+      </article>
+      <article class="card">
+        <h2>Zugang und Parken</h2>
+        <p>{siteConfig.accessibility.faqAnswer}</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section section--soft">
+    <div class="container"><OsmMap /></div>
+  </section>
+
+  <section class="section section--white">
+    <div class="content"><ContactForm /></div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,71 @@
+---
+import { siteConfig } from "../../config/site";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { withBase } from "../../utils/paths";
+---
+
+<BaseLayout
+  title="Häufige Fragen | Tierarztpraxis Dr. Schäffer"
+  description="Häufige Fragen zu Terminen, Notfällen, Anfahrt, Barrierefreiheit und Kontakt."
+  canonicalPath="/faq/"
+>
+  <header class="page-header">
+    <div class="content">
+      <p class="eyebrow">Häufige Fragen</p>
+      <h1>Gut vorbereitet in die Praxis</h1>
+      <p>Die Antworten sind ohne JavaScript aufklappbar und vollständig per Tastatur bedienbar.</p>
+    </div>
+  </header>
+
+  <section class="section section--white">
+    <div class="content faq-list">
+      <details>
+        <summary>Brauche ich einen Termin?</summary>
+        <div class="faq-answer">
+          <p>{siteConfig.appointmentNote}</p>
+          <p>Rufen Sie unter <a href={siteConfig.phone.href}>{siteConfig.phone.display}</a> an. Eine Anfrage über das Formular ist erst nach Rückmeldung der Praxis bestätigt.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Was soll ich in einem Notfall tun?</summary>
+        <div class="faq-answer">
+          <p>Sofort anrufen. Das Kontaktformular und Nachrichten in sozialen Netzwerken sind keine Notfallkanäle.</p>
+          <p><a class="button button--danger" href={siteConfig.phone.href}>{siteConfig.phone.display} anrufen</a></p>
+        </div>
+      </details>
+      <details>
+        <summary>Welche Tiere behandelt die Praxis?</summary>
+        <div class="faq-answer"><p>TODO: Behandelte Tierarten und mögliche Ausschlüsse fachlich bestätigen.</p></div>
+      </details>
+      <details>
+        <summary>Welche Leistungen werden angeboten?</summary>
+        <div class="faq-answer">
+          <p>Veröffentlicht werden ausschließlich fachlich bestätigte Leistungen.</p>
+          <a href={withBase("leistungen/")}>Zur Leistungsübersicht</a>
+        </div>
+      </details>
+      <details>
+        <summary>Was soll ich zum Termin mitbringen?</summary>
+        <div class="faq-answer"><p>Als Entwurf vorgesehen sind Impfpass, Medikamentenliste und vorhandene Befunde. Bitte stimmen Sie den sicheren Übermittlungsweg für medizinische Dokumente telefonisch ab.</p></div>
+      </details>
+      <details open>
+        <summary>Ist die Praxis barrierefrei erreichbar?</summary>
+        <div class="faq-answer">
+          <p>{siteConfig.accessibility.faqAnswer}</p>
+          <p>Wegen der kleinen Türschwelle behaupten wir nicht pauschal eine vollständig schwellenlose Zugänglichkeit.</p>
+        </div>
+      </details>
+      <details open>
+        <summary>Ist diese Website barrierearm nutzbar?</summary>
+        <div class="faq-answer">
+          <p>Wir entwickeln die Website mit klarer Struktur, Tastaturbedienung, sichtbaren Fokusmarkierungen, ausreichenden Kontrasten, vergrößerbaren Texten und verständlichen Formularen. Unser Qualitätsziel ist WCAG 2.2 AA.</p>
+          <p>Eine formale Zertifizierung behaupten wir nicht. Eine Barriere können Sie telefonisch oder über die Anliegenkategorie „Barriere melden“ im Kontaktformular mitteilen.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Kann ich Befunde oder Bilder hochladen?</summary>
+        <div class="faq-answer"><p>Nein. Das allgemeine Formular akzeptiert bewusst keine Dateien. Bitte stimmen Sie einen geeigneten Übermittlungsweg telefonisch mit der Praxis ab.</p></div>
+      </details>
+    </div>
+  </section>
+</BaseLayout>

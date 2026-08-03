@@ -1,74 +1,73 @@
 # Tierarztpraxis Dr. Schäffer – Website
 
-Moderne, barrierebewusst entwickelte Website für die Tierarztpraxis Dr.
-Schäffer in Fürth.
+Moderne, barrierebewusst entwickelte Website für die Tierarztpraxis Dr. Schäffer in Fürth.
 
-## Projektstatus
+## Aktueller Stand
 
-Das Projekt befindet sich in der Bootstrap- und Einrichtungsphase. Der
-Architekturplan, die zentrale Datenstruktur für bestätigte Praxisangaben, ein
-gesicherter Kontaktformular-Worker und der manuelle Cloudflare-Deploy-Workflow
-liegen im Entwicklungsbranch vor.
+Das Repository enthält jetzt zwei auslieferbare Teile:
 
-Praxisdaten aus der alten Testseite bleiben bis zur Bestätigung als
-`legacy-unverified` gekennzeichnet. Neu bestätigte Angaben zur Zugänglichkeit
-sind in `docs/PRAXISDATEN.md` und `src/config/practice.ts` erfasst.
+1. eine statische Astro-Website für GitHub Pages;
+2. einen gehärteten Cloudflare-Worker für das Kontaktformular.
 
-## Stack
-
-- Astro und TypeScript im Strict Mode
-- modernes CSS ohne schweres UI-Framework
-- GitHub Pages für die statische Website
-- Cloudflare für DNS, Weiterleitungen, Sicherheitsheader, Turnstile, Workers KV
-  und den Kontaktformular-Worker
-- Cloudflare Email Service für echte Testmails an eine verifizierte Zieladresse
-- OpenStreetMap als direkt eingebettete Karte
-- Vitest für Daten- und Worker-Tests
-- kein Java
+Die Website läuft bis zur Bestätigung aller fachlichen und rechtlichen Pflichtdaten im Entwicklungsmodus. Sie zeigt einen sichtbaren Hinweis, verhindert Suchmaschinenindexierung und darf markierte Platzhalter enthalten. Das Kontaktformular versendet bereits echte Testnachrichten an die serverseitig konfigurierte Testadresse.
 
 ## Adressen
 
-- GitHub-Projektseite:
-  `https://h234598.github.io/tierarztpraxis_schaffer/`
-- kanonische Website: `https://tierarztpraxis-schaffer.telacore.org`
-- Weiterleitungsalias: `https://tierarztpraxisschaffer.telacore.org`
-- Kontakt-API:
-  `https://api.tierarztpraxis-schaffer.telacore.org/v1/contact`
+- Website: `https://tierarztpraxis-schaffer.telacore.org`
+- Alias: `https://tierarztpraxisschaffer.telacore.org`
+- API: `https://api.tierarztpraxis-schaffer.telacore.org/v1/contact`
+- GitHub-Projektpfad: `https://h234598.github.io/tierarztpraxis_schaffer/`
 
-Unterstriche werden nicht für öffentliche HTTPS-Hostnamen verwendet. Der
-Unterstrich im Repository-Namen ist unproblematisch.
+## Stack
 
-## Bestätigte Zugänglichkeitsangaben
+- Astro 7 und TypeScript im Strict Mode;
+- modernes CSS ohne UI-Laufzeitframework;
+- GitHub Pages und GitHub Actions;
+- Cloudflare Worker, Workers KV, Turnstile, Rate Limit und Email Service;
+- OpenStreetMap;
+- Vitest;
+- kein Java.
 
-- alle Praxisräume liegen im Erdgeschoss;
-- am Eingang befindet sich eine kleine Türschwelle;
-- die Eingangstür hat Standardbreite;
-- ein Aufzug wird nicht benötigt;
-- geeignete Parkplätze liegen unmittelbar vor der Praxis;
-- das Team unterstützt Besucherinnen und Besucher jederzeit.
+## Lokale Entwicklung
 
-Die Website behauptet wegen der vorhandenen Schwelle nicht pauschal
-„vollständig barrierefrei“, sondern beschreibt die Situation konkret.
+```bash
+corepack enable
+pnpm install --frozen-lockfile
+cp .env.example .env
+pnpm dev
+```
+
+Prüfkette:
+
+```bash
+pnpm check
+pnpm worker:check
+pnpm test
+pnpm build
+```
+
+## Sicherheit
+
+- exakte Origin-Allowlist;
+- serverseitige Turnstile-Prüfung;
+- Honeypot und Mindest-Ausfüllzeit;
+- Rate Limit mit gesalzenem Hash statt roher IP als Schlüssel;
+- maximal 8 KiB Request-Body;
+- keine Datei-Uploads;
+- keine Empfängeradresse aus dem Browser;
+- keine personenbezogenen Anwendungslogs;
+- reproduzierbare Installation mit eingecheckter Lockdatei.
+
+## Barrierefreiheit
+
+Die Praxis liegt vollständig im Erdgeschoss. Am Eingang gibt es eine kleine Türschwelle; die Eingangstür hat Standardbreite. Ein Aufzug ist nicht erforderlich. Geeignete Parkplätze liegen direkt vor der Praxis, und das Team unterstützt jederzeit.
+
+Für die Website ist WCAG 2.2 AA das Qualitätsziel. Eine formale Zertifizierung wird nicht behauptet.
 
 ## Dokumentation
 
-- [Überarbeiteter Umsetzungsplan](docs/UMSETZUNGSPLAN.md)
+- [Vollständiger Umsetzungsplan](docs/UMSETZUNGSPLAN.md)
+- [Aktueller Implementierungsstatus](docs/IMPLEMENTIERUNGSSTATUS.md)
 - [Bestätigte und offene Praxisdaten](docs/PRAXISDATEN.md)
-- [Cloudflare-Einrichtung: Schritte 4 bis 12](docs/CLOUDFLARE-SETUP.md)
+- [Cloudflare-Einrichtung](docs/CLOUDFLARE-SETUP.md)
 - [Inventar der alten Testseite](docs/ALTSEITEN-INVENTAR.md)
-
-## Kontaktformular-Worker
-
-Der Worker enthält eine exakte Origin-Allowlist, Größen- und Feldvalidierung,
-Honeypot, Mindest-Ausfüllzeit, Rate Limit, serverseitige Turnstile-Prüfung,
-KV-basierte Empfängerauflösung und reinen Text-Mailversand.
-
-In Entwicklung werden echte E-Mails ausschließlich an die serverseitig
-festgelegte Testadresse versandt. Produktion fällt niemals auf diese
-Testadresse zurück. Der Browser kann keinen Empfänger vorgeben.
-
-## Produktionssperre
-
-Produktionsbuilds sollen bei fehlenden Pflichtwerten oder `TODO`-Platzhaltern
-fehlschlagen. Für Entwicklung ist ein ausdrücklich gesetzter Schalter mit
-sichtbaren Hinweisen und `noindex,nofollow` vorgesehen.

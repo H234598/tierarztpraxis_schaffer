@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+      SITE_DEPLOYMENT_MODE: development
+      ALLOW_PLACEHOLDERS: "true"
+      PUBLIC_SITE_URL: https://tierarztpraxis-schaffer.telacore.org
+      PUBLIC_BASE_PATH: /
+      PUBLIC_CONTACT_API_URL: https://api.tierarztpraxis-schaffer.telacore.org/v1/contact
+      PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: pnpm einrichten
+        uses: pnpm/action-setup@v4
+
+      - name: Node.js mit pnpm-Cache einrichten
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Abhängigkeiten reproduzierbar installieren
+        run: pnpm install --frozen-lockfile
+
+      - name: Manifeste und Lockdatei unverändert halten
+        run: git diff --exit-code -- package.json worker/package.json pnpm-workspace.yaml pnpm-lock.yaml
+
+      - name: Astro und TypeScript prüfen
+        run: pnpm check
+
+      - name: Worker-Typen prüfen
+        run: pnpm worker:check
+
+      - name: Tests ausführen
+        run: pnpm test
+
+      - name: Entwicklungsbuild erstellen
+        run: pnpm build

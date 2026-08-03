@@ -1,0 +1,60 @@
+---
+import DevelopmentBanner from "../components/DevelopmentBanner.astro";
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+import { siteConfig } from "../config/site";
+import { withBase } from "../utils/paths";
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description: string;
+  canonicalPath?: string;
+}
+
+const { title, description, canonicalPath = Astro.url.pathname } = Astro.props;
+const canonicalUrl = new URL(canonicalPath, siteConfig.canonicalUrl).toString();
+const robots = siteConfig.isDevelopment ? "noindex,nofollow" : "index,follow";
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "form-action 'self' https://api.tierarztpraxis-schaffer.telacore.org",
+  "img-src 'self' data:",
+  "style-src 'self'",
+  "script-src 'self' https://challenges.cloudflare.com",
+  "frame-src https://www.openstreetmap.org https://challenges.cloudflare.com",
+  "connect-src 'self' https://api.tierarztpraxis-schaffer.telacore.org https://challenges.cloudflare.com",
+].join("; ");
+---
+
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="robots" content={robots} />
+    <meta name="theme-color" content="#245b43" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta http-equiv="Content-Security-Policy" content={contentSecurityPolicy} />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="icon" href={withBase("favicon.svg")} type="image/svg+xml" />
+    <link rel="manifest" href={withBase("site.webmanifest")} />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Zum Hauptinhalt springen</a>
+    <DevelopmentBanner />
+    <Header />
+    <main id="main-content" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

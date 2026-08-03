@@ -1,0 +1,56 @@
+---
+import { siteConfig } from "../config/site";
+import { withBase } from "../utils/paths";
+
+const navigation = [
+  ["Start", ""],
+  ["Leistungen", "leistungen/"],
+  ["Praxis", "praxis/"],
+  ["Sprechzeiten", "sprechzeiten/"],
+  ["Notfall", "notfall/"],
+  ["FAQ", "faq/"],
+  ["Stellenangebote", "stellenangebote/"],
+  ["Kontakt", "kontakt/"],
+] as const;
+---
+
+<header class="site-header">
+  <div class="contact-strip">
+    <div class="container contact-strip__inner">
+      <span>Tierarztpraxis in Fürth</span>
+      <a
+        class="phone-link"
+        href={siteConfig.phone.href}
+        aria-label={`${siteConfig.shortName} unter ${siteConfig.phone.display} anrufen`}
+      >
+        <span aria-hidden="true">☎</span>
+        {siteConfig.phone.display}
+      </a>
+    </div>
+  </div>
+
+  <div class="container header-main">
+    <a class="brand" href={withBase("")} aria-label="Zur Startseite">
+      <img src={withBase("logo.svg")} width="72" height="72" alt="" />
+      <span>
+        <strong>Tierarztpraxis</strong>
+        <span>Dr. Schäffer</span>
+      </span>
+    </a>
+
+    <details class="mobile-menu">
+      <summary>Menü</summary>
+      <nav aria-label="Hauptnavigation mobil">
+        <ul>
+          {navigation.map(([label, path]) => <li><a href={withBase(path)}>{label}</a></li>)}
+        </ul>
+      </nav>
+    </details>
+
+    <nav class="desktop-nav" aria-label="Hauptnavigation">
+      <ul>
+        {navigation.map(([label, path]) => <li><a href={withBase(path)}>{label}</a></li>)}
+      </ul>
+    </nav>
+  </div>
+</header>

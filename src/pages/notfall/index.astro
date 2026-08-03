@@ -1,0 +1,13 @@
+---
+import { siteConfig } from "../../config/site";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Notfall | Tierarztpraxis Dr. Schäffer"
+  description="Wichtige Hinweise und Telefonnummer für tiermedizinische Notfälle."
+  canonicalPath="/notfall/"
+>
+  <header class="page-header"><div class="content"><p class="eyebrow">Notfall</p><h1>Nicht schreiben – sofort anrufen</h1><p>Das Kontaktformular und Social-Media-Nachrichten sind keine Notfallkanäle.</p><p><a class="button button--danger" href={siteConfig.phone.href}>{siteConfig.phone.display} anrufen</a></p></div></header>
+  <section class="section section--white"><div class="content prose"><h2>Während der Sprechzeiten</h2><p>Bitte rufen Sie unmittelbar an und kündigen Sie Ihr Kommen telefonisch an.</p><h2>Außerhalb der Sprechzeiten</h2><p>{siteConfig.emergencyOutsideHours}</p><div class="callout emergency"><strong>Produktionsblocker:</strong> Zuständiger Notdienst, Telefonnummer, Erreichbarkeit und fachlich korrekte Formulierung müssen vor Veröffentlichung bestätigt sein.</div></div></section>
+</BaseLayout>

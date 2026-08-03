@@ -1,0 +1,45 @@
+---
+import { siteConfig } from "../config/site";
+
+const { latitude, longitude } = siteConfig.coordinates;
+const horizontal = 0.005;
+const vertical = 0.0035;
+const bbox = [
+  longitude - horizontal,
+  latitude - vertical,
+  longitude + horizontal,
+  latitude + vertical,
+].map((value) => value.toFixed(6)).join(",");
+const embedParams = new URLSearchParams({
+  bbox,
+  layer: "mapnik",
+  marker: `${latitude},${longitude}`,
+});
+const embedUrl = `https://www.openstreetmap.org/export/embed.html?${embedParams.toString()}`;
+const externalUrl = `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=18/${latitude}/${longitude}`;
+---
+
+<section id="anfahrt" class="map-card" aria-labelledby="map-heading">
+  <div class="map-card__heading">
+    <p class="eyebrow">Anfahrt</p>
+    <h2 id="map-heading">Direkt auf OpenStreetMap</h2>
+    <p>{siteConfig.address.street}, {siteConfig.address.postalCode} {siteConfig.address.city}</p>
+  </div>
+  <iframe
+    class="osm-map"
+    src={embedUrl}
+    title={`OpenStreetMap-Karte: ${siteConfig.shortName} in Fürth`}
+    loading="eager"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen
+  ></iframe>
+  <div class="map-card__footer">
+    <a href={externalUrl} target="_blank" rel="noopener noreferrer">
+      Größere Karte und Routenplanung bei OpenStreetMap öffnen
+    </a>
+    <small>
+      Kartendaten: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap-Mitwirkende</a>.
+      Beim Laden dieser Seite wird die Karte unmittelbar von OpenStreetMap abgerufen.
+    </small>
+  </div>
+</section>
