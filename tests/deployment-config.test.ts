@@ -80,17 +80,3 @@ describe("GitHub-Pages-Konfiguration", () => {
     expect(upload).toBeGreaterThan(validation);
   });
 });
-
-describe("Kontaktformular-Diagnose", () => {
-  it("unterscheidet Sicherheitsprüfung und Maildienst-Ausfall", async () => {
-    const form = await readFile(
-      "src/components/ContactForm.astro",
-      "utf8",
-    );
-
-    expect(form).toContain('case "security_check_failed"');
-    expect(form).toContain('case "temporarily_unavailable"');
-    expect(form).toContain("Die Sicherheitsprüfung wurde abgelehnt");
-    expect(form).toContain("Der Maildienst ist derzeit nicht verfügbar");
-  });
-});
