@@ -38,10 +38,12 @@ jobs:
         uses: pnpm/action-setup@v4
 
       - name: Node.js einrichten
+        # Der pnpm-Cache wird erst wieder aktiviert, sobald pnpm-lock.yaml im
+        # Repository eingecheckt ist. setup-node verlangt die Lockdatei bereits
+        # während dieses Schritts und würde sonst vor pnpm install abbrechen.
         uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
-          cache: pnpm
 
       - name: Abhängigkeiten installieren
         run: pnpm install --no-frozen-lockfile
