@@ -20,5 +20,13 @@ export default defineConfig({
   integrations: [sitemap()],
   build: {
     assets: "_assets",
+    inlineStylesheets: "never",
+  },
+  vite: {
+    build: {
+      // Unsere CSP erlaubt bewusst keine Inline-Skripte. Astro würde kleine
+      // Client-Skripte sonst automatisch in das HTML einbetten.
+      assetsInlineLimit: 0,
+    },
   },
 });
