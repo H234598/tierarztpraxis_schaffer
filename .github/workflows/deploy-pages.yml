@@ -30,7 +30,7 @@ jobs:
       PUBLIC_SITE_URL: https://tierarztpraxis-schaffer.telacore.org
       PUBLIC_BASE_PATH: /
       PUBLIC_CONTACT_API_URL: https://api.tierarztpraxis-schaffer.telacore.org/v1/contact
-      PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA' }}
+      PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
 
     steps:
       - name: Repository auschecken
@@ -47,6 +47,22 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
+
+      - name: Öffentliche Cloudflare-Konfiguration prüfen
+        run: |
+          set -euo pipefail
+
+          test -n "$PUBLIC_TURNSTILE_SITE_KEY" || {
+            echo 'Die GitHub-Actions-Variable PUBLIC_TURNSTILE_SITE_KEY fehlt.' >&2
+            exit 1
+          }
+
+          case "$PUBLIC_TURNSTILE_SITE_KEY" in
+            1x00000000000000000000AA|2x00000000000000000000AB|1x00000000000000000000BB|2x00000000000000000000BB|3x00000000000000000000FF)
+              echo 'Cloudflare-Test-Sitekeys dürfen nicht in die öffentliche Website gebaut werden.' >&2
+              exit 1
+              ;;
+          esac
 
       - name: Abhängigkeiten reproduzierbar installieren
         run: pnpm install --frozen-lockfile
