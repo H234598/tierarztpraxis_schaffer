@@ -1,6 +1,9 @@
 import { accessibilityFaqAnswer, practiceAccessibility } from "./practice";
+import { resolveTurnstileSiteKey } from "./turnstile";
 
 const deploymentMode = import.meta.env.SITE_DEPLOYMENT_MODE ?? "development";
+const allowTurnstileTestKeys =
+  import.meta.env.ALLOW_TURNSTILE_TEST_KEYS === "true";
 
 export const siteConfig = {
   deploymentMode,
@@ -11,9 +14,10 @@ export const siteConfig = {
   contactApiUrl:
     import.meta.env.PUBLIC_CONTACT_API_URL ??
     "https://api.tierarztpraxis-schaffer.telacore.org/v1/contact",
-  turnstileSiteKey:
-    import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ??
-    "1x00000000000000000000AA",
+  turnstileSiteKey: resolveTurnstileSiteKey(
+    import.meta.env.PUBLIC_TURNSTILE_SITE_KEY,
+    { allowTestKeys: allowTurnstileTestKeys },
+  ),
   name: "Tierarztpraxis Dr. Michael Schäffer",
   shortName: "Tierarztpraxis Dr. Schäffer",
   claim: "Mit Herz, Kompetenz und moderner Tiermedizin.",
