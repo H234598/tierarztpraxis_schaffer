@@ -1,6 +1,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import { extname, join, relative } from "node:path";
 
+import { resolveTurnstileSiteKey } from "../src/config/turnstile";
+
 interface ValidationProblem {
   readonly path: string;
   readonly message: string;
@@ -11,6 +13,8 @@ const allowPlaceholders =
   process.env.ALLOW_PLACEHOLDERS === "true" ||
   (deploymentMode === "development" &&
     process.env.ALLOW_PLACEHOLDERS === undefined);
+const allowTurnstileTestKeys =
+  process.env.ALLOW_TURNSTILE_TEST_KEYS === "true";
 
 const canonicalProductionUrl =
   "https://tierarztpraxis-schaffer.telacore.org";
@@ -95,6 +99,24 @@ async function inspectDirectory(directory: string): Promise<void> {
 await inspectDirectory(join(process.cwd(), "src"));
 await inspectDirectory(join(process.cwd(), "public"));
 
+try {
+  resolveTurnstileSiteKey(process.env.PUBLIC_TURNSTILE_SITE_KEY, {
+    allowTestKeys: allowTurnstileTestKeys,
+  });
+} catch (error) {
+  addProblem(
+    "environment.PUBLIC_TURNSTILE_SITE_KEY",
+    error instanceof Error ? error.message : "ist ungültig",
+  );
+}
+
+if (deploymentMode === "production" && allowTurnstileTestKeys) {
+  addProblem(
+    "environment.ALLOW_TURNSTILE_TEST_KEYS",
+    "darf in Produktion nicht aktiviert sein",
+  );
+}
+
 if (deploymentMode === "production") {
   if (process.env.PUBLIC_SITE_URL !== canonicalProductionUrl) {
     addProblem(
@@ -107,14 +129,6 @@ if (deploymentMode === "production") {
     addProblem(
       "environment.PUBLIC_BASE_PATH",
       "muss bei der Custom Domain exakt / sein",
-    );
-  }
-
-  const turnstileSiteKey = process.env.PUBLIC_TURNSTILE_SITE_KEY;
-  if (!turnstileSiteKey || turnstileSiteKey.startsWith("1x0000")) {
-    addProblem(
-      "environment.PUBLIC_TURNSTILE_SITE_KEY",
-      "muss in Produktion ein echtes Cloudflare-Turnstile-Sitekey sein",
     );
   }
 }
