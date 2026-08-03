@@ -33,9 +33,9 @@ jobs:
         uses: actions/checkout@v5
 
       - name: pnpm einrichten
+        # pnpm/action-setup liest die einzige verbindliche Version aus dem
+        # packageManager-Feld der package.json.
         uses: pnpm/action-setup@v4
-        with:
-          version: 11.11.0
 
       - name: Node.js einrichten
         uses: actions/setup-node@v5
