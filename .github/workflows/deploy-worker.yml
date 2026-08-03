@@ -19,34 +19,76 @@ concurrency:
   group: cloudflare-worker-${{ inputs.environment }}
   cancel-in-progress: false
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: cloudflare-${{ inputs.environment }}
     env:
+      CI: "true"
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: pnpm einrichten
         # pnpm/action-setup liest die einzige verbindliche Version aus dem
         # packageManager-Feld der package.json.
         uses: pnpm/action-setup@v4
 
-      - name: Node.js einrichten
-        # Der pnpm-Cache wird erst wieder aktiviert, sobald pnpm-lock.yaml im
-        # Repository eingecheckt ist. setup-node verlangt die Lockdatei bereits
-        # während dieses Schritts und würde sonst vor pnpm install abbrechen.
+      - name: Node.js mit pnpm-Cache einrichten
         uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Abhängigkeiten installieren
-        run: pnpm install --no-frozen-lockfile
+      - name: Toolchain und Lockdatei verifizieren
+        run: |
+          set -euo pipefail
+
+          test -s pnpm-lock.yaml || {
+            echo 'pnpm-lock.yaml fehlt oder ist leer.' >&2
+            exit 1
+          }
+
+          package_manager="$({
+            node -e 'const fs=require("node:fs"); const p=JSON.parse(fs.readFileSync("package.json", "utf8")); process.stdout.write(p.packageManager ?? "")'
+          })"
+
+          [[ "$package_manager" == pnpm@* ]] || {
+            echo 'package.json enthält kein gültiges packageManager-Feld für pnpm.' >&2
+            exit 1
+          }
+
+          expected_version="${package_manager#pnpm@}"
+          expected_version="${expected_version%%+*}"
+          actual_version="$(pnpm --version)"
+
+          [[ "$actual_version" == "$expected_version" ]] || {
+            echo "Falsche pnpm-Version: erwartet $expected_version, gefunden $actual_version." >&2
+            exit 1
+          }
+
+      - name: Abhängigkeiten reproduzierbar installieren
+        run: pnpm install --frozen-lockfile
+
+      - name: Unveränderte Abhängigkeitsdefinitionen prüfen
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- \
+            package.json \
+            worker/package.json \
+            pnpm-workspace.yaml \
+            pnpm-lock.yaml
 
       - name: Worker-Typen prüfen
         run: pnpm --dir worker check
@@ -56,6 +98,7 @@ jobs:
 
       - name: Unfertige KV-Konfiguration blockieren
         run: |
+          set -euo pipefail
           if grep -q 'TODO_.*_KV_ID' worker/wrangler.jsonc; then
             echo 'In worker/wrangler.jsonc fehlen noch echte KV-Namespace-IDs.' >&2
             exit 1
@@ -63,6 +106,7 @@ jobs:
 
       - name: Cloudflare-Anmeldedaten prüfen
         run: |
+          set -euo pipefail
           test -n "$CLOUDFLARE_ACCOUNT_ID" || {
             echo 'CLOUDFLARE_ACCOUNT_ID fehlt im GitHub-Environment.' >&2
             exit 1
