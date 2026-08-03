@@ -1,0 +1,9 @@
+---
+import { siteConfig } from "../config/site";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { withBase } from "../utils/paths";
+---
+
+<BaseLayout title="Seite nicht gefunden | Tierarztpraxis Dr. Schäffer" description="Die angeforderte Seite wurde nicht gefunden." canonicalPath="/404/">
+  <section class="section section--white"><div class="content prose"><p class="eyebrow">Fehler 404</p><h1>Diese Seite ist wohl ausgebüxt</h1><p>Der Link ist möglicherweise veraltet oder falsch geschrieben. In einem tiermedizinischen Notfall rufen Sie bitte direkt an.</p><div class="button-row"><a class="button" href={withBase("")}>Zur Startseite</a><a class="button button--secondary" href={siteConfig.phone.href}>{siteConfig.phone.display} anrufen</a></div></div></section>
+</BaseLayout>

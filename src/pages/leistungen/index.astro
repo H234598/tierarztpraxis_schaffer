@@ -1,0 +1,23 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { siteConfig } from "../../config/site";
+---
+
+<BaseLayout
+  title="Leistungen | Tierarztpraxis Dr. Schäffer"
+  description="Leistungsübersicht der Tierarztpraxis Dr. Schäffer."
+  canonicalPath="/leistungen/"
+>
+  <header class="page-header"><div class="content"><p class="eyebrow">Leistungen</p><h1>Tiermedizin passend zum tatsächlichen Praxisangebot</h1><p>Wir veröffentlichen keine unbelegten Leistungsversprechen. Die folgenden Bereiche werden vor Produktion fachlich bestätigt.</p></div></header>
+  <section class="section section--white">
+    <div class="container cards cards--three">
+      <article class="card"><h2>Vorsorge und Impfungen</h2><p>TODO: Untersuchungs- und Impfangebot fachlich bestätigen.</p></article>
+      <article class="card"><h2>Allgemeine Untersuchungen</h2><p>TODO: Behandelte Tierarten und diagnostische Möglichkeiten ergänzen.</p></article>
+      <article class="card"><h2>Diagnostik</h2><p>TODO: Labor, Bildgebung und weitere vorhandene Diagnostik benennen.</p></article>
+      <article class="card"><h2>Zahnbehandlungen</h2><p>TODO: Tatsächlich angebotene Zahnleistungen fachlich freigeben.</p></article>
+      <article class="card"><h2>Operationen</h2><p>TODO: Operationsspektrum und Narkoseverfahren bestätigen.</p></article>
+      <article class="card"><h2>Nachsorge und Beratung</h2><p>TODO: Nachsorge, Beratung und mögliche Schwerpunkte ergänzen.</p></article>
+    </div>
+    <div class="content"><p class="callout">Unsicher, ob wir die richtige Anlaufstelle sind? Rufen Sie uns unter <a href={siteConfig.phone.href}>{siteConfig.phone.display}</a> an.</p></div>
+  </section>
+</BaseLayout>

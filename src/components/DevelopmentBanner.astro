@@ -1,0 +1,13 @@
+---
+import { siteConfig } from "../config/site";
+---
+
+{
+  siteConfig.isDevelopment && (
+    <aside class="development-banner" aria-label="Hinweis zur Entwicklungsversion">
+      <strong>Entwicklungsversion:</strong> Einige Praxis- und Rechtsangaben sind
+      noch nicht abschließend bestätigt. Das Kontaktformular versendet echte
+      Testnachrichten ausschließlich an das eingerichtete Testpostfach.
+    </aside>
+  )
+}

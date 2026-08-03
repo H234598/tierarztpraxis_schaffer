@@ -1,0 +1,11 @@
+{
+  "name": "Tierarztpraxis Dr. Schäffer",
+  "short_name": "Tierarztpraxis Schäffer",
+  "description": "Tierarztpraxis Dr. Michael Schäffer in Fürth",
+  "lang": "de-DE",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f7faf7",
+  "theme_color": "#245b43",
+  "icons": []
+}

@@ -1,0 +1,14 @@
+---
+import { siteConfig } from "../../config/site";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { withBase } from "../../utils/paths";
+---
+
+<BaseLayout
+  title="Barrierefreiheit | Tierarztpraxis Dr. Schäffer"
+  description="Zugänglichkeit der Praxis und Qualitätsziele für die barrierearme Website."
+  canonicalPath="/barrierefreiheit/"
+>
+  <header class="page-header"><div class="content"><p class="eyebrow">Barrierefreiheit</p><h1>Barrieren sichtbar machen und gezielt abbauen</h1><p>Unser Qualitätsziel für die Website ist WCAG 2.2 AA. Eine formale Zertifizierung behaupten wir nicht.</p></div></header>
+  <section class="section section--white"><div class="content prose"><h2>Zugang zur Praxis</h2><p>{siteConfig.accessibility.faqAnswer}</p><h2>Digitale Maßnahmen</h2><ul><li>semantische Struktur und Skip-Link;</li><li>vollständige Tastaturbedienung;</li><li>sichtbare Fokusmarkierungen;</li><li>ausreichende Kontraste und vergrößerbare Texte;</li><li>verständliche Formulare und Statusmeldungen;</li><li>Rücksicht auf reduzierte Bewegung.</li></ul><h2>Bekannte offene Punkte</h2><ul><li>genaue lichte Türbreite und Schwellenhöhe;</li><li>Angaben zum Praxis-WC und zu Bewegungsflächen;</li><li>barrierearme ÖPNV-Anfahrt;</li><li>abschließende Tastatur-, Zoom- und Screenreader-Tests.</li></ul><h2>Barriere melden</h2><p>Rufen Sie unter <a href={siteConfig.phone.href}>{siteConfig.phone.display}</a> an oder verwenden Sie im <a href={withBase("kontakt/#kontaktformular")}>Kontaktformular</a> die Kategorie „Barriere melden“.</p></div></section>
+</BaseLayout>

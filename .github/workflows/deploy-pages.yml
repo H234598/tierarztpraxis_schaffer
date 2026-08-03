@@ -1,0 +1,80 @@
+name: GitHub Pages veröffentlichen
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "true"
+      SITE_DEPLOYMENT_MODE: development
+      ALLOW_PLACEHOLDERS: "true"
+      PUBLIC_SITE_URL: https://tierarztpraxis-schaffer.telacore.org
+      PUBLIC_BASE_PATH: /
+      PUBLIC_CONTACT_API_URL: https://api.tierarztpraxis-schaffer.telacore.org/v1/contact
+      PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA' }}
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: pnpm einrichten
+        uses: pnpm/action-setup@v4
+
+      - name: Node.js mit pnpm-Cache einrichten
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Abhängigkeiten reproduzierbar installieren
+        run: pnpm install --frozen-lockfile
+
+      - name: Qualität prüfen
+        run: |
+          set -euo pipefail
+          pnpm check
+          pnpm test
+          pnpm build
+
+      - name: Pages konfigurieren
+        uses: actions/configure-pages@v5
+
+      - name: Pages-Artefakt hochladen
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: GitHub Pages veröffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v4

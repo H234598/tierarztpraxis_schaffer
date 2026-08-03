@@ -1,0 +1,9 @@
+---
+import { siteConfig } from "../../config/site";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Impressum | Tierarztpraxis Dr. Schäffer" description="Impressum der Tierarztpraxis Dr. Schäffer." canonicalPath="/impressum/">
+  <header class="page-header"><div class="content"><p class="eyebrow">Rechtliches</p><h1>Impressum</h1><p>Arbeitsfassung mit sichtbaren Produktionsblockern.</p></div></header>
+  <section class="section section--white"><div class="content prose"><h2>Angaben nach § 5 DDG</h2><p><strong>{siteConfig.name}</strong><br />{siteConfig.address.street}<br />{siteConfig.address.postalCode} {siteConfig.address.city}<br />{siteConfig.address.country}</p><h2>Kontakt</h2><p>Telefon: <a href={siteConfig.phone.href}>{siteConfig.phone.display}</a><br />E-Mail: {siteConfig.publicEmail}</p><h2>Berufsrechtliche Angaben</h2><ul><li>TODO: Berufsbezeichnung und Verleihungsstaat</li><li>TODO: Zuständige Tierärztekammer</li><li>TODO: Zuständige Aufsichtsbehörde</li><li>TODO: Berufsrechtliche Regelungen</li><li>TODO: Berufshaftpflicht</li><li>TODO: Umsatzsteuer-ID, falls vorhanden</li></ul><p class="callout">Diese Angaben müssen vor dem Produktionsbuild fachlich beziehungsweise rechtlich freigegeben werden.</p></div></section>
+</BaseLayout>
