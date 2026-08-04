@@ -16,21 +16,38 @@ function ftypLength(prefix: Uint8Array): number | null {
   return size >= 16 && size <= maximumFtypBytes && size % 4 === 0 ? size : null;
 }
 
+const majorBrandTypes: Readonly<Record<string, AllowedMediaType>> = {
+  isom: "video/mp4",
+  iso2: "video/mp4",
+  mp41: "video/mp4",
+  mp42: "video/mp4",
+  avc1: "video/mp4",
+  "M4V ": "video/mp4",
+  "qt  ": "video/quicktime",
+  heic: "image/heic",
+  heix: "image/heic",
+  hevc: "image/heic",
+  hevx: "image/heic",
+  mif1: "image/heif",
+  msf1: "image/heif",
+  miaf: "image/heif",
+};
+
+const safeCompatibleBrands = new Set(Object.keys(majorBrandTypes));
+
 function isoBmffType(prefix: Uint8Array): AllowedMediaType | null {
   const length = ftypLength(prefix);
   if (length === null || prefix.byteLength < length) return null;
-  const brands = [];
-  for (let offset = 8; offset < length; offset += 4) brands.push(ascii(prefix, offset, 4));
-  if (brands.includes("avif") || brands.includes("avis")) return null;
-
-  const types = new Set<AllowedMediaType>();
-  for (const brand of brands) {
-    if (["isom", "iso2", "mp41", "mp42"].includes(brand)) types.add("video/mp4");
-    if (brand === "qt  ") types.add("video/quicktime");
-    if (["heic", "heix", "hevc", "hevx"].includes(brand)) types.add("image/heic");
-    if (["mif1", "msf1"].includes(brand)) types.add("image/heif");
+  const major = ascii(prefix, 8, 4);
+  const mediaType = majorBrandTypes[major];
+  if (!mediaType) return null;
+  for (let offset = 16; offset < length; offset += 4) {
+    const compatible = ascii(prefix, offset, 4);
+    if (compatible === "avif" || compatible === "avis" || !safeCompatibleBrands.has(compatible)) {
+      return null;
+    }
   }
-  return types.size === 1 ? [...types][0] ?? null : null;
+  return mediaType;
 }
 
 export function needsMoreSignatureBytes(prefix: Uint8Array): boolean {

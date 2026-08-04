@@ -52,6 +52,12 @@ function ftyp(major: string, ...compatible: string[]): Uint8Array {
   );
 }
 
+function ftypWithMinor(major: string, minor: string, ...compatible: string[]): Uint8Array {
+  const result = ftyp(major, ...compatible);
+  result.set([...minor].map((character) => character.charCodeAt(0)), 12);
+  return result;
+}
+
 describe("Magic-Byte-Erkennung", () => {
   it.each([
     ["JPEG", bytes(0xff, 0xd8, 0xff), "image/jpeg"],
@@ -77,10 +83,20 @@ describe("Magic-Byte-Erkennung", () => {
     ["AVIF", isoBmff("avif")],
     ["HEIF mit kompatiblem AVIF", ftyp("mif1", "avif")],
     ["MP4 mit kompatiblem AVIS", ftyp("isom", "avis")],
+    ["MP4 mit unbekannter kompatibler Brand", ftyp("isom", "zzzz")],
     ["unbekannte BMFF-Brand", isoBmff("free")],
     ["zufällige Bytes", bytes(1, 2, 3, 4)],
   ])("weist %s ab", (_label, prefix) => {
     expect(detectMediaType(prefix)).toBeNull();
+  });
+
+  it("ignoriert minor_version, aber nicht kompatibles AVIF", () => {
+    expect(detectMediaType(ftypWithMinor("isom", "avif"))).toBe("video/mp4");
+    expect(detectMediaType(ftypWithMinor("isom", "0000", "avif"))).toBeNull();
+  });
+
+  it("weist abgeschnittene ftyp-Box fail-closed ab", () => {
+    expect(detectMediaType(ftyp("isom", "iso2").slice(0, 16))).toBeNull();
   });
 });
 
