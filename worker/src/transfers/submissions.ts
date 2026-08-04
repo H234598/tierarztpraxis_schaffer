@@ -2,16 +2,13 @@ import {
   validateSubmissionLinks,
   type SubmissionLinkInput,
 } from "./links";
+import {
+  isAllowedMediaType,
+  maximumMediaBytes,
+  type AllowedMediaType,
+} from "./limits";
 
-export type AllowedSubmissionMediaType =
-  | "image/jpeg"
-  | "image/png"
-  | "image/webp"
-  | "image/heic"
-  | "image/heif"
-  | "video/mp4"
-  | "video/quicktime"
-  | "video/webm";
+export type AllowedSubmissionMediaType = AllowedMediaType;
 
 export interface SubmissionFileInput {
   readonly name: string;
@@ -50,14 +47,6 @@ const allowedKeys = new Set([
   "notEmergencyConfirmed",
 ]);
 
-const imageMediaTypes = new Set<AllowedSubmissionMediaType>([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/heic",
-  "image/heif",
-]);
-
 export interface CreatedSubmission {
   readonly submissionId: string;
   readonly uploads: readonly {
@@ -85,19 +74,6 @@ function validNotificationEmail(value: string): boolean {
   return (
     value.length <= 254 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value)
-  );
-}
-
-function isAllowedMediaType(value: string): value is AllowedSubmissionMediaType {
-  return (
-    value === "image/jpeg" ||
-    value === "image/png" ||
-    value === "image/webp" ||
-    value === "image/heic" ||
-    value === "image/heif" ||
-    value === "video/mp4" ||
-    value === "video/quicktime" ||
-    value === "video/webm"
   );
 }
 
@@ -130,9 +106,7 @@ function validateFiles(value: unknown): {
       throw new TypeError("Invalid submission file");
     }
     const mediaType = candidate.mediaType;
-    const maximumBytes = imageMediaTypes.has(mediaType)
-      ? 12 * 1_024 * 1_024
-      : 50 * 1_024 * 1_024;
+    const maximumBytes = maximumMediaBytes(mediaType);
     if (candidate.size > maximumBytes) {
       throw new TypeError("Invalid submission file");
     }
