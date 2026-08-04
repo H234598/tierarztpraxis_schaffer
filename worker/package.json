@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "tsc -p tsconfig.json --noEmit",
+    "types": "wrangler types",
+    "check": "wrangler types --check && tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "dev": "wrangler dev --remote --env development",
     "deploy:development": "wrangler deploy --env development",

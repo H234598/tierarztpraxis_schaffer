@@ -27,6 +27,9 @@
         "TEST_CONTACT_RECIPIENT": "tierarztpraxis_schaffer@herr-der-mails.de",
         "MAIL_FROM": "website@tierarztpraxis-schaffer.telacore.org"
       },
+      "secrets": {
+        "required": ["TURNSTILE_SECRET", "RATE_LIMIT_SALT"]
+      },
       "kv_namespaces": [
         {
           "binding": "CONTACT_CONFIG",
@@ -67,6 +70,9 @@
         "EXPECTED_TURNSTILE_ACTION": "contact_form",
         "CONTACT_RECIPIENT_KEY": "contact:recipient:production",
         "MAIL_FROM": "website@tierarztpraxis-schaffer.telacore.org"
+      },
+      "secrets": {
+        "required": ["TURNSTILE_SECRET", "RATE_LIMIT_SALT"]
       },
       "kv_namespaces": [
         {
