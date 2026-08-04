@@ -134,6 +134,7 @@ async function enterFragmentSession(page: Page): Promise<void> {
   ).toHaveValue("turnstile-test-token");
   await page.getByRole("button", { name: "Sichere Sitzung starten" }).click();
   await expect(page.getByRole("heading", { name: "Fall für Luna" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Fall für Luna" })).toBeFocused();
 }
 
 test("Warnung steht vor Token, Fragment verschwindet und Logout löscht Sitzung", async ({
@@ -172,6 +173,7 @@ test("Warnung steht vor Token, Fragment verschwindet und Logout löscht Sitzung"
 
   await page.getByRole("button", { name: "Sicher abmelden" }).click();
   await expect(page.getByRole("status")).toContainText("abgemeldet");
+  await expect(page.getByLabel("Datentransfer-Token")).toBeFocused();
   expect(state.logoutCalls).toBe(1);
   expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
 });
@@ -309,6 +311,8 @@ test("axe, Tastatur, Live-Status und 320-px-Reflow", async ({ page }) => {
       () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
     ),
   ).toBe(true);
+  await expect(page.locator("[data-case-heading]")).toHaveAttribute("tabindex", "-1");
+  await expect(page.locator("#transfer-report-heading")).toHaveAttribute("tabindex", "-1");
 
   const token = page.getByLabel("Datentransfer-Token");
   await token.focus();
@@ -345,11 +349,548 @@ test("stellt ausschließlich eine vorhandene CSRF-Sitzung per GET wieder her", a
   await page.goto("/datentransfer/");
 
   await expect(page.getByRole("heading", { name: "Fall für Luna" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Fall für Luna" })).toBeFocused();
   await expect(page.getByRole("status")).toContainText("wiederhergestellt");
   expect(caseRequests).toBe(1);
   expect(
     await page.evaluate(() => Object.fromEntries(Object.entries(sessionStorage))),
   ).toEqual({ "tierarztpraxis:datentransfer:csrf": csrfToken });
+});
+
+test("behält CSRF nach Session-Erfolg und wiederholt nur den fehlgeschlagenen GET", async ({
+  page,
+}) => {
+  await routeTurnstile(page);
+  let sessionCalls = 0;
+  let caseCalls = 0;
+  await page.route("**/api/transfers/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/transfers/session" && request.method() === "POST") {
+      sessionCalls += 1;
+      await route.fulfill({
+        json: { ok: true, case: transferCase().case, csrfToken },
+      });
+      return;
+    }
+    if (path === "/api/transfers/case" && request.method() === "GET") {
+      caseCalls += 1;
+      if (caseCalls === 1) {
+        await route.fulfill({
+          status: 503,
+          json: {
+            ok: false,
+            error: { code: "internal", requestId: "req-case" },
+          },
+        });
+      } else {
+        await route.fulfill({ json: transferCase() });
+      }
+      return;
+    }
+    await route.fulfill({ status: 404, json: { ok: false } });
+  });
+
+  await page.goto(`/datentransfer/#token=${encodeURIComponent(fragmentToken)}`);
+  await expect(
+    page.locator("input[name='cf-turnstile-response']"),
+  ).toHaveValue("turnstile-test-token");
+  await page.getByRole("button", { name: "Sichere Sitzung starten" }).click();
+
+  await expect(
+    page.getByRole("button", { name: "Fallansicht erneut laden" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Fallansicht erneut laden" }),
+  ).toBeFocused();
+  expect(
+    await page.evaluate(() => sessionStorage.getItem("tierarztpraxis:datentransfer:csrf")),
+  ).toBe(csrfToken);
+
+  await page.getByRole("button", { name: "Fallansicht erneut laden" }).click();
+  await expect(page.getByRole("heading", { name: "Fall für Luna" })).toBeFocused();
+  expect(sessionCalls).toBe(1);
+  expect(caseCalls).toBe(2);
+});
+
+test("behält CSRF beim fehlgeschlagenen initialen Restore und wiederholt nur GET", async ({
+  page,
+}) => {
+  await routeTurnstile(page);
+  let caseCalls = 0;
+  await page.addInitScript((csrf) => {
+    sessionStorage.setItem("tierarztpraxis:datentransfer:csrf", csrf);
+  }, csrfToken);
+  await page.route("**/api/transfers/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/transfers/case" && request.method() === "GET") {
+      caseCalls += 1;
+      if (caseCalls === 1) {
+        await route.fulfill({
+          status: 503,
+          json: {
+            ok: false,
+            error: { code: "internal", requestId: "req-restore" },
+          },
+        });
+      } else {
+        await route.fulfill({ json: transferCase() });
+      }
+      return;
+    }
+    await route.fulfill({ status: 404, json: { ok: false } });
+  });
+
+  await page.goto("/datentransfer/");
+
+  await expect(
+    page.getByRole("button", { name: "Fallansicht erneut laden" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Fallansicht erneut laden" }),
+  ).toBeFocused();
+  expect(
+    await page.evaluate(() => sessionStorage.getItem("tierarztpraxis:datentransfer:csrf")),
+  ).toBe(csrfToken);
+
+  await page.getByRole("button", { name: "Fallansicht erneut laden" }).click();
+  await expect(page.getByRole("heading", { name: "Fall für Luna" })).toBeFocused();
+  expect(caseCalls).toBe(2);
+});
+
+for (const failure of ["Netzwerkfehler", "Protokollfehler"] as const) {
+  test(`behält CSRF beim initialen Restore nach ${failure}`, async ({ page }) => {
+    await routeTurnstile(page);
+    let caseCalls = 0;
+    await page.addInitScript((csrf) => {
+      sessionStorage.setItem("tierarztpraxis:datentransfer:csrf", csrf);
+    }, csrfToken);
+    await page.route("**/api/transfers/case", async (route) => {
+      caseCalls += 1;
+      if (caseCalls > 1) {
+        await route.fulfill({ json: transferCase() });
+      } else if (failure === "Netzwerkfehler") {
+        await route.abort("connectionfailed");
+      } else {
+        await route.fulfill({ json: { ok: true } });
+      }
+    });
+
+    await page.goto("/datentransfer/");
+
+    await expect(
+      page.getByRole("button", { name: "Fallansicht erneut laden" }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(() => sessionStorage.getItem("tierarztpraxis:datentransfer:csrf")),
+    ).toBe(csrfToken);
+
+    await page.getByRole("button", { name: "Fallansicht erneut laden" }).click();
+    await expect(page.getByRole("heading", { name: "Fall für Luna" })).toBeFocused();
+    expect(caseCalls).toBe(2);
+  });
+}
+
+test("wiederholt nach bestätigtem Finalize nur den fehlgeschlagenen GET", async ({
+  page,
+}) => {
+  await routeTurnstile(page);
+  let caseCalls = 0;
+  let finalizeCalls = 0;
+  await page.route("**/api/transfers/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/transfers/session") {
+      await route.fulfill({
+        json: { ok: true, case: transferCase().case, csrfToken },
+      });
+      return;
+    }
+    if (path === "/api/transfers/case") {
+      caseCalls += 1;
+      if (caseCalls === 2) {
+        await route.fulfill({
+          status: 503,
+          json: {
+            ok: false,
+            error: { code: "internal", requestId: "req-final-case" },
+          },
+        });
+      } else {
+        await route.fulfill({ json: transferCase(caseCalls > 1) });
+      }
+      return;
+    }
+    if (path === "/api/transfers/submissions") {
+      await route.fulfill({
+        json: { ok: true, submissionId: "submission-new", uploads: [] },
+      });
+      return;
+    }
+    if (path === "/api/transfers/submissions/submission-new/finalize") {
+      finalizeCalls += 1;
+      await route.fulfill({ json: { ok: true } });
+      return;
+    }
+    await route.fulfill({ status: 404, json: { ok: false } });
+  });
+
+  await enterFragmentSession(page);
+  await page.getByLabel("Überschrift").fill("Linkes Ohr");
+  await page
+    .getByLabel("Beobachtung und Bericht")
+    .fill("Luna kratzt sich seit gestern deutlich häufiger.");
+  await page.getByLabel("Datenschutzhinweise gelesen").check();
+  await page.getByLabel("Ich bestätige: Kein Notfall").check();
+  await page.getByRole("button", { name: "Bericht sicher senden" }).click();
+
+  await expect(
+    page.getByRole("button", { name: "Fallansicht erneut laden" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Fallansicht erneut laden" }),
+  ).toBeFocused();
+  expect(finalizeCalls).toBe(1);
+
+  await page.getByRole("button", { name: "Fallansicht erneut laden" }).click();
+  await expect(page.getByRole("heading", { name: "Bisheriger Verlauf" })).toBeFocused();
+  expect(finalizeCalls).toBe(1);
+  expect(caseCalls).toBe(3);
+});
+
+test("wiederholt fehlgeschlagenen Finalize-POST ohne erneuten Datei-Upload", async ({
+  page,
+}) => {
+  await routeTurnstile(page);
+  let uploadCalls = 0;
+  let finalizeCalls = 0;
+  let finalized = false;
+  await page.route("**/api/transfers/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/transfers/session") {
+      await route.fulfill({
+        json: { ok: true, case: transferCase().case, csrfToken },
+      });
+      return;
+    }
+    if (path === "/api/transfers/case") {
+      await route.fulfill({ json: transferCase(finalized) });
+      return;
+    }
+    if (path === "/api/transfers/submissions") {
+      await route.fulfill({
+        json: {
+          ok: true,
+          submissionId: "submission-finalize-retry",
+          uploads: [
+            {
+              fileId: "file-finalize-retry",
+              uploadUrl: "/api/transfers/uploads/file-finalize-retry",
+            },
+          ],
+        },
+      });
+      return;
+    }
+    if (path === "/api/transfers/uploads/file-finalize-retry") {
+      uploadCalls += 1;
+      await route.fulfill({ json: { ok: true } });
+      return;
+    }
+    if (path === "/api/transfers/submissions/submission-finalize-retry/finalize") {
+      finalizeCalls += 1;
+      if (finalizeCalls === 1) {
+        await route.fulfill({
+          status: 503,
+          json: {
+            ok: false,
+            error: { code: "internal", requestId: "req-finalize" },
+          },
+        });
+      } else {
+        finalized = true;
+        await route.fulfill({ json: { ok: true } });
+      }
+      return;
+    }
+    await route.fulfill({ status: 404, json: { ok: false } });
+  });
+
+  await enterFragmentSession(page);
+  await page.getByLabel("Überschrift").fill("Linkes Ohr");
+  await page
+    .getByLabel("Beobachtung und Bericht")
+    .fill("Luna kratzt sich seit gestern deutlich häufiger.");
+  await page.getByLabel("Datenschutzhinweise gelesen").check();
+  await page.getByLabel("Ich bestätige: Kein Notfall").check();
+  await page.locator("input[name='files']").setInputFiles({
+    name: "ohr.jpg",
+    mimeType: "image/jpeg",
+    buffer: Buffer.from([1, 2, 3]),
+  });
+  await page.getByRole("button", { name: "Bericht sicher senden" }).click();
+
+  await expect(
+    page.getByRole("button", { name: "Abschluss erneut versuchen" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Abschluss erneut versuchen" }),
+  ).toBeFocused();
+  await expect(page.getByRole("button", { name: "Sicher abmelden" })).toBeEnabled();
+  await expect(page.locator("[data-transfer-final-status]")).toContainText(
+    "Vorgangskennung: req-finalize",
+  );
+  expect(uploadCalls).toBe(1);
+  expect(finalizeCalls).toBe(1);
+
+  await page.getByRole("button", { name: "Abschluss erneut versuchen" }).click();
+
+  await expect(page.getByRole("heading", { name: "Bisheriger Verlauf" })).toBeFocused();
+  expect(uploadCalls).toBe(1);
+  expect(finalizeCalls).toBe(2);
+});
+
+test("zeigt fallweite Antworten ohne submissionId als eigenen Thread-Eintrag", async ({
+  page,
+}) => {
+  await routeTurnstile(page);
+  await page.addInitScript((csrf) => {
+    sessionStorage.setItem("tierarztpraxis:datentransfer:csrf", csrf);
+  }, csrfToken);
+  await page.route("**/api/transfers/case", async (route) => {
+    await route.fulfill({
+      json: {
+        ...transferCase(),
+        replies: [
+          {
+            id: "reply-case",
+            submissionId: null,
+            body: "Bitte senden Sie noch ein Foto von der rechten Seite.",
+            createdAt: "2026-08-04T10:02:00.000Z",
+          },
+        ],
+      },
+    });
+  });
+
+  await page.goto("/datentransfer/");
+
+  await expect(
+    page.getByRole("heading", { name: "Antwort der Praxis zum Fall" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Bitte senden Sie noch ein Foto von der rechten Seite."),
+  ).toBeVisible();
+});
+
+test("zeigt fallweite und einreichungsbezogene Antworten im gemischten Thread", async ({
+  page,
+}) => {
+  await routeTurnstile(page);
+  await page.addInitScript((csrf) => {
+    sessionStorage.setItem("tierarztpraxis:datentransfer:csrf", csrf);
+  }, csrfToken);
+  await page.route("**/api/transfers/case", async (route) => {
+    const snapshot = transferCase(true);
+    await route.fulfill({
+      json: {
+        ...snapshot,
+        replies: [
+          ...snapshot.replies,
+          {
+            id: "reply-case",
+            submissionId: null,
+            body: "Fallweite Rückfrage der Praxis.",
+            createdAt: "2026-08-04T10:03:00.000Z",
+          },
+        ],
+      },
+    });
+  });
+
+  await page.goto("/datentransfer/");
+
+  await expect(
+    page.getByText("Bitte vereinbaren Sie telefonisch einen Termin."),
+  ).toHaveCount(1);
+  await expect(page.getByText("Fallweite Rückfrage der Praxis.")).toHaveCount(1);
+  await expect(
+    page.getByRole("heading", { name: "Antwort der Praxis zum Fall" }),
+  ).toHaveCount(1);
+});
+
+test("terminales Upload-4xx lässt Sitzung und neuen Bericht erreichbar", async ({
+  page,
+}) => {
+  await routeTurnstile(page);
+  await page.route("**/api/transfers/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/transfers/session") {
+      await route.fulfill({
+        json: { ok: true, case: transferCase().case, csrfToken },
+      });
+      return;
+    }
+    if (path === "/api/transfers/case") {
+      await route.fulfill({ json: transferCase() });
+      return;
+    }
+    if (path === "/api/transfers/submissions") {
+      await route.fulfill({
+        json: {
+          ok: true,
+          submissionId: "submission-rejected",
+          uploads: [
+            {
+              fileId: "file-rejected",
+              uploadUrl: "/api/transfers/uploads/file-rejected",
+            },
+          ],
+        },
+      });
+      return;
+    }
+    if (path === "/api/transfers/uploads/file-rejected") {
+      await route.fulfill({
+        status: 422,
+        json: {
+          ok: false,
+          error: {
+            requestId: "req-upload-422",
+            message: "dt1_geheim patientenakte.jpg",
+          },
+        },
+      });
+      return;
+    }
+    await route.fulfill({ status: 404, json: { ok: false } });
+  });
+
+  await enterFragmentSession(page);
+  await page.getByLabel("Überschrift").fill("Linkes Ohr");
+  await page
+    .getByLabel("Beobachtung und Bericht")
+    .fill("Luna kratzt sich seit gestern deutlich häufiger.");
+  await page.getByLabel("Datenschutzhinweise gelesen").check();
+  await page.getByLabel("Ich bestätige: Kein Notfall").check();
+  await page.locator("input[name='files']").setInputFiles({
+    name: "ohr.jpg",
+    mimeType: "image/jpeg",
+    buffer: Buffer.from([1, 2, 3]),
+  });
+  await page.getByRole("button", { name: "Bericht sicher senden" }).click();
+
+  const failedRow = page.getByRole("listitem").filter({ hasText: "ohr.jpg" });
+  await expect(failedRow).toContainText("Vorgangskennung: req-upload-422");
+  await expect(failedRow).not.toContainText("dt1_geheim");
+  await expect(page.getByRole("button", { name: "Sicher abmelden" })).toBeEnabled();
+  await expect(page.getByLabel("Überschrift")).toBeEnabled();
+  await expect(page.locator("[data-transfer-final-status]")).toContainText(
+    "korrigierten Dateien",
+  );
+  await expect(page.locator("#transfer-report-heading")).toBeFocused();
+  expect(
+    await page.evaluate(() => sessionStorage.getItem("tierarztpraxis:datentransfer:csrf")),
+  ).toBe(csrfToken);
+});
+
+test("sperrt Retry draft-weit und lädt abgeschlossene Slots nicht erneut", async ({
+  page,
+}) => {
+  await routeTurnstile(page);
+  let releaseRetry: (() => void) | undefined;
+  const retryGate = new Promise<void>((resolve) => {
+    releaseRetry = resolve;
+  });
+  const uploadCalls = new Map<string, number>();
+  let activeUploads = 0;
+  let maxActiveUploads = 0;
+  let finalizeCalls = 0;
+  let finalized = false;
+  await page.route("**/api/transfers/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path === "/api/transfers/session") {
+      await route.fulfill({
+        json: { ok: true, case: transferCase().case, csrfToken },
+      });
+      return;
+    }
+    if (path === "/api/transfers/case") {
+      await route.fulfill({ json: transferCase(finalized) });
+      return;
+    }
+    if (path === "/api/transfers/submissions") {
+      await route.fulfill({
+        json: {
+          ok: true,
+          submissionId: "submission-retry-lock",
+          uploads: [
+            { fileId: "file-1", uploadUrl: "/api/transfers/uploads/file-1" },
+            { fileId: "file-2", uploadUrl: "/api/transfers/uploads/file-2" },
+          ],
+        },
+      });
+      return;
+    }
+    if (path.startsWith("/api/transfers/uploads/")) {
+      const count = (uploadCalls.get(path) ?? 0) + 1;
+      uploadCalls.set(path, count);
+      activeUploads += 1;
+      maxActiveUploads = Math.max(maxActiveUploads, activeUploads);
+      if (count === 1) {
+        await route.fulfill({ status: 503, json: { ok: false } });
+      } else {
+        if (path.endsWith("file-1")) await retryGate;
+        await route.fulfill({ json: { ok: true } });
+      }
+      activeUploads -= 1;
+      return;
+    }
+    if (path === "/api/transfers/submissions/submission-retry-lock/finalize") {
+      finalizeCalls += 1;
+      finalized = true;
+      await route.fulfill({ json: { ok: true } });
+      return;
+    }
+    await route.fulfill({ status: 404, json: { ok: false } });
+  });
+
+  await enterFragmentSession(page);
+  await page.getByLabel("Überschrift").fill("Linkes Ohr");
+  await page
+    .getByLabel("Beobachtung und Bericht")
+    .fill("Luna kratzt sich seit gestern deutlich häufiger.");
+  await page.getByLabel("Datenschutzhinweise gelesen").check();
+  await page.getByLabel("Ich bestätige: Kein Notfall").check();
+  await page.locator("input[name='files']").setInputFiles([
+    { name: "eins.jpg", mimeType: "image/jpeg", buffer: Buffer.from([1]) },
+    { name: "zwei.jpg", mimeType: "image/jpeg", buffer: Buffer.from([2]) },
+  ]);
+  await page.getByRole("button", { name: "Bericht sicher senden" }).click();
+
+  const firstRow = page.getByRole("listitem").filter({ hasText: "eins.jpg" });
+  const secondRow = page.getByRole("listitem").filter({ hasText: "zwei.jpg" });
+  const firstRetry = firstRow.getByRole("button", { name: "Erneut versuchen" });
+  const secondRetry = secondRow.getByRole("button", { name: "Erneut versuchen" });
+  await firstRetry.click();
+  await expect(secondRetry).toBeDisabled();
+  await secondRetry.evaluate((button: HTMLButtonElement) => button.click());
+  expect(uploadCalls.get("/api/transfers/uploads/file-2")).toBe(1);
+
+  releaseRetry?.();
+  await expect(firstRow).toContainText("Übertragen");
+  await expect(secondRetry).toBeEnabled();
+  await secondRetry.click();
+
+  await expect(page.getByRole("heading", { name: "Bisheriger Verlauf" })).toBeFocused();
+  expect(uploadCalls.get("/api/transfers/uploads/file-1")).toBe(2);
+  expect(uploadCalls.get("/api/transfers/uploads/file-2")).toBe(2);
+  expect(maxActiveUploads).toBe(1);
+  expect(finalizeCalls).toBe(1);
 });
 
 test("sperrt doppelten Sessiontausch und setzt Turnstile nach Fehler zurück", async ({
@@ -448,6 +989,7 @@ test("XHR-401 beendet Sitzung fail-closed und entfernt CSRF", async ({ page }) =
   await expect(
     page.getByRole("button", { name: "Sichere Sitzung starten" }),
   ).toBeVisible();
+  await expect(page.getByLabel("Datentransfer-Token")).toBeFocused();
   expect(await page.evaluate(() => sessionStorage.length)).toBe(0);
 });
 

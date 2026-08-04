@@ -40,14 +40,16 @@ export interface TransferUploadFailure {
   readonly index: number;
   readonly retryable: boolean;
   readonly status?: number;
+  readonly requestId?: string;
 }
 
 export class TransferUploadError extends Error {
   constructor(
     readonly retryable: boolean,
     readonly status?: number,
+    readonly requestId?: string,
   ) {
-    super("Dateiübertragung fehlgeschlagen");
+    super(`Dateiübertragung fehlgeschlagen.${requestSuffix(requestId)}`);
     this.name = "TransferUploadError";
   }
 }
@@ -316,19 +318,31 @@ export function uploadTransferFile(
       onProgress(Math.round((event.loaded / event.total) * 100));
     });
     xhr.addEventListener("load", () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const result: unknown = JSON.parse(xhr.responseText);
-          if (isRecord(result) && result.ok === true) {
-            onProgress(100);
-            resolve();
-            return;
-          }
-        } catch {
-          // Ungültige Erfolgsantwort wird wie ein finaler Transportfehler behandelt.
-        }
+      let result: unknown = null;
+      try {
+        result = JSON.parse(xhr.responseText);
+      } catch {
+        // Ungültige Antwort bleibt ein generischer Transportfehler.
       }
-      reject(new TransferUploadError(xhr.status >= 500, xhr.status));
+      if (
+        xhr.status >= 200 &&
+        xhr.status < 300 &&
+        isRecord(result) &&
+        result.ok === true
+      ) {
+        onProgress(100);
+        resolve();
+        return;
+      }
+      const error = isRecord(result) && isRecord(result.error)
+        ? result.error
+        : null;
+      const requestId = typeof error?.requestId === "string"
+        ? error.requestId
+        : undefined;
+      reject(
+        new TransferUploadError(xhr.status >= 500, xhr.status, requestId),
+      );
     });
     const rejectTransport = () => reject(new TransferUploadError(true));
     xhr.addEventListener("error", rejectTransport);
@@ -366,6 +380,9 @@ export async function uploadPendingFiles(
           error instanceof TransferUploadError && error.retryable,
         ...(error instanceof TransferUploadError && error.status !== undefined
           ? { status: error.status }
+          : {}),
+        ...(error instanceof TransferUploadError && error.requestId
+          ? { requestId: error.requestId }
           : {}),
       });
     }
@@ -456,10 +473,18 @@ interface ActiveDraft {
   readonly files: readonly File[];
   readonly slots: readonly TransferUploadSlot[];
   readonly completed: Set<number>;
-  finalizing: boolean;
+  phase: "uploading" | "finalizing" | "finalize_failed" | "finalized";
+  retryInFlight: boolean;
 }
 
-type TransferUiState = "entry" | "loading" | "ready" | "submitting" | "expired";
+type TransferUiState =
+  | "entry"
+  | "loading"
+  | "ready"
+  | "submitting"
+  | "recovering"
+  | "finalize_retry"
+  | "expired";
 
 function isPublicTransferCase(value: unknown): value is PublicTransferCase {
   return (
@@ -627,11 +652,25 @@ export function setupTransferClient(): void {
   const sessionRegion = root?.querySelector<HTMLElement>("[data-transfer-session]");
   const sessionStatus = root?.querySelector<HTMLElement>("[data-transfer-status]");
   const reportForm = root?.querySelector<HTMLFormElement>("[data-transfer-report]");
-  const finalStatus = root?.querySelector<HTMLElement>("[data-transfer-final-status]");
-  const uploadSection = root?.querySelector<HTMLElement>("[data-transfer-uploads]");
-  const uploadList = root?.querySelector<HTMLElement>("[data-transfer-upload-list]");
-  const uploadStatus = root?.querySelector<HTMLElement>("[data-transfer-upload-status]");
+  const finalStatus = root?.querySelector<HTMLElement>(
+    "[data-transfer-final-status]",
+  );
+  const finalizeRetryButton = root?.querySelector<HTMLButtonElement>(
+    "[data-transfer-finalize-retry]",
+  );
+  const uploadSection = root?.querySelector<HTMLElement>(
+    "[data-transfer-uploads]",
+  );
+  const uploadList = root?.querySelector<HTMLElement>(
+    "[data-transfer-upload-list]",
+  );
+  const uploadStatus = root?.querySelector<HTMLElement>(
+    "[data-transfer-upload-status]",
+  );
   const logoutButton = root?.querySelector<HTMLButtonElement>("[data-transfer-logout]");
+  const caseRetryButton = root?.querySelector<HTMLButtonElement>(
+    "[data-transfer-case-retry]",
+  );
   const callbackPhone = root?.querySelector<HTMLElement>("[data-callback-phone]");
   const callbackPhoneInput = callbackPhone?.querySelector<HTMLInputElement>("input");
   const callbackRadio = root?.querySelector<HTMLInputElement>(
@@ -640,6 +679,10 @@ export function setupTransferClient(): void {
   const callbackChoice = root?.querySelector<HTMLElement>("[data-callback-choice]");
   const fileInput = reportForm?.querySelector<HTMLInputElement>("input[name='files']");
   const threadHeading = root?.querySelector<HTMLElement>("[data-thread-heading]");
+  const caseHeading = root?.querySelector<HTMLElement>("[data-case-heading]");
+  const reportHeading = root?.querySelector<HTMLElement>(
+    "#transfer-report-heading",
+  );
 
   if (
     !root ||
@@ -649,16 +692,20 @@ export function setupTransferClient(): void {
     !sessionStatus ||
     !reportForm ||
     !finalStatus ||
+    !finalizeRetryButton ||
     !uploadSection ||
     !uploadList ||
     !uploadStatus ||
     !logoutButton ||
+    !caseRetryButton ||
     !callbackPhone ||
     !callbackPhoneInput ||
     !callbackRadio ||
     !callbackChoice ||
     !fileInput ||
-    !threadHeading
+    !threadHeading ||
+    !caseHeading ||
+    !reportHeading
   ) {
     return;
   }
@@ -667,12 +714,21 @@ export function setupTransferClient(): void {
   if (fragmentToken) tokenInput.value = fragmentToken;
   let currentCase: PublicTransferCase | null = null;
   let activeDraft: ActiveDraft | null = null;
+  let caseRecovery: "session" | "finalized" | null = null;
   const uploadRows = new Map<number, UploadRow>();
 
   const setState = (state: TransferUiState): void => {
     root.dataset.state = state;
-    entryForm.hidden = state === "ready" || state === "submitting";
-    sessionRegion.hidden = state !== "ready" && state !== "submitting";
+    entryForm.hidden =
+      state === "ready" ||
+      state === "submitting" ||
+      state === "recovering" ||
+      state === "finalize_retry";
+    sessionRegion.hidden =
+      state !== "ready" &&
+      state !== "submitting" &&
+      state !== "recovering" &&
+      state !== "finalize_retry";
     for (const control of entryForm.elements) {
       if (
         control instanceof HTMLInputElement ||
@@ -681,20 +737,34 @@ export function setupTransferClient(): void {
         control.disabled = state === "loading";
       }
     }
-    const sessionBusy = state === "submitting";
+    const sessionBusy =
+      state === "submitting" ||
+      state === "recovering" ||
+      state === "finalize_retry";
     for (const control of reportForm.elements) {
-      if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement || control instanceof HTMLButtonElement || control instanceof HTMLSelectElement) {
+      if (
+        control instanceof HTMLInputElement ||
+        control instanceof HTMLTextAreaElement ||
+        control instanceof HTMLButtonElement ||
+        control instanceof HTMLSelectElement
+      ) {
         control.disabled = sessionBusy;
       }
     }
-    logoutButton.disabled = state === "loading" || sessionBusy;
+    logoutButton.disabled = state === "loading" || state === "submitting";
+    caseRetryButton.hidden = state !== "recovering";
+    caseRetryButton.disabled = false;
+    finalizeRetryButton.hidden = state !== "finalize_retry";
+    finalizeRetryButton.disabled = false;
   };
 
   const expireSession = (message: string): void => {
     clearTransferSession(sessionStorage);
     activeDraft = null;
+    caseRecovery = null;
     setState("expired");
     sessionStatus.textContent = message;
+    tokenInput.focus();
   };
 
   const toggleCallback = (): void => {
@@ -705,7 +775,6 @@ export function setupTransferClient(): void {
   };
 
   const renderThread = (snapshot: TransferCaseSnapshot): void => {
-    const caseHeading = root.querySelector<HTMLElement>("[data-case-heading]");
     const caseReference = root.querySelector<HTMLElement>("[data-case-reference]");
     const caseStatus = root.querySelector<HTMLElement>("[data-case-status]");
     const caseExpiry = root.querySelector<HTMLElement>("[data-case-expiry]");
@@ -713,7 +782,16 @@ export function setupTransferClient(): void {
     const caseBytes = root.querySelector<HTMLElement>("[data-case-bytes]");
     const threadEmpty = root.querySelector<HTMLElement>("[data-thread-empty]");
     const thread = root.querySelector<HTMLOListElement>("[data-transfer-thread]");
-    if (!caseHeading || !caseReference || !caseStatus || !caseExpiry || !caseSubmissions || !caseBytes || !threadEmpty || !thread) return;
+    if (
+      !caseHeading ||
+      !caseReference ||
+      !caseStatus ||
+      !caseExpiry ||
+      !caseSubmissions ||
+      !caseBytes ||
+      !threadEmpty ||
+      !thread
+    ) return;
 
     currentCase = snapshot.case;
     caseHeading.textContent = `Fall für ${snapshot.case.petName}`;
@@ -786,6 +864,16 @@ export function setupTransferClient(): void {
       }
       thread.append(item);
     }
+    for (const reply of snapshot.replies.filter(
+      ({ submissionId }) => submissionId === null,
+    )) {
+      const item = document.createElement("li");
+      item.className = "transfer-thread-item";
+      appendTextElement(item, "h3", "Antwort der Praxis zum Fall");
+      appendTextElement(item, "p", reply.body);
+      appendTextElement(item, "p", formatTransferDate(reply.createdAt));
+      thread.append(item);
+    }
   };
 
   const loadCase = async (): Promise<TransferCaseSnapshot> => {
@@ -837,12 +925,103 @@ export function setupTransferClient(): void {
     row.retry.disabled = false;
   };
 
+  const setRetryButtonsDisabled = (disabled: boolean): void => {
+    for (const [index, row] of uploadRows) {
+      if (!row.retry.hidden && !activeDraft?.completed.has(index)) {
+        row.retry.disabled = disabled;
+      }
+    }
+  };
+
+  const uploadFailureMessage = (
+    retryable: boolean,
+    requestId?: string,
+  ): string => `${retryable
+    ? "Übertragung fehlgeschlagen. Erneuter Versuch ist möglich."
+    : "Übertragung wurde abgelehnt."}${requestSuffix(requestId)}`;
+
+  const abandonRejectedDraft = (): void => {
+    activeDraft = null;
+    setRetryButtonsDisabled(true);
+    uploadStatus.textContent = "Mindestens eine Datei wurde abgelehnt.";
+    finalStatus.textContent =
+      "Die Einreichung konnte nicht abgeschlossen werden. Starten Sie mit korrigierten Dateien einen neuen Bericht.";
+    setState("ready");
+    reportHeading.focus();
+  };
+
+  const completeFinalizedDraft = (snapshot: TransferCaseSnapshot): void => {
+    renderThread(snapshot);
+    reportForm.reset();
+    toggleCallback();
+    activeDraft = null;
+    caseRecovery = null;
+    uploadSection.hidden = true;
+    uploadStatus.textContent = "";
+    finalStatus.textContent = "Bericht und Dateien wurden sicher übermittelt.";
+    setState("ready");
+    threadHeading.focus();
+  };
+
+  const recoverCase = async (): Promise<void> => {
+    const recovery = caseRecovery;
+    if (!recovery || caseRetryButton.disabled) return;
+    caseRetryButton.disabled = true;
+    try {
+      const snapshot = await loadCase();
+      if (recovery === "finalized") {
+        const draft = activeDraft;
+        if (!draft || draft.phase !== "finalized") return;
+        completeFinalizedDraft(snapshot);
+      } else {
+        renderThread(snapshot);
+        caseRecovery = null;
+        setState("ready");
+        sessionStatus.textContent = "Sichere Sitzung aktiv.";
+        caseHeading.focus();
+      }
+    } catch (error) {
+      if (error instanceof TransferRequestError && error.status === 401) {
+        expireSession(error.message);
+        return;
+      }
+      const message = error instanceof TransferRequestError
+        ? error.message
+        : "Die Fallansicht konnte nicht geladen werden.";
+      if (recovery === "finalized") finalStatus.textContent = message;
+      else sessionStatus.textContent = message;
+      caseRetryButton.disabled = false;
+      caseRetryButton.focus();
+    }
+  };
+
+  const loadFinalizedCase = async (draft: ActiveDraft): Promise<void> => {
+    try {
+      completeFinalizedDraft(await loadCase());
+    } catch (error) {
+      if (error instanceof TransferRequestError && error.status === 401) {
+        expireSession(error.message);
+        return;
+      }
+      if (activeDraft !== draft || draft.phase !== "finalized") return;
+      caseRecovery = "finalized";
+      setState("recovering");
+      finalStatus.textContent = error instanceof TransferRequestError
+        ? error.message
+        : "Die Einreichung wurde bestätigt, aber die Fallansicht konnte nicht geladen werden.";
+      caseRetryButton.focus();
+    }
+  };
+
   const finishDraft = async (): Promise<void> => {
     const draft = activeDraft;
-    if (!draft || draft.finalizing) return;
-    const allUploaded = draft.completed.size === draft.files.length;
-    if (!allUploaded) return;
-    draft.finalizing = true;
+    if (
+      !draft ||
+      (draft.phase !== "uploading" && draft.phase !== "finalize_failed")
+    ) return;
+    if (draft.completed.size !== draft.files.length) return;
+    draft.phase = "finalizing";
+    setState("submitting");
     finalStatus.textContent = "Einreichung wird abgeschlossen …";
     try {
       await requestTransferJson(
@@ -854,32 +1033,36 @@ export function setupTransferClient(): void {
           storage: sessionStorage,
         },
       );
-      const snapshot = await loadCase();
-      renderThread(snapshot);
-      reportForm.reset();
-      toggleCallback();
-      activeDraft = null;
-      uploadSection.hidden = true;
-      uploadStatus.textContent = "";
-      finalStatus.textContent = "Bericht und Dateien wurden sicher übermittelt.";
-      setState("ready");
-      threadHeading.focus();
     } catch (error) {
-      draft.finalizing = false;
       if (error instanceof TransferRequestError && error.status === 401) {
         expireSession(error.message);
         return;
       }
+      draft.phase = "finalize_failed";
+      setState("finalize_retry");
       finalStatus.textContent = error instanceof TransferRequestError
         ? error.message
         : "Die Einreichung konnte nicht abgeschlossen werden.";
+      finalizeRetryButton.focus();
+      return;
     }
+    if (activeDraft !== draft) return;
+    draft.phase = "finalized";
+    await loadFinalizedCase(draft);
   };
 
   const retryUpload = async (index: number): Promise<void> => {
     const draft = activeDraft;
     const row = uploadRows.get(index);
-    if (!draft || !row || draft.completed.has(index)) return;
+    if (
+      !draft ||
+      !row ||
+      draft.phase !== "uploading" ||
+      draft.retryInFlight ||
+      draft.completed.has(index)
+    ) return;
+    draft.retryInFlight = true;
+    setRetryButtonsDisabled(true);
     try {
       await uploadOne(draft, index);
       draft.completed.add(index);
@@ -887,15 +1070,23 @@ export function setupTransferClient(): void {
       await finishDraft();
     } catch (error) {
       if (error instanceof TransferUploadError && error.status === 401) {
-        expireSession("Die Sitzung ist abgelaufen.");
+        expireSession(
+          `Die Sitzung ist abgelaufen.${requestSuffix(error.requestId)}`,
+        );
         return;
       }
       const retryable = error instanceof TransferUploadError && error.retryable;
-      row.status.textContent = retryable
-        ? "Übertragung fehlgeschlagen. Erneuter Versuch ist möglich."
-        : "Übertragung wurde abgelehnt.";
+      const requestId = error instanceof TransferUploadError
+        ? error.requestId
+        : undefined;
+      row.status.textContent = uploadFailureMessage(retryable, requestId);
       row.retry.hidden = !retryable;
-      row.retry.disabled = false;
+      if (!retryable) abandonRejectedDraft();
+    } finally {
+      if (activeDraft === draft) {
+        draft.retryInFlight = false;
+        setRetryButtonsDisabled(false);
+      }
     }
   };
 
@@ -916,6 +1107,7 @@ export function setupTransferClient(): void {
 
     setState("loading");
     sessionStatus.textContent = "Sichere Sitzung wird aufgebaut …";
+    let session: TransferSessionResponse;
     try {
       const sessionValue = await requestTransferJson(
         "/api/transfers/session",
@@ -925,16 +1117,8 @@ export function setupTransferClient(): void {
           storage: sessionStorage,
         },
       );
-      const session = parseTransferSessionResponse(sessionValue);
-      storeCsrfToken(sessionStorage, session.csrfToken);
-      tokenInput.value = "";
-      fragmentToken = "";
-      const snapshot = await loadCase();
-      renderThread(snapshot);
-      setState("ready");
-      sessionStatus.textContent = "Sichere Sitzung aktiv.";
+      session = parseTransferSessionResponse(sessionValue);
     } catch (error) {
-      clearTransferSession(sessionStorage);
       setState("entry");
       sessionStatus.textContent = error instanceof TransferRequestError
         ? error.message
@@ -942,6 +1126,27 @@ export function setupTransferClient(): void {
       window.turnstile?.reset(
         entryForm.querySelector<HTMLElement>(".cf-turnstile") ?? undefined,
       );
+      return;
+    }
+    storeCsrfToken(sessionStorage, session.csrfToken);
+    tokenInput.value = "";
+    fragmentToken = "";
+    try {
+      renderThread(await loadCase());
+      setState("ready");
+      sessionStatus.textContent = "Sichere Sitzung aktiv.";
+      caseHeading.focus();
+    } catch (error) {
+      if (error instanceof TransferRequestError && error.status === 401) {
+        expireSession(error.message);
+        return;
+      }
+      caseRecovery = "session";
+      setState("recovering");
+      sessionStatus.textContent = error instanceof TransferRequestError
+        ? error.message
+        : "Die Fallansicht konnte nicht geladen werden.";
+      caseRetryButton.focus();
     }
   });
 
@@ -992,7 +1197,8 @@ export function setupTransferClient(): void {
         files,
         slots: draftResponse.uploads,
         completed: new Set(),
-        finalizing: false,
+        phase: "uploading",
+        retryInFlight: false,
       };
       const draft = activeDraft;
       const failures = await uploadPendingFiles(
@@ -1004,15 +1210,22 @@ export function setupTransferClient(): void {
       for (const failure of failures) {
         const row = uploadRows.get(failure.index);
         if (!row) continue;
-        row.status.textContent = failure.retryable
-          ? "Übertragung fehlgeschlagen. Erneuter Versuch ist möglich."
-          : "Übertragung wurde abgelehnt.";
+        row.status.textContent = uploadFailureMessage(
+          failure.retryable,
+          failure.requestId,
+        );
         row.retry.hidden = !failure.retryable;
         row.retry.disabled = false;
         if (failure.status === 401) {
-          expireSession("Die Sitzung ist abgelaufen.");
+          expireSession(
+            `Die Sitzung ist abgelaufen.${requestSuffix(failure.requestId)}`,
+          );
           return;
         }
+      }
+      if (failures.some(({ retryable }) => !retryable)) {
+        abandonRejectedDraft();
+        return;
       }
       if (failures.length > 0) {
         uploadStatus.textContent = "Mindestens eine Datei konnte nicht übertragen werden.";
@@ -1039,6 +1252,9 @@ export function setupTransferClient(): void {
     if (index !== undefined) void retryUpload(index);
   });
 
+  caseRetryButton.addEventListener("click", () => void recoverCase());
+  finalizeRetryButton.addEventListener("click", () => void finishDraft());
+
   logoutButton.addEventListener("click", async () => {
     logoutButton.disabled = true;
     try {
@@ -1049,6 +1265,7 @@ export function setupTransferClient(): void {
       activeDraft = null;
       setState("expired");
       sessionStatus.textContent = "Sicher abgemeldet. Sie können einen neuen Token eingeben.";
+      tokenInput.focus();
     } catch (error) {
       expireSession(
         error instanceof TransferRequestError
@@ -1068,13 +1285,19 @@ export function setupTransferClient(): void {
         renderThread(snapshot);
         setState("ready");
         sessionStatus.textContent = "Sichere Sitzung wiederhergestellt.";
+        caseHeading.focus();
       })
       .catch((error: unknown) => {
-        clearTransferSession(sessionStorage);
-        setState("entry");
+        if (error instanceof TransferRequestError && error.status === 401) {
+          expireSession(error.message);
+          return;
+        }
+        caseRecovery = "session";
+        setState("recovering");
         sessionStatus.textContent = error instanceof TransferRequestError
           ? error.message
-          : "Die vorhandene Sitzung konnte nicht wiederhergestellt werden.";
+          : "Die Fallansicht konnte nicht geladen werden.";
+        caseRetryButton.focus();
       });
   }
 }
