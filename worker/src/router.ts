@@ -5,6 +5,7 @@ import {
   routePublicTransfer,
   transferError,
 } from "./transfers/routes-public";
+import { routeAdmin } from "./transfers/routes-admin";
 
 export async function routeRequest(context: RouteContext): Promise<Response> {
   const { request, env, url } = context;
@@ -33,6 +34,19 @@ export async function routeRequest(context: RouteContext): Promise<Response> {
 
     const transferContext: DevelopmentRouteContext = { ...context, env };
     return routePublicTransfer(transferContext);
+  }
+
+  if (url.pathname.startsWith("/api/admin/")) {
+    if (env.ENVIRONMENT !== "development") {
+      return transferError(
+        context.requestId,
+        503,
+        "service_unavailable",
+        "Service unavailable",
+      );
+    }
+    const adminContext: DevelopmentRouteContext = { ...context, env };
+    return routeAdmin(adminContext);
   }
 
   return json({ error: "not_found" }, 404);
