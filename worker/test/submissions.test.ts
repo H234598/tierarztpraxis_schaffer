@@ -59,7 +59,9 @@ class SubmissionStatement implements D1PreparedStatement {
   run<T = Record<string, unknown>>(): Promise<D1Result<T>> {
     this.database.runs.push({ query: this.query, values: this.values });
     const changes = this.query.includes("UPDATE transfer_submissions")
-      ? this.database.finalizeChanges
+      ? this.database.sessionMutationChanges === 0
+        ? 0
+        : this.database.finalizeChanges
       : 1;
     return Promise.resolve(d1Result<T>([], changes));
   }
@@ -86,6 +88,7 @@ class SubmissionDatabase implements D1Database {
   readonly prepared: SubmissionStatement[] = [];
   readonly runs: PreparedCall[] = [];
   sessionCase: Readonly<Record<string, unknown>> | null = null;
+  sessionMutationChanges = 1;
   quotaAvailable = true;
   finalizeChanges = 1;
   failBatch = false;
@@ -102,8 +105,18 @@ class SubmissionDatabase implements D1Database {
     this.batchCount += 1;
     this.lastBatchSize = statements.length;
     if (this.failBatch) throw new Error("simulated D1 batch failure");
-    const changes = this.quotaAvailable ? 1 : 0;
-    return statements.map(() => d1Result<T>([], changes));
+    return statements.map((statement, index) => {
+      const changes =
+        index === 0
+          ? this.sessionMutationChanges
+          : statement instanceof SubmissionStatement &&
+              statement.query.includes("UPDATE transfer_submissions")
+            ? this.finalizeChanges
+            : this.quotaAvailable
+              ? 1
+              : 0;
+      return d1Result<T>([], changes);
+    });
   }
 
   exec(_query: string): Promise<D1ExecResult> {
@@ -366,6 +379,44 @@ describe("Submission API", () => {
     expect(badCsrf.status).toBe(403);
   });
 
+  it("erstellt nach Widerruf zwischen Sessionprüfung und Batch keinen Draft", async () => {
+    const database = new SubmissionDatabase();
+    const { cookie, csrfToken } = await sessionFixture(database);
+    database.sessionMutationChanges = 0;
+
+    const response = await execute(
+      apiRequest("/api/transfers/submissions", cookie, csrfToken, validInput),
+      database,
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: { code: "unauthorized" },
+    });
+  });
+
+  it("finalisiert nach Ablauf zwischen Sessionprüfung und Batch nicht", async () => {
+    const database = new SubmissionDatabase();
+    const { cookie, csrfToken } = await sessionFixture(database);
+    database.sessionMutationChanges = 0;
+
+    const response = await execute(
+      apiRequest(
+        "/api/transfers/submissions/submission-1/finalize",
+        cookie,
+        csrfToken,
+      ),
+      database,
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: { code: "unauthorized" },
+    });
+  });
+
   it("reserviert Quote atomar und erzeugt Draft, Links und Uploadslots", async () => {
     const database = new SubmissionDatabase();
     const { cookie, csrfToken } = await sessionFixture(database);
@@ -397,7 +448,7 @@ describe("Submission API", () => {
     expect(persisted).toContain("cases/case-1/submissions/");
     expect(persisted).not.toContain("cases/case-1/submissions/ohr.jpg");
     expect(database.batchCount).toBe(1);
-    expect(database.lastBatchSize).toBe(4);
+    expect(database.lastBatchSize).toBe(5);
     expect(
       database.prepared.filter((statement) =>
         statement.query.includes("UPDATE transfer_cases"),

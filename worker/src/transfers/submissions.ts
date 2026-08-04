@@ -206,13 +206,22 @@ export function validateSubmissionInput(
 export async function createSubmissionDraft(
   database: D1Database,
   caseId: string,
+  sessionId: string,
   input: SubmissionInput,
   now: Date,
-): Promise<CreatedSubmission | null> {
+): Promise<CreatedSubmission | "unauthorized" | null> {
   const submissionId = crypto.randomUUID();
   const nowIso = now.toISOString();
   const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1_000).toISOString();
   const statements: D1PreparedStatement[] = [
+    database
+      .prepare(
+        `UPDATE transfer_sessions
+        SET last_seen_at = last_seen_at
+        WHERE id = ? AND case_id = ? AND revoked_at IS NULL
+          AND expires_at > ? AND absolute_expires_at > ?`,
+      )
+      .bind(sessionId, caseId, nowIso, nowIso),
     database
       .prepare(
         `INSERT INTO transfer_submissions (
@@ -226,7 +235,14 @@ export async function createSubmissionDraft(
           AND c.status = 'open'
           AND c.expires_at > ?
           AND c.submission_count < c.max_submissions
-          AND c.total_bytes <= c.max_total_bytes - ?`,
+          AND c.total_bytes <= c.max_total_bytes - ?
+          AND EXISTS (
+            SELECT 1 FROM transfer_sessions AS active_session
+            WHERE active_session.id = ? AND active_session.case_id = c.id
+              AND active_session.revoked_at IS NULL
+              AND active_session.expires_at > ?
+              AND active_session.absolute_expires_at > ?
+          )`,
       )
       .bind(
         submissionId,
@@ -242,6 +258,9 @@ export async function createSubmissionDraft(
         caseId,
         nowIso,
         input.totalFileBytes,
+        sessionId,
+        nowIso,
+        nowIso,
       ),
   ];
 
@@ -252,7 +271,14 @@ export async function createSubmissionDraft(
           `INSERT INTO transfer_links (id, submission_id, url, label, created_at)
           SELECT ?, s.id, ?, ?, ?
           FROM transfer_submissions AS s
-          WHERE s.id = ? AND s.case_id = ? AND s.status = 'draft'`,
+          WHERE s.id = ? AND s.case_id = ? AND s.status = 'draft'
+            AND EXISTS (
+              SELECT 1 FROM transfer_sessions AS active_session
+              WHERE active_session.id = ? AND active_session.case_id = s.case_id
+                AND active_session.revoked_at IS NULL
+                AND active_session.expires_at > ?
+                AND active_session.absolute_expires_at > ?
+            )`,
         )
         .bind(
           crypto.randomUUID(),
@@ -261,6 +287,9 @@ export async function createSubmissionDraft(
           nowIso,
           submissionId,
           caseId,
+          sessionId,
+          nowIso,
+          nowIso,
         ),
     );
   }
@@ -280,7 +309,14 @@ export async function createSubmissionDraft(
           SELECT ?, s.case_id, s.id, ?, ?, ?, NULL, ?, NULL, NULL,
             'pending', 0, ?, NULL, ?
           FROM transfer_submissions AS s
-          WHERE s.id = ? AND s.case_id = ? AND s.status = 'draft'`,
+          WHERE s.id = ? AND s.case_id = ? AND s.status = 'draft'
+            AND EXISTS (
+              SELECT 1 FROM transfer_sessions AS active_session
+              WHERE active_session.id = ? AND active_session.case_id = s.case_id
+                AND active_session.revoked_at IS NULL
+                AND active_session.expires_at > ?
+                AND active_session.absolute_expires_at > ?
+            )`,
         )
         .bind(
           fileId,
@@ -292,6 +328,9 @@ export async function createSubmissionDraft(
           expiresAt,
           submissionId,
           caseId,
+          sessionId,
+          nowIso,
+          nowIso,
         ),
     );
     uploads.push({
@@ -313,12 +352,29 @@ export async function createSubmissionDraft(
             SELECT 1 FROM transfer_submissions AS s
             WHERE s.id = ? AND s.case_id = transfer_cases.id
               AND s.status = 'draft' AND s.created_at = ?
+          )
+          AND EXISTS (
+            SELECT 1 FROM transfer_sessions AS active_session
+            WHERE active_session.id = ? AND active_session.case_id = transfer_cases.id
+              AND active_session.revoked_at IS NULL
+              AND active_session.expires_at > ?
+              AND active_session.absolute_expires_at > ?
           )`,
       )
-      .bind(input.totalFileBytes, nowIso, caseId, submissionId, nowIso),
+      .bind(
+        input.totalFileBytes,
+        nowIso,
+        caseId,
+        submissionId,
+        nowIso,
+        sessionId,
+        nowIso,
+        nowIso,
+      ),
   );
 
   const results = await database.batch(statements);
+  if (results[0]?.meta.changes !== 1) return "unauthorized";
   if (
     results.length !== statements.length ||
     results.some((result) => result.meta.changes !== 1)
@@ -331,13 +387,23 @@ export async function createSubmissionDraft(
 export async function finalizeSubmission(
   database: D1Database,
   caseId: string,
+  sessionId: string,
   submissionId: string,
   now: Date,
-): Promise<boolean> {
+): Promise<boolean | "unauthorized"> {
   const nowIso = now.toISOString();
-  const result = await database
-    .prepare(
-      `UPDATE transfer_submissions
+  const [sessionGate, finalization] = await database.batch([
+    database
+      .prepare(
+        `UPDATE transfer_sessions
+        SET last_seen_at = last_seen_at
+        WHERE id = ? AND case_id = ? AND revoked_at IS NULL
+          AND expires_at > ? AND absolute_expires_at > ?`,
+      )
+      .bind(sessionId, caseId, nowIso, nowIso),
+    database
+      .prepare(
+        `UPDATE transfer_submissions
       SET status = 'submitted', finalized_at = ?, updated_at = ?
       WHERE id = ? AND case_id = ? AND status = 'draft'
         AND NOT EXISTS (
@@ -345,9 +411,26 @@ export async function finalizeSubmission(
           WHERE f.submission_id = transfer_submissions.id
             AND f.case_id = ?
             AND (f.state <> 'stored' OR f.stored_size IS NULL)
+        )
+        AND EXISTS (
+          SELECT 1 FROM transfer_sessions AS active_session
+          WHERE active_session.id = ? AND active_session.case_id = transfer_submissions.case_id
+            AND active_session.revoked_at IS NULL
+            AND active_session.expires_at > ?
+            AND active_session.absolute_expires_at > ?
         )`,
-    )
-    .bind(nowIso, nowIso, submissionId, caseId, caseId)
-    .run();
-  return result.meta.changes === 1;
+      )
+      .bind(
+        nowIso,
+        nowIso,
+        submissionId,
+        caseId,
+        caseId,
+        sessionId,
+        nowIso,
+        nowIso,
+      ),
+  ]);
+  if (sessionGate?.meta.changes !== 1) return "unauthorized";
+  return finalization?.meta.changes === 1;
 }
