@@ -2394,20 +2394,22 @@ pnpm exec wrangler queues create \
 - Cron täglich;
 - Worker route `tierarztpraxis-schaffer.telacore.org/api/*`.
 
-- [ ] Ressourcen-IDs eintragen.
-- [ ] R2 `r2.dev` deaktiviert lassen.
-- [ ] R2 Lifecycle 60 Tage.
-- [ ] Secrets:
+- [ ] Ressourcen-IDs eintragen: D1-ID eingetragen; R2 fehlt wegen API-Code `10042`.
+- [ ] R2 `r2.dev` deaktiviert lassen: ohne aktiviertes R2 und Bucket noch nicht nachweisbar.
+- [ ] R2 Lifecycle 60 Tage: ohne aktiviertes R2 und Bucket noch nicht anlegbar.
+- [x] Development-Secret-Namen deklarieren, noch keine Werte setzen:
   - `TOKEN_PEPPER`;
   - `SESSION_PEPPER`;
   - `ACCESS_TEAM_DOMAIN`;
   - `ACCESS_ADMIN_API_AUD`.
-- [ ] Development deploy dry-run.
-- [ ] Commit:
+- [x] Development deploy dry-run.
+- [x] Commit:
 
 ```bash
 git commit -m "chore: d1 r2 queues und same-origin-api konfigurieren"
 ```
+
+**Zwischenstand 2026-08-04 – teilweise/blockiert:** Die D1-Datenbank `tierarztpraxis-schaffer-transfer-development` wurde mit EU-Jurisdiktion erstellt und als `TRANSFER_DB` mit ID `27da967d-21c2-4a37-98a1-9e6cfd7451a1` konfiguriert. Hauptqueue `tierarztpraxis-transfer-notifications-development` und DLQ `tierarztpraxis-transfer-notifications-dlq-development` wurden erstellt; Development enthält Producer, Consumer und DLQ-Zuordnung ohne Tuningwerte. Same-Origin-Route `tierarztpraxis-schaffer.telacore.org/api/*`, Cron `0 3 * * *` UTC, vier zusätzliche Secret-Namen sowie das vorgesehene lokale R2-Binding sind konfiguriert. Wrangler-Typen sind regeneriert; `worker:check`, 22 Worker-Tests, 65 Website-Tests und Development-Dry-run sind grün. Das einmalige erneute EU-R2-Listing scheiterte weiterhin mit API-Code `10042`; deshalb erfolgte kein R2-Create-Versuch. Bucket, private `r2.dev`-/Custom-Domain-Nachweise und 60-Tage-Lifecycle fehlen weiterhin. Es gab kein Deployment, keine Production-Änderung und keine Secret-Wert-Mutation. Task 13 bleibt offen; Task 14 kann auf D1 aufbauen.
 
 ---
 

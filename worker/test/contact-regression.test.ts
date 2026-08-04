@@ -82,6 +82,10 @@ function contactConfig(value: string | null = null): KVNamespace {
   };
 }
 
+function unusedTestBinding(name: string): never {
+  throw new Error(`unused test binding: ${name}`);
+}
+
 function environment(
   overrides: Partial<Cloudflare.DevelopmentEnv> = {},
 ): Cloudflare.DevelopmentEnv {
@@ -96,7 +100,28 @@ function environment(
     MAIL_FROM: "website@tierarztpraxis-schaffer.telacore.org",
     TURNSTILE_SECRET: "test-secret",
     RATE_LIMIT_SALT: "test-rate-limit-salt",
+    get TOKEN_PEPPER(): string {
+      return unusedTestBinding("TOKEN_PEPPER");
+    },
+    get SESSION_PEPPER(): string {
+      return unusedTestBinding("SESSION_PEPPER");
+    },
+    get ACCESS_TEAM_DOMAIN(): string {
+      return unusedTestBinding("ACCESS_TEAM_DOMAIN");
+    },
+    get ACCESS_ADMIN_API_AUD(): string {
+      return unusedTestBinding("ACCESS_ADMIN_API_AUD");
+    },
     CONTACT_CONFIG: contactConfig(),
+    get TRANSFER_DB(): D1Database {
+      return unusedTestBinding("TRANSFER_DB");
+    },
+    get TRANSFER_FILES(): R2Bucket {
+      return unusedTestBinding("TRANSFER_FILES");
+    },
+    get TRANSFER_NOTIFICATIONS(): Queue {
+      return unusedTestBinding("TRANSFER_NOTIFICATIONS");
+    },
     CONTACT_RATE_LIMITER: {
       limit: vi.fn().mockResolvedValue({ success: true }),
     },

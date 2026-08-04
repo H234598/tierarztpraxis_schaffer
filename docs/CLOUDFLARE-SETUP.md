@@ -1,4 +1,4 @@
-# Cloudflare-Einrichtung: Schritte 4 bis 12
+# Cloudflare-Einrichtung: Schritte 4 bis 13
 
 Stand: 16. Juli 2026
 
@@ -404,6 +404,81 @@ Turnstile-Token erzeugt wird. Kontrollieren:
 - keine Nachrichtendaten erscheinen in Worker-Logs;
 - eine zweite Verwendung desselben Turnstile-Tokens wird abgelehnt;
 - bei nicht erreichbarem Worker bleibt die Telefonnummer sichtbar.
+
+## 13. Development-Ressourcen für den Datentransfer
+
+Stand 2026-08-04 ist die Development-D1-Datenbank mit EU-Jurisdiktion
+angelegt:
+
+- Name: `tierarztpraxis-schaffer-transfer-development`;
+- ID: `27da967d-21c2-4a37-98a1-9e6cfd7451a1`;
+- Binding: `TRANSFER_DB`;
+- Migrationen: `worker/migrations`, erstmals in Task 14.
+
+Außerdem bestehen Hauptqueue und Dead-Letter-Queue:
+
+- `tierarztpraxis-transfer-notifications-development`;
+- `tierarztpraxis-transfer-notifications-dlq-development`.
+
+`TRANSFER_NOTIFICATIONS` produziert in die Hauptqueue. Der Worker ist auch als
+Consumer der Hauptqueue mit der zweiten Queue als `dead_letter_queue`
+konfiguriert. Batch-, Timeout- und Retry-Tuning bleiben bis Task 24 bei den
+Wrangler-Defaults.
+
+Die tägliche Cron Expression lautet `0 3 * * *`, also 03:00 UTC. Task 25
+implementiert den Handler. Die Route
+`tierarztpraxis-schaffer.telacore.org/api/*` ist mit Zone `telacore.org`
+deklariert, wird ohne Deployment aber noch nicht wirksam.
+
+### R2-Aktivierung noch blockiert
+
+Der read-only Aufruf
+
+```bash
+cd worker
+pnpm exec wrangler r2 bucket list --jurisdiction eu
+```
+
+endet weiterhin mit Cloudflare API-Code `10042`: R2 muss zuerst im Dashboard
+aktiviert werden. Deshalb wurde kein Bucket erstellt. Damit fehlen noch die
+Nachweise für EU-Jurisdiktion, Standard Storage Class, deaktiviertes `r2.dev`,
+fehlende Custom Domains und den 60-Tage-Lifecycle. Bei einer
+Zahlungsbestätigung nicht fortfahren.
+
+Erst nach erfolgreichem read-only Listing den Bucket anlegen und prüfen:
+
+```bash
+pnpm exec wrangler r2 bucket create \
+  tierarztpraxis-schaffer-transfer-development \
+  --jurisdiction eu \
+  --storage-class Standard
+pnpm exec wrangler r2 bucket info \
+  tierarztpraxis-schaffer-transfer-development \
+  --jurisdiction eu \
+  --json
+pnpm exec wrangler r2 bucket dev-url get \
+  tierarztpraxis-schaffer-transfer-development \
+  --jurisdiction eu
+pnpm exec wrangler r2 bucket domain list \
+  tierarztpraxis-schaffer-transfer-development \
+  --jurisdiction eu
+pnpm exec wrangler r2 bucket lifecycle add \
+  tierarztpraxis-schaffer-transfer-development \
+  expiry-60-days \
+  --expire-days 60 \
+  --jurisdiction eu \
+  --force
+pnpm exec wrangler r2 bucket lifecycle list \
+  tierarztpraxis-schaffer-transfer-development \
+  --jurisdiction eu
+```
+
+`worker/wrangler.jsonc` enthält den vorgesehenen lokalen R2-Bindingnamen
+`TRANSFER_FILES` bereits, aber kein `remote: true` und keine öffentliche URL.
+Die Development-Konfiguration verlangt außerdem nur die Secret-Namen
+`TOKEN_PEPPER`, `SESSION_PEPPER`, `ACCESS_TEAM_DOMAIN` und
+`ACCESS_ADMIN_API_AUD`. Werte werden erst nach den Access-Schritten in Task 28
+gesetzt und niemals in diese Dokumentation geschrieben.
 
 ## Häufige Fehler
 
