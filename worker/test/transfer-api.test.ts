@@ -836,6 +836,9 @@ describe("public transfer API", () => {
     expect(database.prepared[0]?.query).not.toContain(token);
     const publicId = token.split("_")[1];
     const secret = token.split("_")[2];
+    if (secret === undefined) {
+      throw new Error("Transfer token missing secret segment");
+    }
     expect(database.prepared[0]?.values).toEqual([
       publicId,
       await hmacHex("token-pepper", secret),
