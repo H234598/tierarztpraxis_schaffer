@@ -5,13 +5,16 @@
   "type": "module",
   "scripts": {
     "types": "wrangler types",
-    "check": "wrangler types --check && tsc -p tsconfig.json --noEmit",
+    "check": "wrangler types --check && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "test": "vitest run",
+    "d1:migrate:local": "wrangler d1 migrations apply TRANSFER_DB --local --env development",
+    "d1:migrate:development": "wrangler d1 migrations apply TRANSFER_DB --remote --env development",
     "dev": "wrangler dev --remote --env development",
     "deploy:development": "wrangler deploy --env development",
     "deploy:production": "wrangler deploy --env production"
   },
   "devDependencies": {
+    "@types/node": "24.13.3",
     "typescript": "5.8.3",
     "vitest": "4.1.10",
     "wrangler": "4.107.0"

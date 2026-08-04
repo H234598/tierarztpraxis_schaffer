@@ -2432,16 +2432,18 @@ git commit -m "chore: d1 r2 queues und same-origin-api konfigurieren"
 }
 ```
 
-- [ ] Schema-Test anlegen.
-- [ ] Migration lokal anwenden.
-- [ ] Constraints und Indizes testen.
+- [x] Schema-Test anlegen.
+- [x] Migration lokal anwenden.
+- [x] Constraints und Indizes testen.
 - [ ] Migration gegen Development nach manueller Bestätigung anwenden.
-- [ ] Backup/Time-Travel-Eintrag dokumentieren.
-- [ ] Commit:
+- [x] Backup/Time-Travel-Eintrag dokumentieren.
+- [x] Commit:
 
 ```bash
 git commit -m "feat: d1-schema für datentransfer anlegen"
 ```
+
+**Zwischenstand 2026-08-04 – lokal fertig, Remote-Freigabe ausstehend:** Die Migration `0001_datatransfer.sql` bildet §17 mit neun Fachtabellen und sechs benannten Indizes ab. `transfer_submissions.case_id` referenziert `transfer_cases(id) ON DELETE CASCADE`; damit entfernt eine Falllöschung auch Submissions und deren abhängige Dateien und Links, während Audit-Ereignisse gemäß Schema mit `case_id = NULL` erhalten bleiben. Der ausführbare Schema-Test wendet die Migration über Wrangler in isoliertem lokalen State an und belegt Tabellen, Indizes, Status-/Boolean-/Längen-/Größenchecks, eindeutige `public_id`/Token-HMACs, Foreign-Key-Rejection, die vollständige Löschkaskade und einen zweiten idempotenten Migrationslauf. Der dokumentierte lokale Paketlauf führte 17 SQL-Befehle erfolgreich aus; `d1 migrations list` meldete anschließend keine offene Migration. `worker:check`, 26 Worker-Tests und 65 Website-Tests sind grün. Der read-only geprüfte Development-D1-Stand bleibt unverändert bei null Tabellen in EU-Jurisdiktion; aktueller Time-Travel-Bookmark: `00000001-00000000-000050bd-098c67ca6b334390ef3948b650c190ea`. Ohne neue manuelle Bestätigung wurde keine Remote-Migration angewandt und kein Restore, Deployment oder Production-Zugriff ausgeführt. Task 14 bleibt bis zum bestätigten Remote-Lauf teilweise offen.
 
 ---
 
