@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { loadAdminStoredFile, loadCustomerStoredFile, parseSingleRange, storedFileResponse } from "../src/transfers/file-response";
+import { routePublicTransfer } from "../src/transfers/routes-public";
+import type { DevelopmentRouteContext } from "../src/env";
 
 describe("Single-Range-Parser", () => {
   const size = 10;
@@ -94,6 +96,18 @@ describe("Geschützte R2-Antwort", () => {
     const response = await storedFileResponse(bucket as never, { ...metadata, originalName: "x\ud800.jpg" }, null, "request-1");
     expect(response).toBeInstanceOf(Response);
   });
+
+  it.each([
+    ["get throw", { get: async () => { throw new Error("r2"); } }],
+    ["conditional miss", { get: async () => ({ size: 10, etag: "etag-1" }) }],
+    ["etag mismatch", { get: async () => ({ body: stream(1), size: 10, etag: "other" }) }],
+    ["size mismatch", { get: async () => ({ body: stream(1), size: 9, etag: "etag-1" }) }],
+    ["range mismatch", { get: async () => ({ body: stream(1), size: 10, etag: "etag-1", range: { offset: 3, length: 4 } }) }],
+  ])("weist R2-%s mit festem Event ab", async (_label, failingBucket) => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await expect(storedFileResponse(failingBucket as never, metadata, "bytes=2-5", "request-1")).resolves.toBe("unavailable");
+    expect(error).toHaveBeenCalledWith("transfer_file_object_unavailable", "request-1");
+  });
 });
 
 describe("D1-Dateibindung", () => {
@@ -122,5 +136,22 @@ describe("D1-Dateibindung", () => {
     await expect(loadAdminStoredFile(database, "file-1")).resolves.toEqual(row);
     expect(calls[0]?.values).toEqual(["file-1"]);
     expect(calls[0]?.query).toContain("f.state = 'stored'");
+  });
+});
+
+describe("Customer-Dateiroute", () => {
+  it("weist fehlende Session vor jedem R2-Zugriff ab", async () => {
+    let reads = 0;
+    const request = new Request("https://example.test/api/transfers/files/file-foreign");
+    const response = await routePublicTransfer({
+      request, url: new URL(request.url), requestId: "request-1",
+      env: {
+        TRANSFER_FILES: { get: async () => { reads += 1; return null; } },
+        TRANSFER_DB: { prepare: () => ({ bind: () => ({ first: async () => null }) }) },
+        SESSION_PEPPER: "pepper",
+      },
+    } as unknown as DevelopmentRouteContext);
+    expect(response.status).toBe(401);
+    expect(reads).toBe(0);
   });
 });
