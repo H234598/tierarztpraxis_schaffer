@@ -9,7 +9,10 @@ export async function verifyTurnstile(
   token: string,
   requestId: string,
   env: Env,
+  expectedAction: string = env.EXPECTED_TURNSTILE_ACTION,
 ): Promise<boolean> {
+  if (token.length === 0 || token.length > 2_048) return false;
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 4_000);
 
@@ -48,7 +51,7 @@ export async function verifyTurnstile(
     return (
       Boolean(hostname) &&
       expectedHostnames.has(hostname?.toLowerCase() ?? "") &&
-      action === env.EXPECTED_TURNSTILE_ACTION
+      action === expectedAction
     );
   } catch {
     return false;

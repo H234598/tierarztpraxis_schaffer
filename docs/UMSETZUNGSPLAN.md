@@ -2491,24 +2491,28 @@ git commit -m "feat: sichere datentransfer-tokens und sessions"
 **Dateien:**
 
 - Create: `worker/src/transfers/routes-public.ts`
-- Create: `worker/src/security/turnstile.ts`
 - Create: `worker/src/transfers/cases.ts`
+- Modify/reuse: `worker/src/security/turnstile.ts`, `worker/src/security/rate-limit.ts`, `worker/src/transfers/sessions.ts`
+- Modify: `worker/src/env.ts`, `worker/src/router.ts`
 - Test: `worker/test/transfer-api.test.ts`
 
-- [ ] `POST /api/transfers/session`;
-- [ ] Turnstile action `datatransfer_session`;
-- [ ] Origin und Rate Limit;
-- [ ] generische Tokenfehler;
-- [ ] Sessioncookie und CSRF;
-- [ ] Fragment wird nicht serverseitig verarbeitet;
-- [ ] `GET /api/transfers/case`;
-- [ ] nur kundenlesbare Daten;
-- [ ] Tests.
-- [ ] Commit:
+- [x] `POST /api/transfers/session`;
+- [x] Turnstile action `datatransfer_session`;
+- [x] Origin und Rate Limit;
+- [x] generische Tokenfehler;
+- [x] Sessioncookie und CSRF;
+- [x] Fragment wird nicht serverseitig verarbeitet;
+- [x] `GET /api/transfers/case`;
+- [x] `POST /api/transfers/session/logout`;
+- [x] nur kundenlesbare Daten;
+- [x] Tests.
+- [x] Commit:
 
 ```bash
 git commit -m "feat: öffentliche session- und fall-api für datentransfer"
 ```
+
+**Abschluss 2026-08-04:** Development routet die drei exakten Public-Pfade typisiert auf die vorhandenen Transferbindings; Production antwortet fail-closed mit `503`. Sessionaustausch erzwingt exakte Same-Origin-Prüfung, JSON-/4-KiB-/Feldgrenzen, domain-separiertes IP-Rate-Limit und Turnstile mit expliziter Action vor jeder Token-/D1-Prüfung. Token-, Fall- und Turnstilefehler bleiben generisch; ein fehlender Public-ID-Lookup führt trotzdem Dummy-HMAC-Verifikation aus. Session- und CSRF-HMAC werden zusammen mit dem Tokenzähler in einem D1-Batch geschrieben, Rohsecrets nie persistiert. Case-GET sucht ausschließlich über Session-HMAC, prüft Sliding-/Absolutablauf und Fallstatus, verlängert DB und Cookie und bindet jede Snapshot-Abfrage nur an die Session-`case_id`. DTO-Allowlists schließen interne Notizen, Kontaktfelder, Adminidentitäten, HMACs und R2-Interna rekursiv aus. Logout verlangt exakte Origin, gültige Session und sessiongebundenes CSRF, widerruft gebunden und löscht den Cookie. RED: Missing-Route-Suite sowie anschließend fünf Session- und vier GET-/Logout-Vertragsfälle. GREEN: 25/25 Transfer-, 27/27 Contact-Regressions-, 91/91 Worker- und 65/65 Website-Tests sowie `worker:check`. Keine Dependency-, Config-, Migrations-, Frontend- oder externe Zustandsänderung; Development-D1 blieb remote leer. Task-13-R2- und Task-14-Remote-Migrationsblock bleiben offen.
 
 ---
 

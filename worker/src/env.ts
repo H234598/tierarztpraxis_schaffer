@@ -14,3 +14,7 @@ export interface RouteContext {
   readonly requestId: string;
   readonly url: URL;
 }
+
+export interface DevelopmentRouteContext extends Omit<RouteContext, "env"> {
+  readonly env: DevelopmentEnv;
+}

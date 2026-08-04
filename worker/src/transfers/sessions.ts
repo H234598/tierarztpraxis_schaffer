@@ -71,6 +71,13 @@ export function nextSessionExpiry(
   ).toISOString();
 }
 
+export function hmacTransferSession(
+  cookieValue: string,
+  sessionPepper: string,
+): Promise<string> {
+  return hmacHex(sessionPepper, `${sessionDomain}${cookieValue}`);
+}
+
 export async function createTransferSession(
   sessionPepper: string,
   now: Date,
@@ -86,10 +93,7 @@ export async function createTransferSession(
     cookieValue,
     setCookie: serializeSessionCookie(cookieValue),
     storage: {
-      sessionHmac: await hmacHex(
-        sessionPepper,
-        `${sessionDomain}${cookieValue}`,
-      ),
+      sessionHmac: await hmacTransferSession(cookieValue, sessionPepper),
       expiresAt,
       absoluteExpiresAt,
     },
