@@ -52,6 +52,72 @@ function noncanonicalSignature(token: string): string {
   return `${header}.${payload}.${altered}`;
 }
 
+const adminStoredFile = {
+  r2Key: "cases/case-1/submissions/submission-1/file-1",
+  originalName: "befund.jpg",
+  mediaType: "image/jpeg",
+  size: 3,
+  etag: "etag-1",
+  inlineSafe: 1,
+};
+
+interface AdminFileState {
+  row: typeof adminStoredFile | null;
+  reads: number;
+  readonly calls: { readonly query: string; readonly values: readonly unknown[] }[];
+}
+
+function adminFileContext(
+  state: AdminFileState,
+  origin: string | null,
+  assertionHeader: string | null,
+  extraHeaders: Readonly<Record<string, string>> = {},
+): DevelopmentRouteContext {
+  const headers = new Headers(extraHeaders);
+  if (origin !== null) headers.set("origin", origin);
+  if (assertionHeader !== null) {
+    headers.set("cf-access-jwt-assertion", assertionHeader);
+  }
+  const request = new Request(
+    "https://admin.example.test/api/admin/files/file-1",
+    { headers },
+  );
+  return {
+    request,
+    url: new URL(request.url),
+    requestId: "request-1",
+    env: {
+      ACCESS_TEAM_DOMAIN: teamDomain,
+      ACCESS_ADMIN_API_AUD: audience,
+      TRANSFER_DB: {
+        prepare(query: string) {
+          return {
+            bind(...values: unknown[]) {
+              state.calls.push({ query, values });
+              return { first: async () => state.row };
+            },
+          };
+        },
+      },
+      TRANSFER_FILES: {
+        async get() {
+          state.reads += 1;
+          return {
+            body: new ReadableStream({
+              start(controller) {
+                controller.enqueue(new Uint8Array([0xff, 0xd8, 0xff]));
+                controller.close();
+              },
+            }),
+            size: adminStoredFile.size,
+            etag: adminStoredFile.etag,
+          };
+        },
+      },
+    },
+  } as unknown as DevelopmentRouteContext;
+}
+
 describe("Cloudflare-Access-Verifier", () => {
   it("validiert lokales JWKS über kid und cached Factory trotz Key-Rotation", async () => {
     let resolverFactories = 0;
@@ -152,6 +218,112 @@ describe("Cloudflare-Access-Verifier", () => {
     const response = await routeAdmin(context("https://admin.example.test", token), verifier);
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ ok: true, admin: { email: "admin@example.test" } });
+  });
+
+  it("liefert Admin-Datei nur mit exakter Origin und lokal verifiziertem RS256-JWT", async () => {
+    const state: AdminFileState = {
+      row: adminStoredFile,
+      reads: 0,
+      calls: [],
+    };
+    const verifier = createAccessVerifier({
+      createKeyResolver: () => async () => publicKey,
+    });
+
+    const response = await routeAdmin(
+      adminFileContext(
+        state,
+        "https://admin.example.test",
+        await assertion(),
+      ),
+      verifier,
+    );
+
+    expect(response.status).toBe(200);
+    expect(state.reads).toBe(1);
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(
+      new Uint8Array([0xff, 0xd8, 0xff]),
+    );
+    expect(state.calls).toHaveLength(1);
+    expect(state.calls[0]?.values).toEqual(["file-1"]);
+    expect(state.calls[0]?.query).toContain("f.state = 'stored'");
+  });
+
+  it.each([
+    ["fehlende", null],
+    ["falsche", "https://evil.example.test"],
+  ])("weist %s Admin-Origin vor R2 mit 403 ab", async (_label, origin) => {
+    const state: AdminFileState = {
+      row: adminStoredFile,
+      reads: 0,
+      calls: [],
+    };
+    const verifier = createAccessVerifier({
+      createKeyResolver: () => async () => publicKey,
+    });
+
+    const response = await routeAdmin(
+      adminFileContext(state, origin, await assertion()),
+      verifier,
+    );
+
+    expect(response.status).toBe(403);
+    expect(state.reads).toBe(0);
+    expect(state.calls).toHaveLength(0);
+  });
+
+  it.each([
+    ["fehlenden Assertion-Header", null, {}],
+    ["ungültige Assertion", "a.b.c", {}],
+    [
+      "gespoofte E-Mail ohne Assertion",
+      null,
+      { "cf-access-authenticated-user-email": "admin@example.test" },
+    ],
+  ])("weist %s vor R2 mit 401 ab", async (_label, assertionHeader, headers) => {
+    const state: AdminFileState = {
+      row: adminStoredFile,
+      reads: 0,
+      calls: [],
+    };
+    const verifier = createAccessVerifier({
+      createKeyResolver: () => async () => publicKey,
+    });
+
+    const response = await routeAdmin(
+      adminFileContext(
+        state,
+        "https://admin.example.test",
+        assertionHeader,
+        headers,
+      ),
+      verifier,
+    );
+
+    expect(response.status).toBe(401);
+    expect(state.reads).toBe(0);
+    expect(state.calls).toHaveLength(0);
+  });
+
+  it("liefert unbekannte Admin-Datei ohne R2 als 404", async () => {
+    const state: AdminFileState = { row: null, reads: 0, calls: [] };
+    const verifier = createAccessVerifier({
+      createKeyResolver: () => async () => publicKey,
+    });
+
+    const response = await routeAdmin(
+      adminFileContext(
+        state,
+        "https://admin.example.test",
+        await assertion(),
+      ),
+      verifier,
+    );
+
+    expect(response.status).toBe(404);
+    expect(state.reads).toBe(0);
+    expect(state.calls).toHaveLength(1);
+    expect(state.calls[0]?.values).toEqual(["file-1"]);
   });
 
   it("hält Admin-API außerhalb Development bei 503", async () => {
