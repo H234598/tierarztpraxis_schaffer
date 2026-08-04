@@ -7,5 +7,6 @@ dist/
 worker/.dev.vars
 worker/.wrangler/
 coverage/
+.worktrees/
 .DS_Store
 *.log
