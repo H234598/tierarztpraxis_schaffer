@@ -137,70 +137,6 @@ async function enterFragmentSession(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { name: "Fall für Luna" })).toBeFocused();
 }
 
-function createGate(): { readonly promise: Promise<void>; readonly release: () => void } {
-  let release = (): void => undefined;
-  const promise = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  return { promise, release };
-}
-
-async function settleBrowserUi(page: Page): Promise<void> {
-  await page.evaluate(
-    () => new Promise<void>((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-    ),
-  );
-}
-
-async function routeGatedSessionRecovery(
-  page: Page,
-  lateResult: "success" | "error",
-): Promise<{ readonly release: () => void; readonly caseCalls: () => number }> {
-  await routeTurnstile(page);
-  const gate = createGate();
-  let caseCalls = 0;
-  await page.route("**/api/transfers/**", async (route) => {
-    const request = route.request();
-    const path = new URL(request.url()).pathname;
-    if (path === "/api/transfers/session" && request.method() === "POST") {
-      await route.fulfill({
-        json: { ok: true, case: transferCase().case, csrfToken },
-      });
-      return;
-    }
-    if (path === "/api/transfers/case" && request.method() === "GET") {
-      caseCalls += 1;
-      if (caseCalls === 1) {
-        await route.fulfill({
-          status: 503,
-          json: { ok: false, error: { code: "internal" } },
-        });
-        return;
-      }
-      await gate.promise;
-      if (lateResult === "success") {
-        await route.fulfill({ json: transferCase() });
-      } else {
-        await route.fulfill({
-          status: 503,
-          json: {
-            ok: false,
-            error: { code: "internal", requestId: "req-late-case" },
-          },
-        });
-      }
-      return;
-    }
-    if (path === "/api/transfers/session/logout" && request.method() === "POST") {
-      await route.fulfill({ json: { ok: true } });
-      return;
-    }
-    await route.fulfill({ status: 404, json: { ok: false } });
-  });
-  return { release: gate.release, caseCalls: () => caseCalls };
-}
-
 test("Warnung steht vor Token, Fragment verschwindet und Logout löscht Sitzung", async ({
   page,
 }) => {
@@ -464,9 +400,6 @@ test("behält CSRF nach Session-Erfolg und wiederholt nur den fehlgeschlagenen G
   await expect(
     page.getByRole("button", { name: "Fallansicht erneut laden" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Fallansicht erneut laden" }),
-  ).toBeFocused();
   expect(
     await page.evaluate(() => sessionStorage.getItem("tierarztpraxis:datentransfer:csrf")),
   ).toBe(csrfToken);
@@ -511,9 +444,6 @@ test("behält CSRF beim fehlgeschlagenen initialen Restore und wiederholt nur GE
   await expect(
     page.getByRole("button", { name: "Fallansicht erneut laden" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Fallansicht erneut laden" }),
-  ).toBeFocused();
   expect(
     await page.evaluate(() => sessionStorage.getItem("tierarztpraxis:datentransfer:csrf")),
   ).toBe(csrfToken);
@@ -553,123 +483,6 @@ for (const failure of ["Netzwerkfehler", "Protokollfehler"] as const) {
     await page.getByRole("button", { name: "Fallansicht erneut laden" }).click();
     await expect(page.getByRole("heading", { name: "Fall für Luna" })).toBeFocused();
     expect(caseCalls).toBe(2);
-  });
-}
-
-for (const lateResult of ["success", "error"] as const) {
-  test(`ignoriert spätes Recovery-${lateResult} nach erfolgreichem Logout`, async ({
-    page,
-  }) => {
-    const recovery = await routeGatedSessionRecovery(page, lateResult);
-    await page.goto(`/datentransfer/#token=${encodeURIComponent(fragmentToken)}`);
-    await expect(
-      page.locator("input[name='cf-turnstile-response']"),
-    ).toHaveValue("turnstile-test-token");
-    await page.getByRole("button", { name: "Sichere Sitzung starten" }).click();
-    const caseRetry = page.getByRole("button", {
-      name: "Fallansicht erneut laden",
-    });
-    await expect(caseRetry).toBeFocused();
-
-    await caseRetry.click();
-    await expect.poll(recovery.caseCalls).toBe(2);
-    const lateResponse = page.waitForResponse(
-      (response) => new URL(response.url()).pathname === "/api/transfers/case",
-    );
-    await page.getByRole("button", { name: "Sicher abmelden" }).click();
-    await expect(page.getByRole("status")).toContainText("abgemeldet");
-    await expect(page.getByLabel("Datentransfer-Token")).toBeFocused();
-
-    recovery.release();
-    await lateResponse;
-    await settleBrowserUi(page);
-
-    await expect(page.locator("[data-transfer-root]")).toHaveAttribute(
-      "data-state",
-      "expired",
-    );
-    await expect(page.locator("[data-transfer-session]")).toBeHidden();
-    await expect(page.locator("[data-case-heading]")).toHaveText("Fall");
-    await expect(page.getByRole("status")).toContainText("abgemeldet");
-    await expect(page.getByLabel("Datentransfer-Token")).toBeFocused();
-    expect(
-      await page.evaluate(() => sessionStorage.getItem("tierarztpraxis:datentransfer:csrf")),
-    ).toBeNull();
-  });
-}
-
-for (const lateResult of ["success", "error"] as const) {
-  test(`respektiert Logout-Fokus bei spätem Recovery-${lateResult}`, async ({
-    page,
-  }) => {
-    const recovery = await routeGatedSessionRecovery(page, lateResult);
-    await page.goto(`/datentransfer/#token=${encodeURIComponent(fragmentToken)}`);
-    await expect(
-      page.locator("input[name='cf-turnstile-response']"),
-    ).toHaveValue("turnstile-test-token");
-    await page.getByRole("button", { name: "Sichere Sitzung starten" }).click();
-    const caseRetry = page.getByRole("button", {
-      name: "Fallansicht erneut laden",
-    });
-    await expect(caseRetry).toBeFocused();
-
-    await caseRetry.click();
-    await expect.poll(recovery.caseCalls).toBe(2);
-    const lateResponse = page.waitForResponse(
-      (response) => new URL(response.url()).pathname === "/api/transfers/case",
-    );
-    const logout = page.getByRole("button", { name: "Sicher abmelden" });
-    await logout.focus();
-    await expect(logout).toBeFocused();
-
-    recovery.release();
-    await lateResponse;
-    await settleBrowserUi(page);
-
-    await expect(logout).toBeFocused();
-  });
-}
-
-for (const lateResult of ["success", "error"] as const) {
-  test(`respektiert Header-Fokus bei spätem Restore-${lateResult}`, async ({
-    page,
-  }) => {
-    await routeTurnstile(page);
-    const gate = createGate();
-    let caseCalls = 0;
-    await page.addInitScript((csrf) => {
-      sessionStorage.setItem("tierarztpraxis:datentransfer:csrf", csrf);
-    }, csrfToken);
-    await page.route("**/api/transfers/case", async (route) => {
-      caseCalls += 1;
-      await gate.promise;
-      if (lateResult === "success") {
-        await route.fulfill({ json: transferCase() });
-      } else {
-        await route.fulfill({
-          status: 503,
-          json: {
-            ok: false,
-            error: { code: "internal", requestId: "req-late-restore" },
-          },
-        });
-      }
-    });
-
-    await page.goto("/datentransfer/");
-    await expect.poll(() => caseCalls).toBe(1);
-    const lateResponse = page.waitForResponse(
-      (response) => new URL(response.url()).pathname === "/api/transfers/case",
-    );
-    const brand = page.getByRole("link", { name: "Zur Startseite" });
-    await brand.focus();
-    await expect(brand).toBeFocused();
-
-    gate.release();
-    await lateResponse;
-    await settleBrowserUi(page);
-
-    await expect(brand).toBeFocused();
   });
 }
 
@@ -729,9 +542,6 @@ test("wiederholt nach bestätigtem Finalize nur den fehlgeschlagenen GET", async
   await expect(
     page.getByRole("button", { name: "Fallansicht erneut laden" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Fallansicht erneut laden" }),
-  ).toBeFocused();
   expect(finalizeCalls).toBe(1);
 
   await page.getByRole("button", { name: "Fallansicht erneut laden" }).click();
@@ -816,9 +626,6 @@ test("wiederholt fehlgeschlagenen Finalize-POST ohne erneuten Datei-Upload", asy
   await expect(
     page.getByRole("button", { name: "Abschluss erneut versuchen" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Abschluss erneut versuchen" }),
-  ).toBeFocused();
   await expect(page.getByRole("button", { name: "Sicher abmelden" })).toBeEnabled();
   await expect(page.locator("[data-transfer-final-status]")).toContainText(
     "Vorgangskennung: req-finalize",
@@ -972,7 +779,6 @@ test("terminales Upload-4xx lässt Sitzung und neuen Bericht erreichbar", async 
   await expect(page.locator("[data-transfer-final-status]")).toContainText(
     "korrigierten Dateien",
   );
-  await expect(page.locator("#transfer-report-heading")).toBeFocused();
   expect(
     await page.evaluate(() => sessionStorage.getItem("tierarztpraxis:datentransfer:csrf")),
   ).toBe(csrfToken);

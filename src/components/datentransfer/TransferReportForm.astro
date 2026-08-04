@@ -5,7 +5,7 @@ import { withBase } from "../../utils/paths";
 <section class="transfer-card" aria-labelledby="transfer-report-heading">
   <header class="transfer-heading">
     <p class="eyebrow">Neue Einreichung</p>
-    <h2 id="transfer-report-heading">Bericht und Dateien</h2>
+    <h2 id="transfer-report-heading" tabindex="-1">Bericht und Dateien</h2>
   </header>
   <form class="transfer-report" data-transfer-report>
     <label>
@@ -72,4 +72,7 @@ import { withBase } from "../../utils/paths";
     <button class="button" type="submit">Bericht sicher senden</button>
   </form>
   <p class="transfer-final-status" aria-live="polite" data-transfer-final-status></p>
+  <button class="button button--secondary" type="button" data-transfer-finalize-retry hidden>
+    Abschluss erneut versuchen
+  </button>
 </section>

@@ -288,6 +288,40 @@ describe("Datentransfer-Client", () => {
     ).rejects.toMatchObject({ retryable: false, status: 200 });
   });
 
+  it.each([
+    { status: 401, retryable: false },
+    { status: 422, retryable: false },
+    { status: 503, retryable: true },
+  ])(
+    "übernimmt bei XHR-$status nur die Vorgangskennung",
+    async ({ status, retryable }) => {
+      const xhr = new FakeXhr(status);
+      xhr.responseText = JSON.stringify({
+        ok: false,
+        error: {
+          requestId: `req-${status}`,
+          message: "dt1_geheim patientenakte.jpg",
+        },
+      });
+      const file = { name: "ohr.jpg", type: "image/jpeg", size: 10 } as File;
+
+      await expect(
+        uploadTransferFile(
+          file,
+          { fileId: "file-1", uploadUrl: "/api/transfers/uploads/file-1" },
+          "csrf-session",
+          vi.fn(),
+          () => xhr as unknown as XMLHttpRequest,
+        ),
+      ).rejects.toMatchObject({
+        message: `Dateiübertragung fehlgeschlagen. Vorgangskennung: req-${status}`,
+        requestId: `req-${status}`,
+        retryable,
+        status,
+      });
+    },
+  );
+
   it("wiederholt nur offene Slots und finalisiert erst nach allen Uploads", async () => {
     const files = [
       { name: "eins.jpg", type: "image/jpeg", size: 10 },

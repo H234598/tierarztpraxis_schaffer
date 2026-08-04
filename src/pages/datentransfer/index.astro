@@ -20,6 +20,9 @@ import TransferLayout from "../../layouts/TransferLayout.astro";
     <div class="transfer-session" data-transfer-session hidden>
       <div class="transfer-session__actions">
         <p>Diese Sitzung ist nur auf diesem Gerät geöffnet.</p>
+        <button class="button button--secondary" type="button" data-transfer-case-retry hidden>
+          Fallansicht erneut laden
+        </button>
         <button class="button button--secondary" type="button" data-transfer-logout>Sicher abmelden</button>
       </div>
       <TransferThread />
