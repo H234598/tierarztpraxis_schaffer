@@ -3,7 +3,7 @@ import {
   isAllowedMediaType,
   type AllowedMediaType,
 } from "./limits";
-import { detectMediaType } from "./file-signatures";
+import { detectMediaType, needsMoreSignatureBytes } from "./file-signatures";
 
 export interface UploadExpectation {
   readonly size: number;
@@ -55,6 +55,27 @@ export type UploadResult = "unauthorized" | "conflict" | "invalid" | "unavailabl
 
 class InvalidUploadBodyError extends Error {}
 
+async function compensateUploadSlot(
+  database: Pick<D1Database, "prepare">,
+  fileId: string,
+  caseId: string,
+  preferred: "pending" | "rejected",
+): Promise<void> {
+  const setState = async (state: "pending" | "rejected"): Promise<boolean> => {
+    try {
+      const result = await database.prepare(
+        "UPDATE transfer_files SET state = ? WHERE id = ? AND case_id = ? AND state = 'uploading'",
+      ).bind(state, fileId, caseId).run();
+      return result.meta.changes === 1;
+    } catch {
+      return false;
+    }
+  };
+  if (await setState(preferred)) return;
+  if (preferred === "pending" && await setState("rejected")) return;
+  console.error("transfer_upload_orphan");
+}
+
 export function validatedUploadStream(
   expected: UploadExpectation,
   onInvalid = (): void => {},
@@ -69,6 +90,7 @@ export function validatedUploadStream(
       signatureChecked = true;
       return;
     }
+    if (needsMoreSignatureBytes(prefix)) return;
     if (detected !== null || prefix.byteLength >= 12) {
       onInvalid();
       throw new InvalidUploadBodyError("Invalid upload signature");
@@ -130,7 +152,8 @@ export async function uploadReservedFile(
       WHERE f.id = ? AND f.case_id = ? AND f.state = 'pending'
         AND f.delete_after > ? AND s.status = 'draft'
         AND c.status = 'open' AND c.expires_at > ?
-        AND c.submission_count > 0 AND c.total_bytes >= f.expected_size`,
+        AND c.submission_count BETWEEN 1 AND c.max_submissions
+        AND c.total_bytes BETWEEN f.expected_size AND c.max_total_bytes`,
     )
     .bind(fileId, caseId, nowIso, nowIso)
     .first<UploadSlotRow>();
@@ -166,8 +189,9 @@ export async function uploadReservedFile(
           INNER JOIN transfer_cases AS c ON c.id = s.case_id
           WHERE s.id = transfer_files.submission_id AND s.status = 'draft'
             AND c.id = transfer_files.case_id AND c.status = 'open'
-            AND c.expires_at > ? AND c.submission_count > 0
-            AND c.total_bytes >= transfer_files.expected_size
+            AND c.expires_at > ?
+            AND c.submission_count BETWEEN 1 AND c.max_submissions
+            AND c.total_bytes BETWEEN transfer_files.expected_size AND c.max_total_bytes
         )
         AND EXISTS (
           SELECT 1 FROM transfer_sessions AS active_session
@@ -192,20 +216,14 @@ export async function uploadReservedFile(
     );
   } catch (error) {
     if (invalidBody || error instanceof InvalidUploadBodyError) {
-      await database.prepare(
-        "UPDATE transfer_files SET state = 'rejected' WHERE id = ? AND case_id = ? AND state = 'uploading'",
-      ).bind(fileId, caseId).run();
+      await compensateUploadSlot(database, fileId, caseId, "rejected");
       return "invalid";
     }
-    await database.prepare(
-      "UPDATE transfer_files SET state = 'pending' WHERE id = ? AND case_id = ? AND state = 'uploading'",
-    ).bind(fileId, caseId).run();
+    await compensateUploadSlot(database, fileId, caseId, "pending");
     return "unavailable";
   }
   if (!object) {
-    await database.prepare(
-      "UPDATE transfer_files SET state = 'pending' WHERE id = ? AND case_id = ? AND state = 'uploading'",
-    ).bind(fileId, caseId).run();
+    await compensateUploadSlot(database, fileId, caseId, "pending");
     return "conflict";
   }
   if (object.size !== slot.size) {
@@ -214,12 +232,11 @@ export async function uploadReservedFile(
     } catch {
       console.error("transfer_upload_orphan");
     }
-    await database.prepare(
-      "UPDATE transfer_files SET state = 'rejected' WHERE id = ? AND case_id = ? AND state = 'uploading'",
-    ).bind(fileId, caseId).run();
+    await compensateUploadSlot(database, fileId, caseId, "rejected");
     return "invalid";
   }
 
+  const finalizedAt = new Date().toISOString();
   let finalized: D1Result | null = null;
   try {
     finalized = await database.prepare(
@@ -227,7 +244,17 @@ export async function uploadReservedFile(
     SET state = 'stored', verified_media_type = ?, stored_size = ?, etag = ?,
       inline_safe = ?, uploaded_at = ?
     WHERE id = ? AND case_id = ? AND state = 'uploading'
-      AND expected_size = ? AND EXISTS (
+      AND expected_size = ? AND delete_after > ?
+      AND EXISTS (
+        SELECT 1 FROM transfer_submissions AS s
+        INNER JOIN transfer_cases AS c ON c.id = s.case_id
+        WHERE s.id = transfer_files.submission_id AND s.status = 'draft'
+          AND c.id = transfer_files.case_id AND c.status = 'open'
+          AND c.expires_at > ?
+          AND c.submission_count BETWEEN 1 AND c.max_submissions
+          AND c.total_bytes BETWEEN transfer_files.expected_size AND c.max_total_bytes
+      )
+      AND EXISTS (
         SELECT 1 FROM transfer_sessions AS active_session
         WHERE active_session.id = ? AND active_session.case_id = transfer_files.case_id
           AND active_session.revoked_at IS NULL
@@ -238,13 +265,14 @@ export async function uploadReservedFile(
     object.size,
     object.etag,
     inlineSafeMediaTypes.has(slot.mediaType) ? 1 : 0,
-    nowIso,
+    finalizedAt,
     fileId,
     caseId,
     slot.size,
+    finalizedAt,
     sessionId,
-    nowIso,
-    nowIso,
+    finalizedAt,
+    finalizedAt,
     ).run();
   } catch {
     finalized = null;
@@ -257,10 +285,6 @@ export async function uploadReservedFile(
   } catch {
     console.error("transfer_upload_orphan");
   }
-  const rollback = await database.prepare(
-    `UPDATE transfer_files SET state = ?
-    WHERE id = ? AND case_id = ? AND state = 'uploading'`,
-  ).bind(deleted ? "pending" : "rejected", fileId, caseId).run();
-  if (rollback.meta.changes !== 1) console.error("transfer_upload_orphan");
+  await compensateUploadSlot(database, fileId, caseId, deleted ? "pending" : "rejected");
   return "unavailable";
 }

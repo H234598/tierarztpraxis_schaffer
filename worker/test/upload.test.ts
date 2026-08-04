@@ -28,7 +28,7 @@ function isoBmff(brand: string): Uint8Array {
     0,
     0,
     0,
-    24,
+    16,
     0x66,
     0x74,
     0x79,
@@ -38,6 +38,17 @@ function isoBmff(brand: string): Uint8Array {
     0,
     0,
     0,
+  );
+}
+
+function ftyp(major: string, ...compatible: string[]): Uint8Array {
+  const size = 16 + compatible.length * 4;
+  return bytes(
+    (size >>> 24) & 0xff, (size >>> 16) & 0xff, (size >>> 8) & 0xff, size & 0xff,
+    0x66, 0x74, 0x79, 0x70,
+    ...[...major].map((character) => character.charCodeAt(0)),
+    0, 0, 0, 0,
+    ...compatible.flatMap((brand) => [...brand].map((character) => character.charCodeAt(0))),
   );
 }
 
@@ -64,6 +75,8 @@ describe("Magic-Byte-Erkennung", () => {
     ["zu kurzes PNG", bytes(0x89, 0x50, 0x4e, 0x47)],
     ["unvollständiges WebP", bytes(0x52, 0x49, 0x46, 0x46)],
     ["AVIF", isoBmff("avif")],
+    ["HEIF mit kompatiblem AVIF", ftyp("mif1", "avif")],
+    ["MP4 mit kompatiblem AVIS", ftyp("isom", "avis")],
     ["unbekannte BMFF-Brand", isoBmff("free")],
     ["zufällige Bytes", bytes(1, 2, 3, 4)],
   ])("weist %s ab", (_label, prefix) => {
@@ -116,6 +129,10 @@ class UploadStatement implements D1PreparedStatement {
     if (this.query.includes("SET state = 'stored'") && this.database.finalizeThrows) {
       return Promise.reject(new Error("finalize failed"));
     }
+    if (this.query.includes("SET state = ?") && this.database.rollbackThrows > 0) {
+      this.database.rollbackThrows -= 1;
+      return Promise.reject(new Error("rollback failed"));
+    }
     const changes = this.database.nextChanges();
     if (changes === 1) {
       if (this.query.includes("state = 'rejected'")) this.database.state = "rejected";
@@ -135,6 +152,7 @@ class UploadDatabase implements Pick<D1Database, "prepare" | "batch"> {
   changes = [1, 1, 1];
   state = "pending";
   finalizeThrows = false;
+  rollbackThrows = 0;
   sessionRow: unknown = null;
   slot = { id: "file-1", r2_key: "cases/case-1/submissions/s/file-1", size: 3, mediaType: "image/jpeg" as const };
   prepare(query: string): D1PreparedStatement { return new UploadStatement(this, query); }
@@ -180,6 +198,22 @@ describe("Streaming-Upload", () => {
     expect(bucket.bytes).toEqual(new Uint8Array([0xff, 0xd8, 0xff]));
   });
 
+  it("wartet auf vollständigen ftyp-Box-Header vor R2-Write", async () => {
+    const prefix = ftyp("mif1");
+    const stream = validatedUploadStream({ size: prefix.byteLength, mediaType: "image/heif" });
+    const writer = stream.writable.getWriter();
+    const reader = stream.readable.getReader();
+    const firstRead = reader.read();
+    await writer.write(prefix.slice(0, 12));
+    expect(await Promise.race([
+      firstRead.then(() => "written"),
+      new Promise((resolve) => setTimeout(() => resolve("waiting"), 1)),
+    ])).toBe("waiting");
+    await writer.write(prefix.slice(12));
+    await writer.close();
+    expect((await firstRead).value).toEqual(prefix);
+  });
+
   it("weist falsche tatsächliche Länge ab und speichert nichts", async () => {
     const database = new UploadDatabase();
     const bucket = new UploadBucket();
@@ -215,6 +249,16 @@ describe("Streaming-Upload", () => {
     expect(bucket.deletes).toBe(1);
   });
 
+  it("bindet Auswahl, Claim und Finalisierung an vollständige Case-Quota", async () => {
+    const database = new UploadDatabase();
+    await expect(uploadReservedFile(database, new UploadBucket(), headers, uploadBody([0xff, 0xd8, 0xff]), "case-1", "session-1", "file-1", now)).resolves.toBe("stored");
+    const queries = database.calls.map((call) => call.query).join("\n");
+    expect(queries).toContain("submission_count BETWEEN 1 AND c.max_submissions");
+    expect(queries).toContain("total_bytes BETWEEN f.expected_size AND c.max_total_bytes");
+    expect(queries).toContain("f.delete_after > ?");
+    expect(queries).toContain("s.status = 'draft'");
+  });
+
   it("claim 0 schreibt nichts nach R2", async () => {
     const database = new UploadDatabase(); database.changes = [1, 0];
     const bucket = new UploadBucket();
@@ -235,6 +279,13 @@ describe("Streaming-Upload", () => {
     const bucket = new UploadBucket(); bucket.putThrows = true;
     await expect(uploadReservedFile(database, bucket, headers, uploadBody([0xff, 0xd8, 0xff]), "case-1", "session-1", "file-1", now)).resolves.toBe("unavailable");
     expect(database.state).toBe("pending");
+  });
+
+  it("kompensiert fehlendes Pending mit Rejected ohne Throw", async () => {
+    const database = new UploadDatabase(); database.changes = [1, 1, 1]; database.rollbackThrows = 1;
+    const bucket = new UploadBucket(); bucket.putThrows = true;
+    await expect(uploadReservedFile(database, bucket, headers, uploadBody([0xff, 0xd8, 0xff]), "case-1", "session-1", "file-1", now)).resolves.toBe("unavailable");
+    expect(database.state).toBe("rejected");
   });
 
   it("Größenabweichung löscht Objekt und sperrt Slot", async () => {

@@ -1,11 +1,41 @@
 import type { AllowedMediaType } from "./limits";
 
+const maximumFtypBytes = 64;
+
 function hasPrefix(bytes: Uint8Array, expected: readonly number[]): boolean {
   return expected.every((value, index) => bytes[index] === value);
 }
 
 function ascii(bytes: Uint8Array, start: number, length: number): string {
   return String.fromCharCode(...bytes.slice(start, start + length));
+}
+
+function ftypLength(prefix: Uint8Array): number | null {
+  if (prefix.byteLength < 8 || ascii(prefix, 4, 4) !== "ftyp") return null;
+  const size = (prefix[0]! << 24) + (prefix[1]! << 16) + (prefix[2]! << 8) + prefix[3]!;
+  return size >= 16 && size <= maximumFtypBytes && size % 4 === 0 ? size : null;
+}
+
+function isoBmffType(prefix: Uint8Array): AllowedMediaType | null {
+  const length = ftypLength(prefix);
+  if (length === null || prefix.byteLength < length) return null;
+  const brands = [];
+  for (let offset = 8; offset < length; offset += 4) brands.push(ascii(prefix, offset, 4));
+  if (brands.includes("avif") || brands.includes("avis")) return null;
+
+  const types = new Set<AllowedMediaType>();
+  for (const brand of brands) {
+    if (["isom", "iso2", "mp41", "mp42"].includes(brand)) types.add("video/mp4");
+    if (brand === "qt  ") types.add("video/quicktime");
+    if (["heic", "heix", "hevc", "hevx"].includes(brand)) types.add("image/heic");
+    if (["mif1", "msf1"].includes(brand)) types.add("image/heif");
+  }
+  return types.size === 1 ? [...types][0] ?? null : null;
+}
+
+export function needsMoreSignatureBytes(prefix: Uint8Array): boolean {
+  const length = ftypLength(prefix);
+  return length !== null && prefix.byteLength < length;
 }
 
 export function detectMediaType(prefix: Uint8Array): AllowedMediaType | null {
@@ -17,25 +47,5 @@ export function detectMediaType(prefix: Uint8Array): AllowedMediaType | null {
     return "image/webp";
   }
   if (hasPrefix(prefix, [0x1a, 0x45, 0xdf, 0xa3])) return "video/webm";
-  if (prefix.length < 12 || ascii(prefix, 4, 4) !== "ftyp") return null;
-
-  switch (ascii(prefix, 8, 4)) {
-    case "isom":
-    case "iso2":
-    case "mp41":
-    case "mp42":
-      return "video/mp4";
-    case "qt  ":
-      return "video/quicktime";
-    case "heic":
-    case "heix":
-    case "hevc":
-    case "hevx":
-      return "image/heic";
-    case "mif1":
-    case "msf1":
-      return "image/heif";
-    default:
-      return null;
-  }
+  return isoBmffType(prefix);
 }
