@@ -260,7 +260,7 @@ describe("Admin-Fallvertrag", () => {
       context(database, "/api/admin/cases/case-1/mark-exported", "POST", {}), admin,
     );
     expect(first!.status).toBe(200);
-    expect(database.batches[0]?.[1]?.query).toContain("INSERT INTO transfer_audit_events");
+    expect(database.batches[0]?.[1]?.query).toContain("exported_at = ?");
 
     const repeatedDatabase = new RecordingDatabase();
     repeatedDatabase.firstRows.push({ exported_at: "2026-08-04T10:00:00.000Z" });

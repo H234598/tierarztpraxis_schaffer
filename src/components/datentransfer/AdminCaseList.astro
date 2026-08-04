@@ -1,0 +1,25 @@
+<section class="admin-transfer-card" aria-labelledby="admin-list-heading">
+  <header>
+    <p class="eyebrow">Übersicht</p>
+    <h2 id="admin-list-heading">Fälle</h2>
+  </header>
+  <form class="admin-case-filter" data-admin-filter-form role="search">
+    <label>Status
+      <select name="status">
+        <option value="">Alle</option>
+        <option value="open">Offen</option>
+        <option value="closed">Geschlossen</option>
+        <option value="expired">Abgelaufen</option>
+        <option value="deleted">Gelöscht</option>
+      </select>
+    </label>
+    <label>Suche <input name="q" type="search" maxlength="160" /></label>
+    <button class="button button--secondary" type="submit">Filtern</button>
+  </form>
+  <div class="admin-case-list" data-admin-case-list aria-live="polite"></div>
+  <nav class="admin-pagination" aria-label="Fallseiten">
+    <button class="button button--secondary" type="button" data-admin-previous-page disabled>Zurück</button>
+    <span data-admin-page>Seite 1</span>
+    <button class="button button--secondary" type="button" data-admin-next-page disabled>Weiter</button>
+  </nav>
+</section>

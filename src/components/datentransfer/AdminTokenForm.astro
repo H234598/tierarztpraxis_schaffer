@@ -1,0 +1,36 @@
+<section class="admin-transfer-card" aria-labelledby="admin-create-heading">
+  <header>
+    <p class="eyebrow">Neuer Zugang</p>
+    <h2 id="admin-create-heading">Fall anlegen</h2>
+  </header>
+  <form class="admin-transfer-form" data-admin-create-form>
+    <label>Tiername <input name="petName" required maxlength="120" autocomplete="off" /></label>
+    <label>Interne Referenz <input name="internalReference" maxlength="160" autocomplete="off" /></label>
+    <label>Anzeigename Halter:in <input name="ownerDisplayName" maxlength="160" autocomplete="off" /></label>
+    <label class="admin-transfer-form__wide">Interne Notiz <textarea name="internalNote" maxlength="4000" rows="3"></textarea></label>
+    <label>Gültigkeit in Tagen <input name="expiresInDays" type="number" min="1" max="30" value="14" required /></label>
+    <label>Maximale Einsendungen <input name="maxSubmissions" type="number" min="1" max="5" value="3" required /></label>
+    <label>Gesamtkontingent in MiB <input name="maxTotalMib" type="number" min="1" max="250" value="100" required /></label>
+    <label class="admin-transfer-choice"><input name="allowReplies" type="checkbox" checked /> Antworten erlauben</label>
+    <label class="admin-transfer-choice"><input name="allowCallback" type="checkbox" checked /> Rückrufwunsch erlauben</label>
+    <button class="button admin-transfer-form__wide" type="submit">Fall und Token anlegen</button>
+  </form>
+</section>
+
+<dialog class="admin-token-dialog" data-admin-token-dialog aria-labelledby="admin-token-heading">
+  <div class="admin-token-sheet">
+    <h2 id="admin-token-heading">Token einmalig sichern</h2>
+    <p>Nach Schließen oder Neuladen ist dieser Klartexttoken nicht mehr verfügbar.</p>
+    <dl class="admin-token-case-data">
+      <div><dt>Fall-ID</dt><dd data-admin-token-case-id></dd></div>
+      <div><dt>Tier</dt><dd data-admin-token-pet-name></dd></div>
+    </dl>
+    <label>Freigabelink <textarea data-admin-share-url readonly rows="4"></textarea></label>
+    <p data-admin-token-expiry></p>
+    <div class="admin-token-actions">
+      <button class="button" type="button" data-admin-copy-token>Link kopieren</button>
+      <button class="button button--secondary" type="button" data-admin-print-token>Drucken</button>
+      <button class="button button--secondary" type="button" data-admin-close-token>Schließen</button>
+    </div>
+  </div>
+</dialog>

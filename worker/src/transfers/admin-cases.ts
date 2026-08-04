@@ -323,32 +323,7 @@ async function createToken(context: DevelopmentRouteContext, admin: VerifiedAdmi
   const now = nowDate.toISOString();
   const expiresAt = new Date(Math.min(Date.parse(transferCase.expires_at), Date.parse(isoAfter(nowDate, expiresInDays)))).toISOString();
   const statements: D1PreparedStatement[] = [
-    database.prepare(`INSERT INTO transfer_tokens (id, case_id, token_version, token_hmac, token_hint, created_at, expires_at)
-      SELECT ?, ?, ?, ?, ?, ?, ?
-      WHERE EXISTS (
-        SELECT 1 FROM transfer_cases
-        WHERE id = ? AND status = 'open' AND expires_at > ?
-      )`).bind(
-      tokenId, caseId, generated.storage.version, generated.storage.tokenHmac, generated.storage.tokenHint, now, expiresAt,
-      caseId, now,
-    ),
-    database.prepare(`INSERT INTO transfer_audit_events
-      (id, case_id, event_type, actor_type, actor_reference, details_json, created_at)
-      SELECT ?, case_id, ?, 'admin', ?, ?, ?
-      FROM transfer_cases
-      WHERE id = ? AND status = 'open' AND expires_at > ? AND EXISTS (
-        SELECT 1 FROM transfer_tokens WHERE id = ? AND case_id = ?
-      )`).bind(
-      crypto.randomUUID(),
-      revokeExisting ? "token_rotated" : "token_created",
-      admin.subject,
-      auditDetails(admin),
-      now,
-      caseId,
-      now,
-      tokenId,
-      caseId,
-    ),
+    database.prepare(`INSERT INTO transfer_tokens (id, case_id, token_version, token_hmac, token_hint, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)`).bind(tokenId, caseId, generated.storage.version, generated.storage.tokenHmac, generated.storage.tokenHint, now, expiresAt),
   ];
   if (revokeExisting) {
     statements.push(
@@ -356,10 +331,8 @@ async function createToken(context: DevelopmentRouteContext, admin: VerifiedAdmi
       database.prepare(`UPDATE transfer_sessions SET revoked_at = ? WHERE case_id = ? AND revoked_at IS NULL AND EXISTS (SELECT 1 FROM transfer_tokens WHERE id = ? AND case_id = ?)`).bind(now, caseId, tokenId, caseId),
     );
   }
-  const results = await database.batch(statements);
-  if ((results[0]?.meta.changes ?? 0) !== 1) {
-    return transferError(context.requestId, 409, "invalid_state", "Invalid state");
-  }
+  statements.push(auditStatement(database, caseId, revokeExisting ? "token_rotated" : "token_created", admin, now));
+  await database.batch(statements);
   return json({ ok: true, tokenId, token: generated.token, shareUrl: `/datentransfer/#token=${generated.token}`, expiresAt }, 201);
 }
 
@@ -410,7 +383,7 @@ async function markExported(context: DevelopmentRouteContext, admin: VerifiedAdm
     database.prepare(`INSERT INTO transfer_audit_events
       (id, case_id, event_type, actor_type, actor_reference, details_json, created_at)
       SELECT ?, id, 'case_exported', 'admin', ?, ?, ? FROM transfer_cases
-      WHERE id = ? AND exported_at IS NULL`).bind(crypto.randomUUID(), admin.subject, auditDetails(admin), now, caseId),
+      WHERE id = ? AND exported_at = ?`).bind(crypto.randomUUID(), admin.subject, auditDetails(admin), now, caseId, now),
   ]);
   if ((results[0]?.meta.changes ?? 0) !== 1) return transferError(context.requestId, 409, "invalid_state", "Invalid state");
   return json({ ok: true, exportedAt: now });

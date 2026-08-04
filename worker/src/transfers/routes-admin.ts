@@ -13,6 +13,7 @@ export async function authenticateAdminRequest(
   context: DevelopmentRouteContext,
   verifier: AccessVerifier = accessVerifier,
 ): Promise<VerifiedAdminIdentity | null> {
+  if (context.request.headers.get("origin") !== context.url.origin) return null;
   return verifier.verify(
     context.request.headers.get("cf-access-jwt-assertion"),
     context.env.ACCESS_TEAM_DOMAIN,
@@ -24,18 +25,7 @@ export async function routeAdmin(
   context: DevelopmentRouteContext,
   verifier: AccessVerifier = accessVerifier,
 ): Promise<Response> {
-  const requestOrigin = context.request.headers.get("origin");
-  const isFileRoute = context.url.pathname.startsWith("/api/admin/files/");
-  if (context.request.method !== "GET") {
-    if (requestOrigin !== context.url.origin) {
-      return transferError(context.requestId, 403, "forbidden", "Request forbidden");
-    }
-  } else if (isFileRoute || requestOrigin !== null) {
-    if (requestOrigin !== context.url.origin) {
-      return transferError(context.requestId, 403, "forbidden", "Request forbidden");
-    }
-  }
-  if (isFileRoute && requestOrigin === null) {
+  if (context.request.headers.get("origin") !== context.url.origin) {
     return transferError(context.requestId, 403, "forbidden", "Request forbidden");
   }
   const admin = await authenticateAdminRequest(context, verifier);

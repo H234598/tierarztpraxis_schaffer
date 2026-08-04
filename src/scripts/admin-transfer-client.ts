@@ -60,9 +60,6 @@ export function setupAdminTransferClient(): void {
   const note = element<HTMLElement>(root, "[data-admin-internal-note]");
   const tokenList = element<HTMLUListElement>(root, "[data-admin-token-list]");
   const submissionList = element<HTMLUListElement>(root, "[data-admin-submission-list]");
-  const fileList = element<HTMLUListElement>(root, "[data-admin-file-list]");
-  const linkList = element<HTMLUListElement>(root, "[data-admin-link-list]");
-  const replyList = element<HTMLUListElement>(root, "[data-admin-reply-list]");
   const auditList = element<HTMLUListElement>(root, "[data-admin-audit-list]");
   const dialog = element<HTMLDialogElement>(document, "[data-admin-token-dialog]");
   const shareUrl = element<HTMLTextAreaElement>(dialog, "[data-admin-share-url]");
@@ -82,12 +79,8 @@ export function setupAdminTransferClient(): void {
     if (error instanceof AdminRequestError && error.status === 401) {
       workspace.hidden = true; authRequired.hidden = false; detail.hidden = true;
       list.replaceChildren(); facts.replaceChildren(); tokenList.replaceChildren();
-      submissionList.replaceChildren(); fileList.replaceChildren(); linkList.replaceChildren(); replyList.replaceChildren(); auditList.replaceChildren();
-      text(note, ""); noteSection.hidden = true;
-      detailHeading.textContent = "";
-      tokenCaseId.textContent = ""; tokenPetName.textContent = ""; tokenExpiry.textContent = "";
-      shareUrl.value = ""; if (dialog.open) dialog.close();
       identity.textContent = ""; selectedCaseId = ""; selectedStatus = "";
+      shareUrl.value = ""; if (dialog.open) dialog.close();
     }
     setStatus(error instanceof Error ? error.message : "Anfrage fehlgeschlagen.");
   };
@@ -145,11 +138,11 @@ export function setupAdminTransferClient(): void {
       }
       submissionList.replaceChildren();
       for (const submission of records(payload.submissions)) { const item = document.createElement("li"); text(item, `${string(submission.title)} · ${string(submission.status)}`); submissionList.append(item); }
-      fileList.replaceChildren();
+      const fileList = element<HTMLUListElement>(root, "[data-admin-file-list]"); fileList.replaceChildren();
       for (const file of records(payload.files)) { const item = document.createElement("li"); const link = document.createElement("a"); link.href = `/api/admin/files/${encodeURIComponent(string(file.id))}`; text(link, `${string(file.originalName)} · ${string(file.state)}`); item.append(link); fileList.append(item); }
-      linkList.replaceChildren();
+      const linkList = element<HTMLUListElement>(root, "[data-admin-link-list]"); linkList.replaceChildren();
       for (const external of records(payload.links)) { const item = document.createElement("li"); text(item, `${string(external.label) || "Link"}: ${string(external.url)}`); linkList.append(item); }
-      replyList.replaceChildren();
+      const replyList = element<HTMLUListElement>(root, "[data-admin-reply-list]"); replyList.replaceChildren();
       for (const reply of records(payload.replies)) { const item = document.createElement("li"); text(item, `${string(reply.body)} · ${string(reply.createdAt)}`); replyList.append(item); }
       auditList.replaceChildren();
       for (const event of records(payload.audit)) { const item = document.createElement("li"); text(item, `${string(event.eventType)} · ${string(event.createdAt)}`); auditList.append(item); }
@@ -158,25 +151,14 @@ export function setupAdminTransferClient(): void {
     } catch (error) { failClosed(error); }
   };
 
-  const preserveOneTimeToken = (payload: Record<string, unknown> | null): void => {
-    if (!payload || typeof payload.shareUrl !== "string" || typeof payload.token !== "string") return;
-    showToken(payload);
-  };
-  const mutate = async (button: HTMLButtonElement, path: string, method: "POST" | "PATCH", body: unknown, refreshDetail = false, keepToken = false): Promise<Record<string, unknown> | null> => {
+  const mutate = async (button: HTMLButtonElement, path: string, method: "POST" | "PATCH", body: unknown, refreshDetail = false): Promise<Record<string, unknown> | null> => {
     setBusy(button, true);
-    let payload: Record<string, unknown> | null = null;
     try {
-      payload = await requestAdminJson(path, { method, body });
+      const payload = await requestAdminJson(path, { method, body });
       setStatus("Änderung gespeichert.");
       if (refreshDetail && selectedCaseId) await loadDetail(selectedCaseId);
       await loadCases(); return payload;
-    } catch (error) {
-      if (keepToken && !(error instanceof AdminRequestError && error.status === 401)) {
-        preserveOneTimeToken(payload);
-      }
-      failClosed(error);
-      return null;
-    }
+    } catch (error) { failClosed(error); return null; }
     finally { setBusy(button, false); }
   };
 
@@ -197,19 +179,13 @@ export function setupAdminTransferClient(): void {
   filterForm.addEventListener("submit", (event) => { event.preventDefault(); page = 1; void loadCases().catch(failClosed); });
   previous.addEventListener("click", () => { if (page > 1) { page -= 1; void loadCases().catch(failClosed); } });
   next.addEventListener("click", () => { if (page * 20 < total) { page += 1; void loadCases().catch(failClosed); } });
-  const clearOneTimeToken = (): void => {
-    shareUrl.value = ""; tokenCaseId.textContent = ""; tokenPetName.textContent = ""; tokenExpiry.textContent = "";
-  };
+  const clearOneTimeToken = (): void => { shareUrl.value = ""; tokenCaseId.textContent = ""; tokenPetName.textContent = ""; };
   dialog.addEventListener("close", clearOneTimeToken);
-  addEventListener("pagehide", clearOneTimeToken);
-  addEventListener("pageshow", (event) => {
-    if (event.persisted) clearOneTimeToken();
-  });
   element<HTMLButtonElement>(dialog, "[data-admin-close-token]").addEventListener("click", () => dialog.close());
   element<HTMLButtonElement>(dialog, "[data-admin-copy-token]").addEventListener("click", async () => { await navigator.clipboard.writeText(shareUrl.value); setStatus("Freigabelink kopiert."); });
   element<HTMLButtonElement>(dialog, "[data-admin-print-token]").addEventListener("click", () => window.print());
-  element<HTMLButtonElement>(detail, "[data-admin-new-token]").addEventListener("click", async (event) => { const payload = await mutate(event.currentTarget as HTMLButtonElement, `/api/admin/cases/${encodeURIComponent(selectedCaseId)}/tokens`, "POST", { revokeExisting: false }, false, true); if (payload) showToken(payload); });
-  element<HTMLButtonElement>(detail, "[data-admin-rotate-token]").addEventListener("click", async (event) => { const payload = await mutate(event.currentTarget as HTMLButtonElement, `/api/admin/cases/${encodeURIComponent(selectedCaseId)}/tokens`, "POST", { revokeExisting: true }, true, true); if (payload) showToken(payload); });
+  element<HTMLButtonElement>(detail, "[data-admin-new-token]").addEventListener("click", async (event) => { const payload = await mutate(event.currentTarget as HTMLButtonElement, `/api/admin/cases/${encodeURIComponent(selectedCaseId)}/tokens`, "POST", { revokeExisting: false }); if (payload) showToken(payload); });
+  element<HTMLButtonElement>(detail, "[data-admin-rotate-token]").addEventListener("click", async (event) => { const payload = await mutate(event.currentTarget as HTMLButtonElement, `/api/admin/cases/${encodeURIComponent(selectedCaseId)}/tokens`, "POST", { revokeExisting: true }, true); if (payload) showToken(payload); });
   element<HTMLButtonElement>(detail, "[data-admin-toggle-status]").addEventListener("click", (event) => void mutate(event.currentTarget as HTMLButtonElement, `/api/admin/cases/${encodeURIComponent(selectedCaseId)}/status`, "PATCH", { status: selectedStatus === "open" ? "closed" : "open" }, true));
   element<HTMLButtonElement>(detail, "[data-admin-mark-exported]").addEventListener("click", (event) => void mutate(event.currentTarget as HTMLButtonElement, `/api/admin/cases/${encodeURIComponent(selectedCaseId)}/mark-exported`, "POST", {}, true));
 

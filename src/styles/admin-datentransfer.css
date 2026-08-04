@@ -1,0 +1,44 @@
+@layer reset, tokens, base, components;
+
+@layer components {
+  .admin-transfer-shell, .admin-transfer-workspace { display: grid; gap: 1.5rem; padding-block: clamp(1.5rem, 5vw, 3rem); }
+  .admin-transfer-workspace { padding-block: 0; }
+  .admin-transfer-card, .admin-auth-required { display: grid; gap: 1rem; min-width: 0; padding: clamp(1rem, 4vw, 2rem); border: 1px solid var(--border); border-radius: var(--radius); background: var(--paper); box-shadow: var(--shadow-sm); }
+  .admin-auth-required { border-left: .4rem solid var(--danger); background: var(--danger-soft); }
+  .admin-transfer-status:not(:empty) { padding: .8rem 1rem; border-radius: var(--radius-sm); background: var(--green-soft); font-weight: 700; }
+  .admin-transfer-form, .admin-case-filter { display: grid; gap: 1rem; }
+  .admin-transfer-form label, .admin-case-filter label, .admin-token-dialog label { display: grid; gap: .35rem; font-weight: 750; }
+  .admin-transfer-choice { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+  .admin-transfer-choice input { min-height: 1.25rem; width: 1.25rem; }
+  .admin-case-list, .admin-case-detail, .admin-case-facts { display: grid; gap: 1rem; }
+  .admin-case-row { display: grid; gap: .5rem; min-width: 0; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+  .admin-case-row button { justify-self: start; }
+  .admin-case-facts { grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); }
+  .admin-case-facts > div { min-width: 0; padding: .75rem; background: var(--green-soft); border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+  .admin-case-facts dt { font-weight: 800; }
+  .admin-case-actions, .admin-token-actions, .admin-pagination { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+  .admin-pagination { justify-content: space-between; }
+  .admin-token-list, .admin-submission-list, .admin-file-list, .admin-link-list, .admin-reply-list, .admin-audit-list { display: grid; gap: .65rem; padding-left: 1.25rem; }
+  .admin-token-list li { overflow-wrap: anywhere; }
+  .admin-token-dialog { width: min(42rem, calc(100% - 2rem)); padding: 0; border: 1px solid var(--border); border-radius: var(--radius); }
+  .admin-token-dialog::backdrop { background: rgb(0 0 0 / .55); }
+  .admin-token-sheet { display: grid; gap: 1rem; padding: clamp(1rem, 4vw, 2rem); }
+  .admin-token-case-data { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: .75rem; }
+  .admin-token-case-data > div { padding: .75rem; background: var(--green-soft); border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+  .admin-token-case-data dt { font-weight: 800; }
+  [hidden] { display: none !important; }
+}
+
+@media (min-width: 48rem) {
+  .admin-transfer-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-transfer-form__wide { grid-column: 1 / -1; }
+  .admin-case-filter { grid-template-columns: repeat(2, minmax(0, 1fr)) auto; align-items: end; }
+}
+
+@media print {
+  body * { visibility: hidden !important; }
+  .admin-token-dialog[open], .admin-token-dialog[open] * { visibility: visible !important; }
+  .admin-token-dialog[open] { position: absolute; inset: 0; display: block; width: 100%; max-width: none; border: 0; }
+  .admin-token-dialog::backdrop { display: none; }
+  .admin-token-actions, .admin-internal-note { display: none !important; }
+}

@@ -83,7 +83,16 @@ export function parseTransferToken(value: string): ParsedTransferToken | null {
 export async function generateTransferToken(
   tokenPepper: string,
 ): Promise<GeneratedTransferToken> {
-  const publicCaseId = generatePublicCaseId();
+  return generateTransferTokenForPublicCaseId(generatePublicCaseId(), tokenPepper);
+}
+
+export async function generateTransferTokenForPublicCaseId(
+  publicCaseId: string,
+  tokenPepper: string,
+): Promise<GeneratedTransferToken> {
+  if (!publicCaseIdPattern.test(publicCaseId)) {
+    throw new TypeError("Invalid public case ID");
+  }
   const secret = generateTokenSecret();
 
   return {
