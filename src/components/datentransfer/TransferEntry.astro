@@ -1,0 +1,47 @@
+---
+import { siteConfig } from "../../config/site";
+import { withBase } from "../../utils/paths";
+---
+
+<aside class="transfer-warning" data-transfer-warning aria-labelledby="transfer-warning-heading">
+  <h2 id="transfer-warning-heading">Wichtig vor dem Datentransfer</h2>
+  <p>
+    Dieser Datentransfer ist <strong>kein Notfallkanal</strong>. Bei einem Notfall rufen Sie die Praxis sofort unter
+    <a href={siteConfig.phone.href}>{siteConfig.phone.display}</a> an.
+  </p>
+  <p>Eine digitale Antwort ist nicht garantiert. Bitte warten Sie bei dringenden Beschwerden nicht auf eine Rückmeldung.</p>
+  <p>Pro Bild sind höchstens 12 MiB, pro Video höchstens 50 MiB und insgesamt höchstens acht Dateien erlaubt.</p>
+  <p><a href={withBase("datenschutz/")}>Datenschutzhinweise zum Datentransfer</a></p>
+</aside>
+
+<section class="transfer-card" aria-labelledby="transfer-entry-heading">
+  <header class="transfer-heading">
+    <p class="eyebrow">Geschützter Zugang</p>
+    <h2 id="transfer-entry-heading">Datentransfer öffnen</h2>
+    <p>Verwenden Sie den persönlichen Token aus Ihrer Praxisnachricht.</p>
+  </header>
+  <form class="transfer-entry" data-transfer-entry>
+    <label>
+      <span>Datentransfer-Token</span>
+      <input
+        data-transfer-token
+        name="token"
+        type="password"
+        autocomplete="off"
+        maxlength="256"
+      />
+    </label>
+    <div
+      class="cf-turnstile"
+      data-sitekey={siteConfig.turnstileSiteKey}
+      data-action="datatransfer_session"
+      data-theme="light"
+    ></div>
+    <button class="button" type="submit">Sichere Sitzung starten</button>
+  </form>
+  <p class="transfer-status" role="status" aria-live="polite" data-transfer-status>
+    Noch keine sichere Sitzung.
+  </p>
+</section>
+
+<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>

@@ -1,0 +1,36 @@
+---
+import TransferEntry from "../../components/datentransfer/TransferEntry.astro";
+import TransferReportForm from "../../components/datentransfer/TransferReportForm.astro";
+import TransferThread from "../../components/datentransfer/TransferThread.astro";
+import TransferUploadList from "../../components/datentransfer/TransferUploadList.astro";
+import TransferLayout from "../../layouts/TransferLayout.astro";
+---
+
+<TransferLayout>
+  <header class="page-header transfer-page-header">
+    <div class="content">
+      <p class="eyebrow">Datentransfer</p>
+      <h1>Berichte und Dateien sicher übermitteln</h1>
+      <p>Für einen bereits von der Praxis angelegten Fall. Kein allgemeines Kontakt- oder Notfallformular.</p>
+    </div>
+  </header>
+
+  <div class="transfer-shell content" data-transfer-root data-state="entry">
+    <TransferEntry />
+    <div class="transfer-session" data-transfer-session hidden>
+      <div class="transfer-session__actions">
+        <p>Diese Sitzung ist nur auf diesem Gerät geöffnet.</p>
+        <button class="button button--secondary" type="button" data-transfer-logout>Sicher abmelden</button>
+      </div>
+      <TransferThread />
+      <TransferReportForm />
+      <TransferUploadList />
+    </div>
+  </div>
+</TransferLayout>
+
+<script>
+  import { setupTransferClient } from "../../scripts/transfer-client";
+
+  setupTransferClient();
+</script>
