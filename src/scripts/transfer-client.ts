@@ -715,7 +715,19 @@ export function setupTransferClient(): void {
   let currentCase: PublicTransferCase | null = null;
   let activeDraft: ActiveDraft | null = null;
   let caseRecovery: "session" | "finalized" | null = null;
+  let caseLoadGeneration = 0;
   const uploadRows = new Map<number, UploadRow>();
+
+  const beginCaseLoad = (): number => ++caseLoadGeneration;
+
+  const invalidateCaseLoads = (): void => {
+    caseLoadGeneration += 1;
+    caseRecovery = null;
+  };
+
+  const recoveryOwnsFocus = (...targets: readonly HTMLElement[]): boolean =>
+    document.activeElement === document.body ||
+    targets.includes(document.activeElement as HTMLElement);
 
   const setState = (state: TransferUiState): void => {
     root.dataset.state = state;
@@ -759,9 +771,9 @@ export function setupTransferClient(): void {
   };
 
   const expireSession = (message: string): void => {
+    invalidateCaseLoads();
     clearTransferSession(sessionStorage);
     activeDraft = null;
-    caseRecovery = null;
     setState("expired");
     sessionStatus.textContent = message;
     tokenInput.focus();
@@ -950,7 +962,10 @@ export function setupTransferClient(): void {
     reportHeading.focus();
   };
 
-  const completeFinalizedDraft = (snapshot: TransferCaseSnapshot): void => {
+  const completeFinalizedDraft = (
+    snapshot: TransferCaseSnapshot,
+    returnFocus = true,
+  ): void => {
     renderThread(snapshot);
     reportForm.reset();
     toggleCallback();
@@ -960,56 +975,83 @@ export function setupTransferClient(): void {
     uploadStatus.textContent = "";
     finalStatus.textContent = "Bericht und Dateien wurden sicher übermittelt.";
     setState("ready");
-    threadHeading.focus();
+    if (returnFocus) threadHeading.focus();
   };
 
   const recoverCase = async (): Promise<void> => {
     const recovery = caseRecovery;
     if (!recovery || caseRetryButton.disabled) return;
+    const generation = beginCaseLoad();
     caseRetryButton.disabled = true;
     try {
       const snapshot = await loadCase();
+      if (
+        generation !== caseLoadGeneration ||
+        root.dataset.state !== "recovering" ||
+        caseRecovery !== recovery
+      ) return;
+      const returnFocus = recoveryOwnsFocus(caseRetryButton);
       if (recovery === "finalized") {
         const draft = activeDraft;
         if (!draft || draft.phase !== "finalized") return;
-        completeFinalizedDraft(snapshot);
+        completeFinalizedDraft(snapshot, returnFocus);
       } else {
         renderThread(snapshot);
         caseRecovery = null;
         setState("ready");
         sessionStatus.textContent = "Sichere Sitzung aktiv.";
-        caseHeading.focus();
+        if (returnFocus) caseHeading.focus();
       }
     } catch (error) {
+      if (
+        generation !== caseLoadGeneration ||
+        root.dataset.state !== "recovering" ||
+        caseRecovery !== recovery
+      ) return;
       if (error instanceof TransferRequestError && error.status === 401) {
         expireSession(error.message);
         return;
       }
+      const returnFocus = recoveryOwnsFocus(caseRetryButton);
       const message = error instanceof TransferRequestError
         ? error.message
         : "Die Fallansicht konnte nicht geladen werden.";
       if (recovery === "finalized") finalStatus.textContent = message;
       else sessionStatus.textContent = message;
       caseRetryButton.disabled = false;
-      caseRetryButton.focus();
+      if (returnFocus) caseRetryButton.focus();
     }
   };
 
   const loadFinalizedCase = async (draft: ActiveDraft): Promise<void> => {
+    const generation = beginCaseLoad();
     try {
-      completeFinalizedDraft(await loadCase());
+      const snapshot = await loadCase();
+      if (
+        generation !== caseLoadGeneration ||
+        root.dataset.state !== "submitting" ||
+        activeDraft !== draft ||
+        draft.phase !== "finalized"
+      ) return;
+      completeFinalizedDraft(snapshot, recoveryOwnsFocus());
     } catch (error) {
+      if (
+        generation !== caseLoadGeneration ||
+        root.dataset.state !== "submitting" ||
+        activeDraft !== draft ||
+        draft.phase !== "finalized"
+      ) return;
       if (error instanceof TransferRequestError && error.status === 401) {
         expireSession(error.message);
         return;
       }
-      if (activeDraft !== draft || draft.phase !== "finalized") return;
+      const returnFocus = recoveryOwnsFocus();
       caseRecovery = "finalized";
       setState("recovering");
       finalStatus.textContent = error instanceof TransferRequestError
         ? error.message
         : "Die Einreichung wurde bestätigt, aber die Fallansicht konnte nicht geladen werden.";
-      caseRetryButton.focus();
+      if (returnFocus) caseRetryButton.focus();
     }
   };
 
@@ -1131,22 +1173,34 @@ export function setupTransferClient(): void {
     storeCsrfToken(sessionStorage, session.csrfToken);
     tokenInput.value = "";
     fragmentToken = "";
+    const generation = beginCaseLoad();
     try {
-      renderThread(await loadCase());
+      const snapshot = await loadCase();
+      if (
+        generation !== caseLoadGeneration ||
+        root.dataset.state !== "loading"
+      ) return;
+      const returnFocus = recoveryOwnsFocus();
+      renderThread(snapshot);
       setState("ready");
       sessionStatus.textContent = "Sichere Sitzung aktiv.";
-      caseHeading.focus();
+      if (returnFocus) caseHeading.focus();
     } catch (error) {
+      if (
+        generation !== caseLoadGeneration ||
+        root.dataset.state !== "loading"
+      ) return;
       if (error instanceof TransferRequestError && error.status === 401) {
         expireSession(error.message);
         return;
       }
+      const returnFocus = recoveryOwnsFocus();
       caseRecovery = "session";
       setState("recovering");
       sessionStatus.textContent = error instanceof TransferRequestError
         ? error.message
         : "Die Fallansicht konnte nicht geladen werden.";
-      caseRetryButton.focus();
+      if (returnFocus) caseRetryButton.focus();
     }
   });
 
@@ -1256,6 +1310,7 @@ export function setupTransferClient(): void {
   finalizeRetryButton.addEventListener("click", () => void finishDraft());
 
   logoutButton.addEventListener("click", async () => {
+    invalidateCaseLoads();
     logoutButton.disabled = true;
     try {
       await logoutTransferSession(sessionStorage);
@@ -1280,24 +1335,35 @@ export function setupTransferClient(): void {
   if (readCsrfToken(sessionStorage) && !fragmentToken) {
     setState("loading");
     sessionStatus.textContent = "Vorhandene sichere Sitzung wird geprüft …";
+    const generation = beginCaseLoad();
     void loadCase()
       .then((snapshot) => {
+        if (
+          generation !== caseLoadGeneration ||
+          root.dataset.state !== "loading"
+        ) return;
+        const returnFocus = recoveryOwnsFocus();
         renderThread(snapshot);
         setState("ready");
         sessionStatus.textContent = "Sichere Sitzung wiederhergestellt.";
-        caseHeading.focus();
+        if (returnFocus) caseHeading.focus();
       })
       .catch((error: unknown) => {
+        if (
+          generation !== caseLoadGeneration ||
+          root.dataset.state !== "loading"
+        ) return;
         if (error instanceof TransferRequestError && error.status === 401) {
           expireSession(error.message);
           return;
         }
+        const returnFocus = recoveryOwnsFocus();
         caseRecovery = "session";
         setState("recovering");
         sessionStatus.textContent = error instanceof TransferRequestError
           ? error.message
           : "Die Fallansicht konnte nicht geladen werden.";
-        caseRetryButton.focus();
+        if (returnFocus) caseRetryButton.focus();
       });
   }
 }
