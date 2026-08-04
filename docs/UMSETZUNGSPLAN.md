@@ -2463,24 +2463,26 @@ git commit -m "feat: d1-schema für datentransfer anlegen"
 - Create: `worker/src/transfers/sessions.ts`
 - Test: `worker/test/token.test.ts`, `worker/test/session.test.ts`
 
-- [ ] Tokenparser-Failing Tests:
+- [x] Tokenparser-Failing Tests:
   - falsche Version;
   - zu kurzer Secretteil;
   - Whitespace;
   - zusätzlicher Punkt;
   - abgelaufen;
   - widerrufen.
-- [ ] HMAC-Helfer.
-- [ ] konstante Vergleichsfunktion.
-- [ ] Sessioncookie.
-- [ ] CSRF-Rotation.
-- [ ] kein Token in Logs.
-- [ ] Tests in Workers Runtime.
-- [ ] Commit:
+- [x] HMAC-Helfer.
+- [x] konstante Vergleichsfunktion über natives `crypto.subtle.verify()`.
+- [x] Sessioncookie.
+- [x] CSRF-Rotation.
+- [x] kein Token in Logs.
+- [x] Tests gegen Workers-Web-Crypto-Oberfläche.
+- [x] Commit:
 
 ```bash
 git commit -m "feat: sichere datentransfer-tokens und sessions"
 ```
+
+**Abschluss 2026-08-04:** HMAC-SHA-256 nutzt ausschließlich Workers Web Crypto mit nicht extrahierbaren Schlüsseln; Signaturprüfung erfolgt nach strikter Hexvalidierung über natives `crypto.subtle.verify()`. Transfer-, Session- und CSRF-Secrets stammen aus jeweils 32 Bytes `crypto.getRandomValues()` und verwenden kanonisches Base64URL ohne Padding. Transfertokens erzwingen Version, genau zwei Separatoren, 12–16 Base32-Zeichen, Mindestentropie, Ablauf, Widerruf und gespeicherte HMAC-Bindung. Sessions erzwingen den host-only Cookievertrag, genau einen kanonischen Cookie, 30 Minuten Sliding Expiry und zwölf Stunden absolute Laufzeit; Session- und CSRF-HMACs sind mit `session-v1\0` beziehungsweise `csrf-v1\0` getrennt. CSRF-Rotation ersetzt den gespeicherten HMAC und macht den alten Token unwirksam. RED: beide fokussierten Suites scheiterten an den vier fehlenden Produktionsmodulen. GREEN: 39/39 fokussierte, 66/66 Worker- und 65/65 Website-Tests sowie `worker:check`. Keine Node-Crypto-API, Dependency, Logs, Config-, Migrations-, Router-, Frontend- oder externe Zustandsänderung. Task-13-R2- und Task-14-Remote-Migrationsblock bleiben unverändert.
 
 ---
 
