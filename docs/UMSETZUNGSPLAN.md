@@ -1292,6 +1292,8 @@ CREATE TABLE transfer_cases (
   owner_display_name TEXT CHECK(owner_display_name IS NULL OR length(owner_display_name) <= 160),
   internal_reference TEXT CHECK(internal_reference IS NULL OR length(internal_reference) <= 160),
   public_reference TEXT CHECK(public_reference IS NULL OR length(public_reference) <= 160),
+  internal_note TEXT CHECK(internal_note IS NULL OR length(internal_note) <= 4000),
+  callback_note TEXT CHECK(callback_note IS NULL OR length(callback_note) <= 4000),
   status TEXT NOT NULL DEFAULT 'open'
     CHECK(status IN ('open', 'closed', 'expired', 'deleted')),
   allow_replies INTEGER NOT NULL DEFAULT 1 CHECK(allow_replies IN (0, 1)),
@@ -1438,6 +1440,8 @@ CREATE INDEX idx_transfer_files_submission_state
 CREATE INDEX idx_transfer_notifications_state_created
   ON transfer_notifications(state, created_at);
 ```
+
+`internal_note` und `callback_note` sind ausschließlich für Admin- und Serverzugriffe bestimmt und dürfen nie in Public-DTOs oder Customer-API-Antworten erscheinen.
 
 ---
 
@@ -2443,7 +2447,9 @@ git commit -m "chore: d1 r2 queues und same-origin-api konfigurieren"
 git commit -m "feat: d1-schema für datentransfer anlegen"
 ```
 
-**Zwischenstand 2026-08-04 – lokal fertig, Remote-Freigabe ausstehend:** Die Migration `0001_datatransfer.sql` bildet §17 mit neun Fachtabellen und sechs benannten Indizes ab. `transfer_submissions.case_id` referenziert `transfer_cases(id) ON DELETE CASCADE`; damit entfernt eine Falllöschung auch Submissions und deren abhängige Dateien und Links, während Audit-Ereignisse gemäß Schema mit `case_id = NULL` erhalten bleiben. Der ausführbare Schema-Test wendet die Migration über Wrangler in isoliertem lokalen State an und belegt Tabellen, Indizes, Status-/Boolean-/Längen-/Größenchecks, eindeutige `public_id`/Token-HMACs, Foreign-Key-Rejection, die vollständige Löschkaskade und einen zweiten idempotenten Migrationslauf. Der dokumentierte lokale Paketlauf führte 17 SQL-Befehle erfolgreich aus; `d1 migrations list` meldete anschließend keine offene Migration. `worker:check`, 26 Worker-Tests und 65 Website-Tests sind grün. Der read-only geprüfte Development-D1-Stand bleibt unverändert bei null Tabellen in EU-Jurisdiktion; aktueller Time-Travel-Bookmark: `00000001-00000000-000050bd-098c67ca6b334390ef3948b650c190ea`. Ohne neue manuelle Bestätigung wurde keine Remote-Migration angewandt und kein Restore, Deployment oder Production-Zugriff ausgeführt. Task 14 bleibt bis zum bestätigten Remote-Lauf teilweise offen.
+**Zwischenstand 2026-08-04 – lokal fertig, Remote-Freigabe ausstehend:** Die Migration `0001_datatransfer.sql` bildet §17 mit neun Fachtabellen und sechs benannten Indizes ab. `transfer_submissions.case_id` referenziert `transfer_cases(id) ON DELETE CASCADE`; damit entfernt eine Falllöschung auch Submissions und deren abhängige Dateien und Links, während Audit-Ereignisse gemäß Schema mit `case_id = NULL` erhalten bleiben. Der ausführbare Schema-Test wendet die Migration über Wrangler in isoliertem lokalen State an und belegt Tabellen, Indizes, Status-/Boolean-/Längen-/Größenchecks, eindeutige `public_id`/Token-HMACs, Foreign-Key-Rejection, die vollständige Löschkaskade und einen zweiten idempotenten Migrationslauf. Der dokumentierte lokale Paketlauf führte 17 SQL-Befehle erfolgreich aus; `d1 migrations list` meldete anschließend keine offene Migration. `worker:check`, 27 Worker-Tests und 65 Website-Tests sind grün. Der read-only geprüfte Development-D1-Stand bleibt unverändert bei null Tabellen in EU-Jurisdiktion; aktueller Time-Travel-Bookmark: `00000001-00000000-000050bd-098c67ca6b334390ef3948b650c190ea`. Ohne neue manuelle Bestätigung wurde keine Remote-Migration angewandt und kein Restore, Deployment oder Production-Zugriff ausgeführt. Task 14 bleibt bis zum bestätigten Remote-Lauf teilweise offen.
+
+**Fixrunde 1:** §15.1 und §15.4 erfordern eine interne Fallnotiz und eine interne Rückrufnotiz. `transfer_cases` enthält deshalb nun die nullable Felder `internal_note` und `callback_note`, jeweils mit maximal 4.000 Zeichen. RED: der reale Wrangler-Schematest scheiterte mit `table transfer_cases has no column named internal_note`; GREEN: beide Felder akzeptieren 4.000 Zeichen und verwerfen 4.001 Zeichen, gezielter Schematest 5/5. Beide Felder bleiben ausschließlich Admin/Server und sind für Public-DTOs sowie Customer-API-Antworten gesperrt. Keine weiteren Schema- oder API-Änderungen.
 
 ---
 

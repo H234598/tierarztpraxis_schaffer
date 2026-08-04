@@ -7,6 +7,8 @@ CREATE TABLE transfer_cases (
   owner_display_name TEXT CHECK(owner_display_name IS NULL OR length(owner_display_name) <= 160),
   internal_reference TEXT CHECK(internal_reference IS NULL OR length(internal_reference) <= 160),
   public_reference TEXT CHECK(public_reference IS NULL OR length(public_reference) <= 160),
+  internal_note TEXT CHECK(internal_note IS NULL OR length(internal_note) <= 4000),
+  callback_note TEXT CHECK(callback_note IS NULL OR length(callback_note) <= 4000),
   status TEXT NOT NULL DEFAULT 'open'
     CHECK(status IN ('open', 'closed', 'expired', 'deleted')),
   allow_replies INTEGER NOT NULL DEFAULT 1 CHECK(allow_replies IN (0, 1)),

@@ -246,6 +246,53 @@ describe.sequential("D1 transfer schema migration", () => {
     );
   });
 
+  it("accepts 4,000-character internal notes and rejects 4,001", () => {
+    const db = migratedDatabase();
+    const insertCaseWithNotes = (
+      id: string,
+      publicId: string,
+      internalNote: string | null,
+      callbackNote: string | null,
+    ) =>
+      db
+        .prepare(
+          `INSERT INTO transfer_cases (
+             id, public_id, pet_name, internal_note, callback_note,
+             created_by_sub, created_at, updated_at, expires_at, delete_after
+           ) VALUES (
+             ?, ?, 'Momo', ?, ?, 'admin', '2026-08-04T10:00:00Z',
+             '2026-08-04T10:00:00Z', '2026-09-04T10:00:00Z',
+             '2026-10-04T10:00:00Z'
+           )`,
+        )
+        .run(id, publicId, internalNote, callbackNote);
+
+    expect(() =>
+      insertCaseWithNotes(
+        "notes-valid",
+        "public-notes-valid",
+        "i".repeat(4_000),
+        "c".repeat(4_000),
+      ),
+    ).not.toThrow();
+    expect(() =>
+      insertCaseWithNotes(
+        "internal-note-too-long",
+        "public-internal-note-too-long",
+        "i".repeat(4_001),
+        null,
+      ),
+    ).toThrow(/constraint/i);
+    expect(() =>
+      insertCaseWithNotes(
+        "callback-note-too-long",
+        "public-callback-note-too-long",
+        null,
+        "c".repeat(4_001),
+      ),
+    ).toThrow(/constraint/i);
+  });
+
   it("cascades case deletion through every dependent record", () => {
     const db = migratedDatabase();
     db.exec(`

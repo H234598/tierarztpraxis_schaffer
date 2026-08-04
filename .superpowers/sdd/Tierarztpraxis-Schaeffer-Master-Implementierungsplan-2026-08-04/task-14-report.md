@@ -5,6 +5,7 @@ Status: lokal fertig, Remote-Migration wartet auf manuelle Bestätigung
 ## Umsetzung
 
 - `worker/migrations/0001_datatransfer.sql` bildet §17 unverändert ab, einschließlich korrigierter FK-Kante `transfer_submissions.case_id REFERENCES transfer_cases(id) ON DELETE CASCADE`.
+- `transfer_cases.internal_note` und `transfer_cases.callback_note` speichern die in §15.1 und §15.4 geforderten internen Notizen nullable und auf jeweils 4.000 Zeichen begrenzt. Beide Felder sind ausschließlich Admin/Server und dürfen nie in Public-DTOs oder Customer-API-Antworten erscheinen.
 - Neun Fachtabellen und sechs benannte Indizes angelegt.
 - Paket-Skripte `d1:migrate:local` und `d1:migrate:development` ergänzt.
 - Schema-Integrationstest nutzt nur Node-Stdlib und installiertes Wrangler. Jeder Lauf erhält eigenen `mkdtemp`-State außerhalb des Repositories; Aufräumen validiert Pfad und Symlink-Grenze.
@@ -21,10 +22,18 @@ Status: lokal fertig, Remote-Migration wartet auf manuelle Bestätigung
 - Dokumentierter Paketlauf `pnpm --dir worker d1:migrate:local`: 17 SQL-Befehle erfolgreich.
 - Lokale Migrationsliste: `No migrations to apply!`.
 - `pnpm worker:check`: erfolgreich, einschließlich separater Production- und Test-Typechecks.
-- `pnpm --dir worker test`: 26/26.
-- `pnpm test` unter dokumentierter Development-Testumgebung: 65/65 Website- und 26/26 Worker-Tests.
+- `pnpm --dir worker test`: 27/27.
+- `pnpm test` unter dokumentierter Development-Testumgebung: 65/65 Website- und 27/27 Worker-Tests.
 - Generierter `worker/.wrangler/state` nach Verifikation validiert und entfernt.
 - Vault-Masterplan zuerst aktualisiert; Repo-Plan danach bytegleich synchronisiert.
+
+## Fixrunde 1
+
+- Review gegen §15.1 und §15.4 bestätigte zwei fehlende interne Notizfelder.
+- RED: gezielter Schema-Test 1/5 rot mit `table transfer_cases has no column named internal_note`; vier bisherige Tests blieben grün.
+- GREEN: beide Felder akzeptieren exakt 4.000 Zeichen und verwerfen 4.001; gezielter Schema-Test 5/5.
+- Migration und Vault-§17 erhielten ausschließlich die zwei nullable `CHECK`-Spalten; keine Public-DTO-, Customer-API- oder sonstige Schemaänderung.
+- Frischer lokaler Apply: 17 SQL-Befehle erfolgreich; Migrationsliste anschließend leer.
 
 ## Remote-Grenze
 
@@ -37,8 +46,14 @@ Read-only Development-D1-Nachweis:
 
 Keine neue manuelle Bestätigung lag vor. Deshalb kein `d1:migrate:development`, kein Restore, kein Deployment, kein Production-Zugriff und keine R2-/Queue-Mutation. Task bleibt bis zum bestätigten Remote-Lauf teilweise offen.
 
-Geplante Commitnachricht für lokalen Zwischenstand:
+Initialer Commit:
 
 ```text
 feat: d1-schema für datentransfer anlegen
+```
+
+Geplante Fixcommitnachricht:
+
+```text
+fix: interne fallnotizen im d1-schema ergänzen
 ```
