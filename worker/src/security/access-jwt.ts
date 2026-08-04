@@ -1,4 +1,4 @@
-import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose";
+import { base64url, createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose";
 
 export interface VerifiedAdminIdentity {
   readonly email: string;
@@ -37,7 +37,12 @@ function trustedIssuer(teamDomain: string | undefined): URL | null {
 }
 
 function validCompactJwt(assertion: string | null): assertion is string {
-  return Boolean(assertion && assertion.length <= maximumAssertionLength && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u.test(assertion));
+  if (!assertion || assertion.length > maximumAssertionLength || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u.test(assertion)) return false;
+  try {
+    return assertion.split(".").every((segment) => base64url.encode(base64url.decode(segment)) === segment);
+  } catch {
+    return false;
+  }
 }
 
 function validEmail(email: unknown): email is string {

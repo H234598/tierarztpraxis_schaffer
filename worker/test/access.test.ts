@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { exportJWK, generateKeyPair, SignJWT } from "jose";
+import { base64url, createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from "jose";
 
 import { createAccessVerifier } from "../src/security/access-jwt";
 import { routeAdmin } from "../src/transfers/routes-admin";
@@ -11,23 +11,30 @@ const issuer = `https://${teamDomain}`;
 const audience = "admin-api-audience";
 let privateKey: CryptoKey;
 let publicKey: CryptoKey;
+let rotatedPrivateKey: CryptoKey;
+let rotatedPublicKey: CryptoKey;
 
 beforeAll(async () => {
   ({ privateKey, publicKey } = await generateKeyPair("RS256"));
+  ({ privateKey: rotatedPrivateKey, publicKey: rotatedPublicKey } = await generateKeyPair("RS256"));
 });
 
-async function assertion(overrides: Record<string, unknown> = {}): Promise<string> {
+async function assertion(
+  overrides: Record<string, unknown> = {},
+  key: CryptoKey = privateKey,
+  kid = "local-key",
+): Promise<string> {
   const now = Math.floor(Date.now() / 1_000);
   const { iss = issuer, aud = audience, sub = "subject-1", exp = now + 60, nbf = now - 1, iat = now, ...claims } = overrides;
   return new SignJWT({ email: "admin@example.test", ...claims })
-    .setProtectedHeader({ alg: "RS256", kid: "local-key" })
+    .setProtectedHeader({ alg: "RS256", kid })
     .setIssuer(String(iss))
     .setAudience(String(aud))
     .setSubject(String(sub))
     .setIssuedAt(Number(iat))
     .setNotBefore(Number(nbf))
     .setExpirationTime(Number(exp))
-    .sign(privateKey);
+    .sign(key);
 }
 
 function withAlgorithm(token: string, algorithm: string): string {
@@ -35,23 +42,37 @@ function withAlgorithm(token: string, algorithm: string): string {
   return `${Buffer.from(JSON.stringify({ alg: algorithm, kid: "local-key" })).toString("base64url")}.${payload!}.${signature!}`;
 }
 
+function noncanonicalSignature(token: string): string {
+  const [header, payload, signature] = token.split(".") as [string, string, string];
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  const value = alphabet.indexOf(signature.at(-1)!);
+  const paddingBits = signature.length % 4 === 2 ? 4 : 2;
+  const altered = `${signature.slice(0, -1)}${alphabet[(value & ~((1 << paddingBits) - 1)) | ((value + 1) & ((1 << paddingBits) - 1))]!}`;
+  expect(base64url.decode(altered)).toEqual(base64url.decode(signature));
+  return `${header}.${payload}.${altered}`;
+}
+
 describe("Cloudflare-Access-Verifier", () => {
-  it("validiert lokales RSA-JWKS und cached Resolver pro vertrauenswürdigem Issuer", async () => {
+  it("validiert lokales JWKS über kid und cached Factory trotz Key-Rotation", async () => {
     let resolverFactories = 0;
+    const first = { ...await exportJWK(publicKey), kid: "kid-1", alg: "RS256", use: "sig" };
+    const second = { ...await exportJWK(rotatedPublicKey), kid: "kid-2", alg: "RS256", use: "sig" };
+    const jwks = { keys: [first] };
     const verifier = createAccessVerifier({
       createKeyResolver(jwksUrl) {
         resolverFactories += 1;
         expect(jwksUrl.href).toBe(`${issuer}/cdn-cgi/access/certs`);
-        return async () => publicKey;
+        return async (protectedHeader, token) => createLocalJWKSet(jwks)(protectedHeader, token);
       },
     });
-    const token = await assertion();
-    await expect(verifier.verify(token, teamDomain, audience)).resolves.toEqual({
+    await expect(verifier.verify(await assertion({}, privateKey, "kid-1"), teamDomain, audience)).resolves.toEqual({
       email: "admin@example.test", subject: "subject-1",
     });
-    await expect(verifier.verify(token, teamDomain, audience)).resolves.toEqual({
+    jwks.keys.push(second);
+    await expect(verifier.verify(await assertion({}, rotatedPrivateKey, "kid-2"), teamDomain, audience)).resolves.toEqual({
       email: "admin@example.test", subject: "subject-1",
     });
+    await expect(verifier.verify(await assertion({}, privateKey, "unknown"), teamDomain, audience)).resolves.toBeNull();
     expect(resolverFactories).toBe(1);
   });
 
@@ -72,6 +93,8 @@ describe("Cloudflare-Access-Verifier", () => {
     ["fehlend", null],
     ["leer", ""],
     ["kaputt", "a.b.c"],
+    ["nichtkanonische Base64url", { noncanonical: true }],
+    ["Padding", { padded: true }],
     ["falscher Algorithmus", { alg: "HS256" }],
     ["falscher Issuer", { iss: "https://evil.cloudflareaccess.com" }],
     ["falsche Audience", { aud: "other" }],
@@ -83,7 +106,10 @@ describe("Cloudflare-Access-Verifier", () => {
     const verifier = createAccessVerifier({ createKeyResolver: () => async () => publicKey });
     const token = typeof input === "string" || input === null
       ? input
-      : "alg" in input ? withAlgorithm(await assertion(), String(input.alg)) : await assertion(input);
+      : "alg" in input ? withAlgorithm(await assertion(), String(input.alg))
+      : "noncanonical" in input ? noncanonicalSignature(await assertion())
+      : "padded" in input ? `${await assertion()}=`
+      : await assertion(input);
     await expect(verifier.verify(token, teamDomain, audience)).resolves.toBeNull();
   });
 
