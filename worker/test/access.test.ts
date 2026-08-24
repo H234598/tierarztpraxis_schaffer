@@ -297,6 +297,31 @@ describe("Cloudflare-Access-Verifier", () => {
     });
   });
 
+  it("akzeptiert browserüblichen same-origin GET ohne Origin-Header", async () => {
+    const token = await assertion();
+    const verifier = createAccessVerifier({
+      createKeyResolver: () => async () => publicKey,
+    });
+    const request = new Request("https://admin.example.test/api/admin/session", {
+      headers: {
+        "cf-access-jwt-assertion": token,
+        "sec-fetch-site": "same-origin",
+      },
+    });
+
+    const response = await routeAdmin(
+      {
+        request,
+        url: new URL(request.url),
+        requestId: "request-1",
+        env: { ACCESS_TEAM_DOMAIN: teamDomain, ACCESS_ADMIN_API_AUD: audience },
+      } as unknown as DevelopmentRouteContext,
+      verifier,
+    );
+
+    expect(response.status).toBe(200);
+  });
+
   it("liefert Admin-Datei nur mit exakter Origin und lokal verifiziertem RS256-JWT", async () => {
     const state: AdminFileState = {
       row: adminStoredFile,

@@ -13,11 +13,20 @@ import {
 } from "./file-response";
 import { handleAdminCaseApi } from "./admin-cases";
 
+function isSameOriginAdminRequest(context: DevelopmentRouteContext): boolean {
+  const origin = context.request.headers.get("origin");
+  if (origin !== null) return origin === context.url.origin;
+  return (
+    context.request.method === "GET" &&
+    context.request.headers.get("sec-fetch-site") === "same-origin"
+  );
+}
+
 export async function authenticateAdminRequest(
   context: DevelopmentRouteContext,
   verifier: AccessVerifier = accessVerifier,
 ): Promise<VerifiedAdminIdentity | null> {
-  if (context.request.headers.get("origin") !== context.url.origin) return null;
+  if (!isSameOriginAdminRequest(context)) return null;
   return verifier.verify(
     context.request.headers.get("cf-access-jwt-assertion"),
     context.env.ACCESS_TEAM_DOMAIN,
@@ -29,7 +38,7 @@ export async function routeAdmin(
   context: DevelopmentRouteContext,
   verifier: AccessVerifier = accessVerifier,
 ): Promise<Response> {
-  if (context.request.headers.get("origin") !== context.url.origin) {
+  if (!isSameOriginAdminRequest(context)) {
     return transferError(context.requestId, 403, "forbidden", "Request forbidden");
   }
   const admin = await authenticateAdminRequest(context, verifier);
