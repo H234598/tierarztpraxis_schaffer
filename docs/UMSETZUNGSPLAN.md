@@ -24,21 +24,41 @@ aliases:
   - Vier Startseiten und Datentransfer
   - Tierarztpraxis Schäffer Meilensteinplan
 created: 2026-08-04
-title: Tierarztpraxis Dr. Schäffer – Master-Implementierungsplan für vier Startseiten, TODO-Seite und sicheren Datentransfer
+title:
+  Tierarztpraxis Dr. Schäffer – Master-Implementierungsplan für vier Startseiten,
+  TODO-Seite und sicheren Datentransfer
 ---
 
 # Tierarztpraxis Dr. Schäffer – Master-Implementierungsplan für vier Startseiten, TODO-Seite und sicheren Datentransfer
 
-> [!important] Für agentische Umsetzung
-> **Erforderlicher Arbeitsmodus:** Diesen Plan taskweise mit einem isolierten Git-Worktree und überprüfbaren Zwischenständen ausführen. Jeder Task endet mit Tests, Review und einem eigenständig verständlichen Commit. Für die Umsetzung ist ein subagentengesteuerter oder explizit checkpointbasierter Ablauf vorgesehen; keine ungeprüften Großcommits.
+> [!important] Für agentische Umsetzung **Erforderlicher Arbeitsmodus:** Diesen Plan
+> taskweise mit einem isolierten Git-Worktree und überprüfbaren Zwischenständen
+> ausführen. Jeder Task endet mit Tests, Review und einem eigenständig verständlichen
+> Commit. Für die Umsetzung ist ein subagentengesteuerter oder explizit
+> checkpointbasierter Ablauf vorgesehen; keine ungeprüften Großcommits.
 >
-> **Planmodus:** Dieses Dokument beschreibt ausschließlich die Umsetzung. Es nimmt selbst keine Produktivänderung vor.
+> **Planmodus:** Dieses Dokument beschreibt ausschließlich die Umsetzung. Es nimmt
+> selbst keine Produktivänderung vor.
 
-**Ziel:** Die bestehende, bereits auslieferbare Astro-Website wird zu einer eleganten, modernen und lebendig formulierten Praxiswebsite mit vier auswählbaren Startseitenvarianten erweitert. Gleichzeitig entsteht ein gehärtetes Datentransfer-MVP, über das die Praxis fallbezogene Zugriffstokens erzeugt und Tierhalter Berichte, Bilder, Videos und HTTPS-Links vertraulich übermitteln können. Eine zentrale Unterseite `TODO` macht alle noch offenen Daten, Entscheidungen, Prüfungen und Produktionsblocker transparent.
+**Ziel:** Die bestehende, bereits auslieferbare Astro-Website wird zu einer eleganten,
+modernen und lebendig formulierten Praxiswebsite mit vier auswählbaren
+Startseitenvarianten erweitert. Gleichzeitig entsteht ein gehärtetes Datentransfer-MVP,
+über das die Praxis fallbezogene Zugriffstokens erzeugt und Tierhalter Berichte, Bilder,
+Videos und HTTPS-Links vertraulich übermitteln können. Eine zentrale Unterseite `TODO`
+macht alle noch offenen Daten, Entscheidungen, Prüfungen und Produktionsblocker
+transparent.
 
-**Architektur:** Die öffentliche Website bleibt statisch auf GitHub Pages. Cloudflare bleibt Edge-, DNS- und API-Schicht. Das vorhandene Worker-Backend wird modularisiert und um D1, einen privaten R2-Bucket, Queues sowie Cloudflare Access für die Adminfunktionen erweitert. Die vier Startseiten teilen ein gemeinsames Inhaltsmodell und unterscheiden sich nur in Komposition, Design-Tokens und Bildsprache; die dritte neu generierte Preview wird als vierte Gesamtvariante und Standard-Landingpage auf `/` umgesetzt.
+**Architektur:** Die öffentliche Website bleibt statisch auf GitHub Pages. Cloudflare
+bleibt Edge-, DNS- und API-Schicht. Das vorhandene Worker-Backend wird modularisiert und
+um D1, einen privaten R2-Bucket, Queues sowie Cloudflare Access für die Adminfunktionen
+erweitert. Die vier Startseiten teilen ein gemeinsames Inhaltsmodell und unterscheiden
+sich nur in Komposition, Design-Tokens und Bildsprache; die dritte neu generierte
+Preview wird als vierte Gesamtvariante und Standard-Landingpage auf `/` umgesetzt.
 
-**Tech Stack:** Astro 7, TypeScript Strict Mode, modernes CSS ohne UI-Runtime-Framework, pnpm mit Lockfile, GitHub Pages, GitHub Actions, Cloudflare Workers, Workers KV, D1, R2, Queues, Access, Turnstile, Email Service, OpenStreetMap, Vitest, Cloudflare Workers Vitest Integration, Playwright und axe-core. **Kein Java.**
+**Tech Stack:** Astro 7, TypeScript Strict Mode, modernes CSS ohne UI-Runtime-Framework,
+pnpm mit Lockfile, GitHub Pages, GitHub Actions, Cloudflare Workers, Workers KV, D1, R2,
+Queues, Access, Turnstile, Email Service, OpenStreetMap, Vitest, Cloudflare Workers
+Vitest Integration, Playwright und axe-core. **Kein Java.**
 
 ---
 
@@ -49,27 +69,44 @@ title: Tierarztpraxis Dr. Schäffer – Master-Implementierungsplan für vier St
 - Kanonische Website: `https://tierarztpraxis-schaffer.telacore.org`.
 - Alias: `https://tierarztpraxisschaffer.telacore.org`.
 - Bestehende Kontakt-API: `https://api.tierarztpraxis-schaffer.telacore.org/v1/contact`.
-- Öffentliche Datentransferseite: `https://tierarztpraxis-schaffer.telacore.org/datentransfer/`.
+- Öffentliche Datentransferseite:
+  `https://tierarztpraxis-schaffer.telacore.org/datentransfer/`.
 - Adminseite: `https://tierarztpraxis-schaffer.telacore.org/admin/datentransfer/`.
-- Neue same-origin API-Routen: `https://tierarztpraxis-schaffer.telacore.org/api/...`, über einen Cloudflare-Worker-Route-Match vor GitHub Pages.
-- Das bestehende Kontaktformular bleibt funktionsfähig und wird beim Worker-Refactoring durch Regressionstests geschützt.
-- Der E-Mailversand des bestehenden Kontaktformulars ist nach Nutzerbestätigung funktionsfähig.
-- Die dritte der drei neu generierten Previews wird zur **Startseite 4** und zum Standard auf `/`.
+- Neue same-origin API-Routen: `https://tierarztpraxis-schaffer.telacore.org/api/...`,
+  über einen Cloudflare-Worker-Route-Match vor GitHub Pages.
+- Das bestehende Kontaktformular bleibt funktionsfähig und wird beim Worker-Refactoring
+  durch Regressionstests geschützt.
+- Der E-Mailversand des bestehenden Kontaktformulars ist nach Nutzerbestätigung
+  funktionsfähig.
+- Die dritte der drei neu generierten Previews wird zur **Startseite 4** und zum
+  Standard auf `/`.
 - Die bisherige Startseite bleibt **Startseite 1**.
 - Keine extern geladenen Webfonts.
 - Keine Analyse- oder Werbetracker.
 - Keine Java-Komponenten.
-- Keine erfundenen medizinischen Leistungen, Teammitglieder, Qualifikationen oder Rechtsangaben.
-- Generierte Bilder mit Menschen sind niemals als echtes Team oder echte Praxisfotografie auszugeben; sie werden als `Symbolbild` gekennzeichnet oder nur als Designreferenz verwendet.
-- Die TODO-Seite darf niemals Secrets, Tokenwerte, private E-Mail-Adressen außer ausdrücklich freigegebenen Testadressen, Cloudflare-IDs mit Sicherheitswirkung oder interne personenbezogene Angaben veröffentlichen.
-- Das Datentransferportal ist kein Notfallkanal und darf keine automatische Diagnose, Triage oder Behandlungszusage vornehmen.
-- R2 und D1 werden für den Datentransfer von Anfang an mit EU-Jurisdiktion erstellt. Die Jurisdiktion kann nach Erstellung nicht nachträglich geändert werden.
+- Keine erfundenen medizinischen Leistungen, Teammitglieder, Qualifikationen oder
+  Rechtsangaben.
+- Generierte Bilder mit Menschen sind niemals als echtes Team oder echte
+  Praxisfotografie auszugeben; sie werden als `Symbolbild` gekennzeichnet oder nur als
+  Designreferenz verwendet.
+- Die TODO-Seite darf niemals Secrets, Tokenwerte, private E-Mail-Adressen außer
+  ausdrücklich freigegebenen Testadressen, Cloudflare-IDs mit Sicherheitswirkung oder
+  interne personenbezogene Angaben veröffentlichen.
+- Das Datentransferportal ist kein Notfallkanal und darf keine automatische Diagnose,
+  Triage oder Behandlungszusage vornehmen.
+- R2 und D1 werden für den Datentransfer von Anfang an mit EU-Jurisdiktion erstellt. Die
+  Jurisdiktion kann nach Erstellung nicht nachträglich geändert werden.
 - Der R2-Bucket bleibt privat. Kein `r2.dev`, keine öffentliche Bucket-Domain.
 - Kundentokens werden nie im Klartext gespeichert.
-- Kundentokens werden nicht als Query-Parameter oder URL-Pfad transportiert, sondern als URL-Fragment oder manuelle Eingabe.
-- E-Mails enthalten keine Berichte, Bilder, Videos oder Berichtstexte, sondern nur minimale Benachrichtigungen und einen Link zum Access-geschützten Adminbereich.
-- Die Praxis muss vor produktiver Freigabe entscheiden und dokumentieren, wann übermittelte Inhalte in die offizielle Praxis-/Patientenakte übernommen und wann Portal-Kopien gelöscht werden.
-- Der gesamte Ausbau bleibt zunächst im Entwicklungsmodus und `noindex`, bis sämtliche Produktionsblocker geschlossen sind.
+- Kundentokens werden nicht als Query-Parameter oder URL-Pfad transportiert, sondern als
+  URL-Fragment oder manuelle Eingabe.
+- E-Mails enthalten keine Berichte, Bilder, Videos oder Berichtstexte, sondern nur
+  minimale Benachrichtigungen und einen Link zum Access-geschützten Adminbereich.
+- Die Praxis muss vor produktiver Freigabe entscheiden und dokumentieren, wann
+  übermittelte Inhalte in die offizielle Praxis-/Patientenakte übernommen und wann
+  Portal-Kopien gelöscht werden.
+- Der gesamte Ausbau bleibt zunächst im Entwicklungsmodus und `noindex`, bis sämtliche
+  Produktionsblocker geschlossen sind.
 
 ---
 
@@ -81,7 +118,8 @@ Das Repository enthält aktuell:
 
 - Astro 7 mit TypeScript im Strict Mode;
 - eine statische GitHub-Pages-Website;
-- Seiten für Start, Leistungen, Praxis, Sprechzeiten, Notfall, Kontakt, FAQ, Stellenangebote, Barrierefreiheit, Impressum, Datenschutz und 404;
+- Seiten für Start, Leistungen, Praxis, Sprechzeiten, Notfall, Kontakt, FAQ,
+  Stellenangebote, Barrierefreiheit, Impressum, Datenschutz und 404;
 - prominente Telefonnummer;
 - direkte OpenStreetMap-Einbettung;
 - ein funktionierendes Kontaktformular;
@@ -92,7 +130,8 @@ Das Repository enthält aktuell:
 - Cloudflare Email Service;
 - pnpm-Lockfile und gehärtete CI;
 - eine CSP ohne `unsafe-inline`;
-- einen Build-Artefakt-Test, der verhindert, dass Astro den Formularhandler erneut inline ausliefert;
+- einen Build-Artefakt-Test, der verhindert, dass Astro den Formularhandler erneut
+  inline ausliefert;
 - bestätigte Angaben zur baulichen Zugänglichkeit;
 - sichtbare Entwicklungskennzeichnung und `noindex,nofollow`.
 
@@ -100,37 +139,42 @@ Das Repository enthält aktuell:
 
 - `src/pages/index.astro` ist derzeit eine einzelne, relativ schlichte Startseite.
 - `src/components/Header.astro` besitzt noch kein Startseiten-Dropdown.
-- `src/styles/global.css` ist monolithisch und für vier deutlich unterschiedliche visuelle Varianten nicht ausreichend modular.
-- `src/config/site.ts` mischt bestätigte Fakten, unbestätigte Inhalte und sichtbare Platzhalter.
-- `scripts/validate-content.ts` erkennt textuelle Platzhalter, aber es gibt noch kein strukturiertes, öffentlich renderbares TODO-Register.
-- `worker/src/index.ts` ist monolithisch und für Kontaktformular, Datentransfer, Uploads, Adminzugriff, Queue-Consumer und Cron-Aufgaben zu groß.
+- `src/styles/global.css` ist monolithisch und für vier deutlich unterschiedliche
+  visuelle Varianten nicht ausreichend modular.
+- `src/config/site.ts` mischt bestätigte Fakten, unbestätigte Inhalte und sichtbare
+  Platzhalter.
+- `scripts/validate-content.ts` erkennt textuelle Platzhalter, aber es gibt noch kein
+  strukturiertes, öffentlich renderbares TODO-Register.
+- `worker/src/index.ts` ist monolithisch und für Kontaktformular, Datentransfer,
+  Uploads, Adminzugriff, Queue-Consumer und Cron-Aufgaben zu groß.
 - D1, R2, Queues und Access sind für den Datentransfer noch nicht eingerichtet.
 - Es existiert noch keine sichere Token-, Session-, Upload-, Thread- oder Antwortlogik.
-- Die drei generierten Designbilder sind derzeit Designvorschauen, keine implementierten Startseiten.
+- Die drei generierten Designbilder sind derzeit Designvorschauen, keine implementierten
+  Startseiten.
 
 ---
 
 ## 3. Historische Ziele und Meilensteine aus diesem Projektchat
 
-| ID | Zeitraum | Ziel oder Entscheidung | Status | Evidenz |
-|---|---|---|---|---|
-| H0 | 2026-07-15 | Moderne Website für die Tierarztpraxis auf GitHub Pages; Cloudflare Free Tier darf ergänzen. | abgeschlossen | Grundarchitektur definiert |
-| H1 | 2026-07-15 bis 2026-08-03 | Repository in `tierarztpraxis_schaffer` umbenennen; Altseiten-ZIP inventarisieren; relevante Daten, Texte, Farben und Bilder übernehmen; Joomla/MHTML nicht migrieren. | abgeschlossen | PR #1 |
-| H2 | 2026-07-15 | FAQ und Stellenangebote werden verpflichtende Seiten; Telefonnummer prominent; OSM integrieren; fehlende Angaben als kontrollierte Platzhalter. | abgeschlossen | PR #1 und PR #2 |
-| H3 | 2026-07-16 | Kanonische Domain mit Bindestrich; Alias ohne Bindestrich; API auf eigener Subdomain; GitHub-Pages-Custom-Domain repositorybezogen konfigurieren. | abgeschlossen | DNS-/Pages-Konzept |
-| H4 | 2026-07-16 | OpenStreetMap direkt anzeigen; Koordinaten `49.483750, 10.9705833333`. | abgeschlossen | Kontaktseite |
-| H5 | 2026-07-16 | Empfängeradresse ohne Worker-Codeänderung austauschbar; Workers KV statt Durable Object für selten geänderte Konfiguration. | abgeschlossen | Worker/KV |
-| H6 | 2026-07-16 | Entwicklungsmodus darf echte E-Mails nur an `tierarztpraxis_schaffer@herr-der-mails.de` senden. | abgeschlossen | Worker deployed, Nutzer bestätigt Versand |
-| H7 | 2026-07-16 | Produktionsbuild muss bei fehlenden Pflichtwerten scheitern; Entwicklungsmodus darf markierte Platzhalter ausliefern. | abgeschlossen | Validator und Workflows |
-| H8 | 2026-07-16 | Bauliche Zugänglichkeit konkret beschreiben: Erdgeschoss, kleine Türschwelle, Standardtür, kein Aufzug, Parkplätze vor der Tür, Unterstützung jederzeit. | abgeschlossen | Praxisdaten und FAQ |
-| H9 | 2026-08-03 | Worker deployen und CI mit Lockfile, Frozen Install und minimalen Rechten härten. | abgeschlossen | PR #1/Worker-Workflow |
-| H10 | 2026-08-03 | Vollständige Entwicklungsversion der Website mit Kontaktformular, OSM, FAQ, Jobs und Rechtsseiten veröffentlichen. | abgeschlossen | PR #2 |
-| H11 | 2026-08-03 | Echtes Turnstile-Schlüsselpaar erzwingen, Dummy-Fallback entfernen und Fehlermeldungen präzisieren. | abgeschlossen | PR #3 |
-| H12 | 2026-08-03 | CSP-bedingt blockierten Inline-Formularhandler diagnostizieren; als externes Asset ausgeben; Artefaktregressionstest ergänzen. | abgeschlossen | PR #4 |
-| H13 | 2026-08-04 | Optik eleganter, hübscher und moderner gestalten; Texte lebendiger machen; mehrere Designrichtungen erstellen. | geplant in diesem Dokument | Startseiten 2–4 |
-| H14 | 2026-08-04 | Alle drei neuen Designs plus bestehende Seite auswählbar machen; Standard ist die dritte neue Preview. | geplant in diesem Dokument | Startseiten 1–4 |
-| H15 | 2026-08-04 | Neue Seite `TODO` mit allen offenen Daten, Entscheidungen, Aufgaben und Produktionsblockern. | geplant in diesem Dokument | strukturierte TODO-Registry |
-| H16 | 2026-08-04 | Tokenbasierter Datentransfer für Berichte, Bilder, Videos und Links; optionaler Praxisantwort-Thread. | geplant in diesem Dokument | Datentransfer-MVP |
+| ID  | Zeitraum                  | Ziel oder Entscheidung                                                                                                                                                 | Status                     | Evidenz                                   |
+| --- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ----------------------------------------- |
+| H0  | 2026-07-15                | Moderne Website für die Tierarztpraxis auf GitHub Pages; Cloudflare Free Tier darf ergänzen.                                                                           | abgeschlossen              | Grundarchitektur definiert                |
+| H1  | 2026-07-15 bis 2026-08-03 | Repository in `tierarztpraxis_schaffer` umbenennen; Altseiten-ZIP inventarisieren; relevante Daten, Texte, Farben und Bilder übernehmen; Joomla/MHTML nicht migrieren. | abgeschlossen              | PR #1                                     |
+| H2  | 2026-07-15                | FAQ und Stellenangebote werden verpflichtende Seiten; Telefonnummer prominent; OSM integrieren; fehlende Angaben als kontrollierte Platzhalter.                        | abgeschlossen              | PR #1 und PR #2                           |
+| H3  | 2026-07-16                | Kanonische Domain mit Bindestrich; Alias ohne Bindestrich; API auf eigener Subdomain; GitHub-Pages-Custom-Domain repositorybezogen konfigurieren.                      | abgeschlossen              | DNS-/Pages-Konzept                        |
+| H4  | 2026-07-16                | OpenStreetMap direkt anzeigen; Koordinaten `49.483750, 10.9705833333`.                                                                                                 | abgeschlossen              | Kontaktseite                              |
+| H5  | 2026-07-16                | Empfängeradresse ohne Worker-Codeänderung austauschbar; Workers KV statt Durable Object für selten geänderte Konfiguration.                                            | abgeschlossen              | Worker/KV                                 |
+| H6  | 2026-07-16                | Entwicklungsmodus darf echte E-Mails nur an `tierarztpraxis_schaffer@herr-der-mails.de` senden.                                                                        | abgeschlossen              | Worker deployed, Nutzer bestätigt Versand |
+| H7  | 2026-07-16                | Produktionsbuild muss bei fehlenden Pflichtwerten scheitern; Entwicklungsmodus darf markierte Platzhalter ausliefern.                                                  | abgeschlossen              | Validator und Workflows                   |
+| H8  | 2026-07-16                | Bauliche Zugänglichkeit konkret beschreiben: Erdgeschoss, kleine Türschwelle, Standardtür, kein Aufzug, Parkplätze vor der Tür, Unterstützung jederzeit.               | abgeschlossen              | Praxisdaten und FAQ                       |
+| H9  | 2026-08-03                | Worker deployen und CI mit Lockfile, Frozen Install und minimalen Rechten härten.                                                                                      | abgeschlossen              | PR #1/Worker-Workflow                     |
+| H10 | 2026-08-03                | Vollständige Entwicklungsversion der Website mit Kontaktformular, OSM, FAQ, Jobs und Rechtsseiten veröffentlichen.                                                     | abgeschlossen              | PR #2                                     |
+| H11 | 2026-08-03                | Echtes Turnstile-Schlüsselpaar erzwingen, Dummy-Fallback entfernen und Fehlermeldungen präzisieren.                                                                    | abgeschlossen              | PR #3                                     |
+| H12 | 2026-08-03                | CSP-bedingt blockierten Inline-Formularhandler diagnostizieren; als externes Asset ausgeben; Artefaktregressionstest ergänzen.                                         | abgeschlossen              | PR #4                                     |
+| H13 | 2026-08-04                | Optik eleganter, hübscher und moderner gestalten; Texte lebendiger machen; mehrere Designrichtungen erstellen.                                                         | geplant in diesem Dokument | Startseiten 2–4                           |
+| H14 | 2026-08-04                | Alle drei neuen Designs plus bestehende Seite auswählbar machen; Standard ist die dritte neue Preview.                                                                 | geplant in diesem Dokument | Startseiten 1–4                           |
+| H15 | 2026-08-04                | Neue Seite `TODO` mit allen offenen Daten, Entscheidungen, Aufgaben und Produktionsblockern.                                                                           | geplant in diesem Dokument | strukturierte TODO-Registry               |
+| H16 | 2026-08-04                | Tokenbasierter Datentransfer für Berichte, Bilder, Videos und Links; optionaler Praxisantwort-Thread.                                                                  | geplant in diesem Dokument | Datentransfer-MVP                         |
 
 ---
 
@@ -194,16 +238,17 @@ Nicht Teil des unmittelbaren Entwicklungsmeilensteins, aber im Plan enthalten:
 
 Die Benennung wird eindeutig festgelegt:
 
-| Menülabel | Ursprung | Route | Indexierung | Rolle |
-|---|---|---|---|---|
-| Startseite 1 | bisherige aktuelle Startseite | `/startseiten/1/` | `noindex,follow` | konservative Bestandsvariante |
-| Startseite 2 | erste neu generierte Preview | `/startseiten/2/` | `noindex,follow` | premium-klinisch, Grün/Teal/Beige |
-| Startseite 3 | zweite neu generierte Preview | `/startseiten/3/` | `noindex,follow` | editorial, Creme/Oliv, ruhige Typografie |
-| Startseite 4 | dritte neu generierte Preview | `/startseiten/4/` | `noindex,follow` | modern, Teal/Koralle, Standard |
-| Standard | identischer Renderer wie Startseite 4 | `/` | `index` erst nach Produktionsfreigabe | Landingpage |
+| Menülabel    | Ursprung                              | Route             | Indexierung                           | Rolle                                    |
+| ------------ | ------------------------------------- | ----------------- | ------------------------------------- | ---------------------------------------- |
+| Startseite 1 | bisherige aktuelle Startseite         | `/startseiten/1/` | `noindex,follow`                      | konservative Bestandsvariante            |
+| Startseite 2 | erste neu generierte Preview          | `/startseiten/2/` | `noindex,follow`                      | premium-klinisch, Grün/Teal/Beige        |
+| Startseite 3 | zweite neu generierte Preview         | `/startseiten/3/` | `noindex,follow`                      | editorial, Creme/Oliv, ruhige Typografie |
+| Startseite 4 | dritte neu generierte Preview         | `/startseiten/4/` | `noindex,follow`                      | modern, Teal/Koralle, Standard           |
+| Standard     | identischer Renderer wie Startseite 4 | `/`               | `index` erst nach Produktionsfreigabe | Landingpage                              |
 
-> [!note]
-> Die Formulierung „die dritte Preview ist Standard“ bedeutet damit: Die bisherige Seite zählt als Startseite 1; die drei neuen Previews werden Startseiten 2, 3 und 4. Die dritte neue Preview ist folglich Startseite 4.
+> [!note] Die Formulierung „die dritte Preview ist Standard“ bedeutet damit: Die
+> bisherige Seite zählt als Startseite 1; die drei neuen Previews werden Startseiten 2,
+> 3 und 4. Die dritte neue Preview ist folglich Startseite 4.
 
 ---
 
@@ -243,7 +288,9 @@ api.tierarztpraxis-schaffer.telacore.org/*
                         └── /health
 ```
 
-Der neue Datentransfer wird same-origin unter `/api/` bereitgestellt. Dadurch entfallen Cross-Origin-Cookies und ein großer Teil der CORS-Komplexität. Das bestehende Kontaktformular bleibt vorerst auf der bereits funktionierenden `api.`-Adresse.
+Der neue Datentransfer wird same-origin unter `/api/` bereitgestellt. Dadurch entfallen
+Cross-Origin-Cookies und ein großer Teil der CORS-Komplexität. Das bestehende
+Kontaktformular bleibt vorerst auf der bereits funktionierenden `api.`-Adresse.
 
 ### 6.3 Datentransfer
 
@@ -285,14 +332,14 @@ Praxisadmin
 
 ### 7.1 Aktuelle Plattformgrenzen, Stand 2026-08-04
 
-| Produkt | Free-Tier-Rahmen | Architekturfolge |
-|---|---|---|
-| Workers | 100.000 Requests/Tag, 10 ms CPU pro HTTP-Request, 128 MB RAM, 100 MB Request-Body im Free-Zonentarif | Uploads streamen, keine große Datei puffern, keine Videotranscodierung |
-| R2 Standard | 10 GB-Monat Speicher, 1 Mio. Class-A- und 10 Mio. Class-B-Operationen/Monat, keine Egresskosten | private Kurzzeitablage ist realistisch; Speicherquote hart begrenzen |
-| D1 Free | 5 Mio. gelesene Zeilen/Tag, 100.000 geschriebene Zeilen/Tag, 5 GB Gesamtspeicher; einzelne Free-Datenbank maximal 500 MB; 7 Tage Time Travel | Indizes, kleine Metadaten, keine Binärdateien in D1 |
-| Queues Free | 10.000 Operationen/Tag, 24 Stunden Retention | nur IDs in Nachrichten; Cron-Reconciliation gegen stille Ausfälle |
-| Access Free | bis 50 Nutzer im Free-Paket | ausreichend für Praxisadmin und wenige Mitarbeitende |
-| Worker Static Assets | 20.000 Dateien, 25 MiB pro Datei | Admin-Shell wäre möglich; im Plan bleibt die Shell auf GitHub Pages und die Daten bleiben API-geschützt |
+| Produkt              | Free-Tier-Rahmen                                                                                                                             | Architekturfolge                                                                                        |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Workers              | 100.000 Requests/Tag, 10 ms CPU pro HTTP-Request, 128 MB RAM, 100 MB Request-Body im Free-Zonentarif                                         | Uploads streamen, keine große Datei puffern, keine Videotranscodierung                                  |
+| R2 Standard          | 10 GB-Monat Speicher, 1 Mio. Class-A- und 10 Mio. Class-B-Operationen/Monat, keine Egresskosten                                              | private Kurzzeitablage ist realistisch; Speicherquote hart begrenzen                                    |
+| D1 Free              | 5 Mio. gelesene Zeilen/Tag, 100.000 geschriebene Zeilen/Tag, 5 GB Gesamtspeicher; einzelne Free-Datenbank maximal 500 MB; 7 Tage Time Travel | Indizes, kleine Metadaten, keine Binärdateien in D1                                                     |
+| Queues Free          | 10.000 Operationen/Tag, 24 Stunden Retention                                                                                                 | nur IDs in Nachrichten; Cron-Reconciliation gegen stille Ausfälle                                       |
+| Access Free          | bis 50 Nutzer im Free-Paket                                                                                                                  | ausreichend für Praxisadmin und wenige Mitarbeitende                                                    |
+| Worker Static Assets | 20.000 Dateien, 25 MiB pro Datei                                                                                                             | Admin-Shell wäre möglich; im Plan bleibt die Shell auf GitHub Pages und die Daten bleiben API-geschützt |
 
 ### 7.2 Projektinterne Quoten
 
@@ -320,7 +367,8 @@ export const transferLimits = {
 
 ### 7.3 Upgrade- oder Architekturtrigger
 
-Ein Upgrade oder eine bewusste Funktionsbegrenzung wird ausgelöst, wenn eines der folgenden Kriterien erreicht wird:
+Ein Upgrade oder eine bewusste Funktionsbegrenzung wird ausgelöst, wenn eines der
+folgenden Kriterien erreicht wird:
 
 - R2-Nutzung über 7 GB;
 - tägliche Worker-Requests über 50.000;
@@ -330,7 +378,8 @@ Ein Upgrade oder eine bewusste Funktionsbegrenzung wird ausgelöst, wenn eines d
 - mehr als 25 aktive Datentransferfälle gleichzeitig;
 - Videos über 50 MB werden regelmäßig benötigt;
 - die Funktion wird für die Praxis betriebskritisch und benötigt SLA oder Support;
-- eine rechtliche oder technische Risikobewertung verlangt Malware-Scanning, stärkere Verschlüsselung oder längere revisionssichere Aufbewahrung.
+- eine rechtliche oder technische Risikobewertung verlangt Malware-Scanning, stärkere
+  Verschlüsselung oder längere revisionssichere Aufbewahrung.
 
 ---
 
@@ -338,7 +387,11 @@ Ein Upgrade oder eine bewusste Funktionsbegrenzung wird ausgelöst, wenn eines d
 
 ### 8.1 Einordnung
 
-Die Plattform verarbeitet personenbezogene Daten der Tierhalter und vertrauliche fallbezogene Tierinformationen. Tiergesundheitsdaten sind nicht automatisch menschliche Gesundheitsdaten im Sinne der besonderen Kategorien, können aber mit Namen, Kontaktangaben, Wohnumfeld, Bildmaterial und freien Texten verknüpft sein. Die Verarbeitung wird deshalb wie ein hochvertraulicher Intake-Kanal behandelt.
+Die Plattform verarbeitet personenbezogene Daten der Tierhalter und vertrauliche
+fallbezogene Tierinformationen. Tiergesundheitsdaten sind nicht automatisch menschliche
+Gesundheitsdaten im Sinne der besonderen Kategorien, können aber mit Namen,
+Kontaktangaben, Wohnumfeld, Bildmaterial und freien Texten verknüpft sein. Die
+Verarbeitung wird deshalb wie ein hochvertraulicher Intake-Kanal behandelt.
 
 Vor Produktion sind mindestens zu dokumentieren:
 
@@ -375,28 +428,28 @@ Vor Produktion sind mindestens zu dokumentieren:
 
 ### 8.3 Sicherheitsbedrohungen und Gegenmaßnahmen
 
-| Bedrohung | Gegenmaßnahme |
-|---|---|
-| Token wird über Referrer oder Logdateien geleakt | Token nur im URL-Fragment oder manuell; Fragment nach Sessionaustausch entfernen |
-| Brute Force | mindestens 256 Bit Zufall, HMAC-Hash, Turnstile, Rate Limit, generische Fehler |
-| Gestohlener Token | kurze Gültigkeit, widerrufbar, begrenzte Einreichungen, Sessioncookie |
-| Sessiondiebstahl | `Secure`, `HttpOnly`, `SameSite=Strict`, kurze Laufzeit, Rotation |
-| CSRF | SameSite-Strict, exakte Origin-Prüfung, CSRF-Header und sessiongebundener CSRF-Hash |
-| IDOR | jede D1-Abfrage bindet Case-, Session- und Objekt-ID gemeinsam |
-| XSS in Berichtstext | ausschließlich Textknoten; kein `set:html`; Zeichen- und Längenlimits |
-| Gefährlicher Link | nur `https:`; keine serverseitige Linkvorschau; `noopener noreferrer nofollow` |
-| SVG-/HTML-Upload | vollständig blockieren |
-| Falscher MIME-Type | deklarierter MIME-Type plus Magic-Byte-Prüfung |
-| Speichererschöpfung | Datei-, Fall- und Bucketquoten; R2-Lifecycle; D1-Zähler |
-| Worker-RAM-Überschreitung | Streaming; maximal ersten kleinen Headerblock puffern |
-| E-Mail-Leak | E-Mails enthalten nur Fall-ID, Status und Adminlink |
-| Access-Header-Spoofing | Access-JWT-Signatur, Issuer und Audience im Worker validieren |
-| Admin-Origin-Bypass | statische Shell enthält keine Daten; alle API-Daten verlangen gültigen Access-JWT |
-| Replay eines Upload-Slots | Upload-Slot ist einmalig und zustandsgebunden |
-| Race Condition bei Quoten | D1-Statusübergänge und Zähler in Batch/Transaktion |
-| Gelöschte Portaldatei noch in Praxis erforderlich | vor Schließen Status `exported_to_practice_system` verlangen oder bewusste Ausnahme protokollieren |
-| Notfall wird digital eingereicht | prominente Notfallwarnung vor Tokenprüfung und im Formular; Notfalltelefon jederzeit sichtbar |
-| Malware | kein Ausführen; private Speicherung; nur sichere Medien inline; sonst Download; klarer Hinweis, dass kein vollständiger Malware-Scan behauptet wird |
+| Bedrohung                                         | Gegenmaßnahme                                                                                                                                       |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Token wird über Referrer oder Logdateien geleakt  | Token nur im URL-Fragment oder manuell; Fragment nach Sessionaustausch entfernen                                                                    |
+| Brute Force                                       | mindestens 256 Bit Zufall, HMAC-Hash, Turnstile, Rate Limit, generische Fehler                                                                      |
+| Gestohlener Token                                 | kurze Gültigkeit, widerrufbar, begrenzte Einreichungen, Sessioncookie                                                                               |
+| Sessiondiebstahl                                  | `Secure`, `HttpOnly`, `SameSite=Strict`, kurze Laufzeit, Rotation                                                                                   |
+| CSRF                                              | SameSite-Strict, exakte Origin-Prüfung, CSRF-Header und sessiongebundener CSRF-Hash                                                                 |
+| IDOR                                              | jede D1-Abfrage bindet Case-, Session- und Objekt-ID gemeinsam                                                                                      |
+| XSS in Berichtstext                               | ausschließlich Textknoten; kein `set:html`; Zeichen- und Längenlimits                                                                               |
+| Gefährlicher Link                                 | nur `https:`; keine serverseitige Linkvorschau; `noopener noreferrer nofollow`                                                                      |
+| SVG-/HTML-Upload                                  | vollständig blockieren                                                                                                                              |
+| Falscher MIME-Type                                | deklarierter MIME-Type plus Magic-Byte-Prüfung                                                                                                      |
+| Speichererschöpfung                               | Datei-, Fall- und Bucketquoten; R2-Lifecycle; D1-Zähler                                                                                             |
+| Worker-RAM-Überschreitung                         | Streaming; maximal ersten kleinen Headerblock puffern                                                                                               |
+| E-Mail-Leak                                       | E-Mails enthalten nur Fall-ID, Status und Adminlink                                                                                                 |
+| Access-Header-Spoofing                            | Access-JWT-Signatur, Issuer und Audience im Worker validieren                                                                                       |
+| Admin-Origin-Bypass                               | statische Shell enthält keine Daten; alle API-Daten verlangen gültigen Access-JWT                                                                   |
+| Replay eines Upload-Slots                         | Upload-Slot ist einmalig und zustandsgebunden                                                                                                       |
+| Race Condition bei Quoten                         | D1-Statusübergänge und Zähler in Batch/Transaktion                                                                                                  |
+| Gelöschte Portaldatei noch in Praxis erforderlich | vor Schließen Status `exported_to_practice_system` verlangen oder bewusste Ausnahme protokollieren                                                  |
+| Notfall wird digital eingereicht                  | prominente Notfallwarnung vor Tokenprüfung und im Formular; Notfalltelefon jederzeit sichtbar                                                       |
+| Malware                                           | kein Ausführen; private Speicherung; nur sichere Medien inline; sonst Download; klarer Hinweis, dass kein vollständiger Malware-Scan behauptet wird |
 
 ---
 
@@ -638,7 +691,8 @@ export const defaultHomeVariantId: HomeVariantId = "4";
 
 ### 10.2 Gemeinsamer Inhalt
 
-Alle Varianten beziehen Fakten aus einer Quelle. Die Varianten dürfen Stil, Reihenfolge und Länge ändern, nicht aber Fakten.
+Alle Varianten beziehen Fakten aus einer Quelle. Die Varianten dürfen Stil, Reihenfolge
+und Länge ändern, nicht aber Fakten.
 
 ```ts
 // src/content/home-content.ts
@@ -664,8 +718,7 @@ export const sharedHomeFacts = {
   phoneHref: "tel:+4991163292983",
   address: "Friedrich-Ebert-Straße 17, 90766 Fürth",
   appointmentNote: "Wir bitten stets um telefonische Voranmeldung.",
-  emergencyNote:
-    "Das Kontaktformular und der Datentransfer sind keine Notfallkanäle.",
+  emergencyNote: "Das Kontaktformular und der Datentransfer sind keine Notfallkanäle.",
 } as const;
 ```
 
@@ -718,7 +771,8 @@ export const sharedHomeFacts = {
 
 > Mit Herz, Zeit und moderner Medizin für Ihr Tier da.
 >
-> Einfühlsame Betreuung, klare Worte und ein ruhiger Blick auf das, was Ihr Tier jetzt braucht.
+> Einfühlsame Betreuung, klare Worte und ein ruhiger Blick auf das, was Ihr Tier jetzt
+> braucht.
 
 **CTA:**
 
@@ -746,7 +800,8 @@ export const sharedHomeFacts = {
 
 **Philosophie:**
 
-> Jedes Tier ist einzigartig. Deshalb verbinden wir moderne Tiermedizin mit Empathie, Transparenz und einer Atmosphäre, in der Fragen willkommen sind.
+> Jedes Tier ist einzigartig. Deshalb verbinden wir moderne Tiermedizin mit Empathie,
+> Transparenz und einer Atmosphäre, in der Fragen willkommen sind.
 
 ### 11.4 Startseite 4 – Modern Teal/Koralle, Standard
 
@@ -771,7 +826,8 @@ export const sharedHomeFacts = {
 >
 > **Persönlich. Sorgfältig. Für Ihr Tier da.**
 >
-> Von der Vorsorge bis zur Behandlung begleiten wir Sie mit Erfahrung, Ruhe und einem offenen Ohr.
+> Von der Vorsorge bis zur Behandlung begleiten wir Sie mit Erfahrung, Ruhe und einem
+> offenen Ohr.
 
 **Standardregel:**
 
@@ -786,11 +842,15 @@ export const sharedHomeFacts = {
 
 ### 12.1 Designvorschauen
 
-Die drei bereits generierten Ganzseitenbilder werden ausschließlich als Designreferenzen gespeichert. Sie dürfen nicht als fertige Website-Screenshots oder als Behauptung über das echte Team veröffentlicht werden.
+Die drei bereits generierten Ganzseitenbilder werden ausschließlich als Designreferenzen
+gespeichert. Sie dürfen nicht als fertige Website-Screenshots oder als Behauptung über
+das echte Team veröffentlicht werden.
 
 ### 12.2 Produktionsassets
 
-Für jede Variante werden separate, textfreie Motive erzeugt. Alle Bilder werden ohne eingebrannte Telefonnummern, Adressen, Logos, Sternebewertungen oder erfundene Namen erzeugt.
+Für jede Variante werden separate, textfreie Motive erzeugt. Alle Bilder werden ohne
+eingebrannte Telefonnummern, Adressen, Logos, Sternebewertungen oder erfundene Namen
+erzeugt.
 
 #### Asset A – Variante 2 Hero
 
@@ -932,7 +992,8 @@ const { currentPath } = Astro.props;
 
 ### 14.1 Ziel
 
-Die Seite `/todo/` wird zur sichtbaren, aus dem Code generierten Projektübersicht. Sie beantwortet:
+Die Seite `/todo/` wird zur sichtbaren, aus dem Code generierten Projektübersicht. Sie
+beantwortet:
 
 - Was fehlt noch?
 - Welche Daten sind unbestätigt?
@@ -946,11 +1007,7 @@ Die Seite `/todo/` wird zur sichtbaren, aus dem Code generierten Projektübersic
 
 ```ts
 export type ProjectTodoStatus =
-  | "open"
-  | "in-progress"
-  | "blocked"
-  | "done"
-  | "not-applicable";
+  "open" | "in-progress" | "blocked" | "done" | "not-applicable";
 
 export type ProjectTodoPriority = "P0" | "P1" | "P2" | "P3";
 
@@ -1001,98 +1058,98 @@ export interface ProjectTodo {
 
 #### Inhalt und Praxisdaten
 
-| ID | Priorität | Aufgabe | Produktionsblocker |
-|---|---|---|---|
-| CNT-001 | P0 | Öffentliche Praxis-E-Mail bestätigen | ja |
-| CNT-002 | P0 | Behandelte Tierarten bestätigen | ja |
-| CNT-003 | P0 | Vollständiges Leistungsangebot fachlich freigeben | ja |
-| CNT-004 | P0 | Notdienst außerhalb der Sprechzeiten festlegen | ja |
-| CNT-005 | P1 | Teammitglieder, Funktionen und Qualifikationen erfassen | ja |
-| CNT-006 | P1 | Echte Praxis- und Teamfotos samt Einwilligungen bereitstellen | ja |
-| CNT-007 | P2 | Urlaubs-, Feiertags- und Kurzfristhinweise organisatorisch zuordnen | ja |
-| CNT-008 | P2 | Social-Media-Ziele final bestätigen | nein |
-| CNT-009 | P2 | Eröffnungsrückblick final freigeben | nein |
+| ID      | Priorität | Aufgabe                                                             | Produktionsblocker |
+| ------- | --------- | ------------------------------------------------------------------- | ------------------ |
+| CNT-001 | P0        | Öffentliche Praxis-E-Mail bestätigen                                | ja                 |
+| CNT-002 | P0        | Behandelte Tierarten bestätigen                                     | ja                 |
+| CNT-003 | P0        | Vollständiges Leistungsangebot fachlich freigeben                   | ja                 |
+| CNT-004 | P0        | Notdienst außerhalb der Sprechzeiten festlegen                      | ja                 |
+| CNT-005 | P1        | Teammitglieder, Funktionen und Qualifikationen erfassen             | ja                 |
+| CNT-006 | P1        | Echte Praxis- und Teamfotos samt Einwilligungen bereitstellen       | ja                 |
+| CNT-007 | P2        | Urlaubs-, Feiertags- und Kurzfristhinweise organisatorisch zuordnen | ja                 |
+| CNT-008 | P2        | Social-Media-Ziele final bestätigen                                 | nein               |
+| CNT-009 | P2        | Eröffnungsrückblick final freigeben                                 | nein               |
 
 #### Barrierefreiheit
 
-| ID | Priorität | Aufgabe | Produktionsblocker |
-|---|---|---|---|
-| A11Y-001 | P1 | Lichte Eingangstürbreite messen | ja |
-| A11Y-002 | P1 | Höhe der Türschwelle messen | ja |
-| A11Y-003 | P1 | Praxis-WC beschreiben | ja |
-| A11Y-004 | P1 | Bewegungsflächen für Rollstuhl/Rollator prüfen | ja |
-| A11Y-005 | P2 | Parkplatzmerkmale präzisieren | nein |
-| A11Y-006 | P2 | Barrierearme ÖPNV-Anfahrt ermitteln | nein |
-| A11Y-007 | P0 | Tastaturtest aller Seiten durchführen | ja |
-| A11Y-008 | P0 | 200- und 400-Prozent-Zoom prüfen | ja |
-| A11Y-009 | P0 | Screenreader-Stichprobe durchführen | ja |
-| A11Y-010 | P0 | axe-Tests ohne schwere oder kritische Fehler | ja |
+| ID       | Priorität | Aufgabe                                        | Produktionsblocker |
+| -------- | --------- | ---------------------------------------------- | ------------------ |
+| A11Y-001 | P1        | Lichte Eingangstürbreite messen                | ja                 |
+| A11Y-002 | P1        | Höhe der Türschwelle messen                    | ja                 |
+| A11Y-003 | P1        | Praxis-WC beschreiben                          | ja                 |
+| A11Y-004 | P1        | Bewegungsflächen für Rollstuhl/Rollator prüfen | ja                 |
+| A11Y-005 | P2        | Parkplatzmerkmale präzisieren                  | nein               |
+| A11Y-006 | P2        | Barrierearme ÖPNV-Anfahrt ermitteln            | nein               |
+| A11Y-007 | P0        | Tastaturtest aller Seiten durchführen          | ja                 |
+| A11Y-008 | P0        | 200- und 400-Prozent-Zoom prüfen               | ja                 |
+| A11Y-009 | P0        | Screenreader-Stichprobe durchführen            | ja                 |
+| A11Y-010 | P0        | axe-Tests ohne schwere oder kritische Fehler   | ja                 |
 
 #### Recht und Datenschutz
 
-| ID | Priorität | Aufgabe | Produktionsblocker |
-|---|---|---|---|
-| LEG-001 | P0 | Berufsbezeichnung und Verleihungsstaat eintragen | ja |
-| LEG-002 | P0 | Zuständige Tierärztekammer eintragen | ja |
-| LEG-003 | P0 | Zuständige Aufsichtsbehörde eintragen | ja |
-| LEG-004 | P0 | Berufsrechtliche Regelungen verlinken | ja |
-| LEG-005 | P0 | Berufshaftpflichtangaben prüfen | ja |
-| LEG-006 | P0 | Umsatzsteuer-ID oder Nichtvorhandensein klären | ja |
-| LEG-007 | P0 | Impressum rechtlich freigeben | ja |
-| LEG-008 | P0 | Datenschutzerklärung rechtlich freigeben | ja |
-| LEG-009 | P0 | Cloudflare-Auftragsverarbeitung prüfen und dokumentieren | ja |
-| LEG-010 | P0 | Verzeichnis der Verarbeitungstätigkeiten für Datentransfer ergänzen | ja |
-| LEG-011 | P0 | Rechtsgrundlage und Informationspflicht für Datentransfer festlegen | ja |
-| LEG-012 | P0 | Portal-Aufbewahrung und Übergabe in Praxisakte festlegen | ja |
-| LEG-013 | P1 | Datenpannen- und Betroffenenrechteprozess dokumentieren | ja |
+| ID      | Priorität | Aufgabe                                                             | Produktionsblocker |
+| ------- | --------- | ------------------------------------------------------------------- | ------------------ |
+| LEG-001 | P0        | Berufsbezeichnung und Verleihungsstaat eintragen                    | ja                 |
+| LEG-002 | P0        | Zuständige Tierärztekammer eintragen                                | ja                 |
+| LEG-003 | P0        | Zuständige Aufsichtsbehörde eintragen                               | ja                 |
+| LEG-004 | P0        | Berufsrechtliche Regelungen verlinken                               | ja                 |
+| LEG-005 | P0        | Berufshaftpflichtangaben prüfen                                     | ja                 |
+| LEG-006 | P0        | Umsatzsteuer-ID oder Nichtvorhandensein klären                      | ja                 |
+| LEG-007 | P0        | Impressum rechtlich freigeben                                       | ja                 |
+| LEG-008 | P0        | Datenschutzerklärung rechtlich freigeben                            | ja                 |
+| LEG-009 | P0        | Cloudflare-Auftragsverarbeitung prüfen und dokumentieren            | ja                 |
+| LEG-010 | P0        | Verzeichnis der Verarbeitungstätigkeiten für Datentransfer ergänzen | ja                 |
+| LEG-011 | P0        | Rechtsgrundlage und Informationspflicht für Datentransfer festlegen | ja                 |
+| LEG-012 | P0        | Portal-Aufbewahrung und Übergabe in Praxisakte festlegen            | ja                 |
+| LEG-013 | P1        | Datenpannen- und Betroffenenrechteprozess dokumentieren             | ja                 |
 
 #### Design und Startseiten
 
-| ID | Priorität | Aufgabe | Produktionsblocker |
-|---|---|---|---|
-| DES-001 | P1 | Startseite 1 modernisieren | nein |
-| DES-002 | P1 | Startseite 2 implementieren | nein |
-| DES-003 | P1 | Startseite 3 implementieren | nein |
-| DES-004 | P0 | Startseite 4 als Landingpage implementieren | nein |
-| DES-005 | P1 | Startseiten-Dropdown barrierefrei umsetzen | nein |
-| DES-006 | P1 | Produktionsbilder erstellen und kennzeichnen | ja |
-| DES-007 | P1 | Bildnachweise pflegen | ja |
-| DES-008 | P2 | Visuelle Regression für vier Varianten einrichten | nein |
+| ID      | Priorität | Aufgabe                                           | Produktionsblocker |
+| ------- | --------- | ------------------------------------------------- | ------------------ |
+| DES-001 | P1        | Startseite 1 modernisieren                        | nein               |
+| DES-002 | P1        | Startseite 2 implementieren                       | nein               |
+| DES-003 | P1        | Startseite 3 implementieren                       | nein               |
+| DES-004 | P0        | Startseite 4 als Landingpage implementieren       | nein               |
+| DES-005 | P1        | Startseiten-Dropdown barrierefrei umsetzen        | nein               |
+| DES-006 | P1        | Produktionsbilder erstellen und kennzeichnen      | ja                 |
+| DES-007 | P1        | Bildnachweise pflegen                             | ja                 |
+| DES-008 | P2        | Visuelle Regression für vier Varianten einrichten | nein               |
 
 #### Datentransfer
 
-| ID | Priorität | Aufgabe | Produktionsblocker |
-|---|---|---|---|
-| DT-001 | P0 | D1 in EU-Jurisdiktion erstellen | ja |
-| DT-002 | P0 | privaten R2-Bucket in EU-Jurisdiktion erstellen | ja |
-| DT-003 | P0 | Queue und Dead-Letter-Queue erstellen | ja |
-| DT-004 | P0 | Access-Anwendungen und Admin-E-Mail-Policy einrichten | ja |
-| DT-005 | P0 | `TOKEN_PEPPER` und Session-Secrets setzen | ja |
-| DT-006 | P0 | D1-Migration anwenden | ja |
-| DT-007 | P0 | Token- und Sessionlogik implementieren | ja |
-| DT-008 | P0 | Berichtserstellung implementieren | ja |
-| DT-009 | P0 | sichere Bild-/Video-Uploads implementieren | ja |
-| DT-010 | P0 | privaten Download und Range-Support implementieren | ja |
-| DT-011 | P0 | Admin-Token-Erzeugung implementieren | ja |
-| DT-012 | P1 | optionale Antwort und Rückrufstatus implementieren | ja |
-| DT-013 | P0 | E-Mail-Benachrichtigung ohne Berichtsinhalte | ja |
-| DT-014 | P0 | Löschlauf und R2-Lifecycle konfigurieren | ja |
-| DT-015 | P0 | End-to-End-Sicherheitstest | ja |
-| DT-016 | P1 | Übernahme-in-Praxisakte-Status definieren | ja |
-| DT-017 | P1 | Datentransfer-Betriebshandbuch erstellen | ja |
+| ID     | Priorität | Aufgabe                                               | Produktionsblocker |
+| ------ | --------- | ----------------------------------------------------- | ------------------ |
+| DT-001 | P0        | D1 in EU-Jurisdiktion erstellen                       | ja                 |
+| DT-002 | P0        | privaten R2-Bucket in EU-Jurisdiktion erstellen       | ja                 |
+| DT-003 | P0        | Queue und Dead-Letter-Queue erstellen                 | ja                 |
+| DT-004 | P0        | Access-Anwendungen und Admin-E-Mail-Policy einrichten | ja                 |
+| DT-005 | P0        | `TOKEN_PEPPER` und Session-Secrets setzen             | ja                 |
+| DT-006 | P0        | D1-Migration anwenden                                 | ja                 |
+| DT-007 | P0        | Token- und Sessionlogik implementieren                | ja                 |
+| DT-008 | P0        | Berichtserstellung implementieren                     | ja                 |
+| DT-009 | P0        | sichere Bild-/Video-Uploads implementieren            | ja                 |
+| DT-010 | P0        | privaten Download und Range-Support implementieren    | ja                 |
+| DT-011 | P0        | Admin-Token-Erzeugung implementieren                  | ja                 |
+| DT-012 | P1        | optionale Antwort und Rückrufstatus implementieren    | ja                 |
+| DT-013 | P0        | E-Mail-Benachrichtigung ohne Berichtsinhalte          | ja                 |
+| DT-014 | P0        | Löschlauf und R2-Lifecycle konfigurieren              | ja                 |
+| DT-015 | P0        | End-to-End-Sicherheitstest                            | ja                 |
+| DT-016 | P1        | Übernahme-in-Praxisakte-Status definieren             | ja                 |
+| DT-017 | P1        | Datentransfer-Betriebshandbuch erstellen              | ja                 |
 
 #### Infrastruktur und Betrieb
 
-| ID | Priorität | Aufgabe | Produktionsblocker |
-|---|---|---|---|
-| OPS-001 | P0 | Produktions-Turnstile-Widget und Secret | ja |
-| OPS-002 | P0 | Entwicklungs- und Produktions-D1/R2 trennen | ja |
-| OPS-003 | P0 | Migrationsworkflow mit manueller Freigabe | ja |
-| OPS-004 | P1 | R2-Speicherwarnung bei 7 GB | ja |
-| OPS-005 | P1 | Queue-Reconciliation und Alarmierung | ja |
-| OPS-006 | P1 | D1-Time-Travel-Restore testen | ja |
-| OPS-007 | P1 | Rollback- und Incident-Runbook testen | ja |
-| OPS-008 | P2 | monatliche Inhaltsprüfung terminieren | nein |
+| ID      | Priorität | Aufgabe                                     | Produktionsblocker |
+| ------- | --------- | ------------------------------------------- | ------------------ |
+| OPS-001 | P0        | Produktions-Turnstile-Widget und Secret     | ja                 |
+| OPS-002 | P0        | Entwicklungs- und Produktions-D1/R2 trennen | ja                 |
+| OPS-003 | P0        | Migrationsworkflow mit manueller Freigabe   | ja                 |
+| OPS-004 | P1        | R2-Speicherwarnung bei 7 GB                 | ja                 |
+| OPS-005 | P1        | Queue-Reconciliation und Alarmierung        | ja                 |
+| OPS-006 | P1        | D1-Time-Travel-Restore testen               | ja                 |
+| OPS-007 | P1        | Rollback- und Incident-Runbook testen       | ja                 |
+| OPS-008 | P2        | monatliche Inhaltsprüfung terminieren       | nein               |
 
 ---
 
@@ -1159,7 +1216,8 @@ Felder:
 - Datenschutzbestätigung;
 - ausdrückliche Bestätigung: `Kein Notfall`.
 
-Es gibt keine Kategorie `Notfall`. Wer einen Notfall meldet, sieht Telefonnummer und muss abbrechen.
+Es gibt keine Kategorie `Notfall`. Wer einen Notfall meldet, sieht Telefonnummer und
+muss abbrechen.
 
 ### 15.4 Praxis bearbeitet
 
@@ -1232,10 +1290,7 @@ Der vollständige Token wird nur bei Erzeugung an den Admin zurückgegeben.
 ### 16.3 HMAC-Helfer
 
 ```ts
-export async function hmacHex(
-  secret: string,
-  value: string,
-): Promise<string> {
+export async function hmacHex(secret: string, value: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -1275,7 +1330,8 @@ Die Session wird bei Aktivität verlängert, aber nach zwölf Stunden absolut be
 - Client speichert ihn in `sessionStorage`;
 - alle mutierenden Requests senden `X-Datatransfer-CSRF`;
 - D1 speichert nur HMAC;
-- bei Seitenreload kann ein authentifizierter Endpoint einen neuen CSRF-Token ausstellen;
+- bei Seitenreload kann ein authentifizierter Endpoint einen neuen CSRF-Token
+  ausstellen;
 - exakte Origin-Prüfung bleibt zusätzlich aktiv.
 
 ---
@@ -1441,7 +1497,8 @@ CREATE INDEX idx_transfer_notifications_state_created
   ON transfer_notifications(state, created_at);
 ```
 
-`internal_note` und `callback_note` sind ausschließlich für Admin- und Serverzugriffe bestimmt und dürfen nie in Public-DTOs oder Customer-API-Antworten erscheinen.
+`internal_note` und `callback_note` sind ausschließlich für Admin- und Serverzugriffe
+bestimmt und dürfen nie in Public-DTOs oder Customer-API-Antworten erscheinen.
 
 ---
 
@@ -1614,7 +1671,8 @@ Filter:
 
 #### `GET /api/admin/cases/:id`
 
-Liefert alle Fallinformationen, Einreichungen, Dateien, Links, Antworten und Audit-Kurzverlauf.
+Liefert alle Fallinformationen, Einreichungen, Dateien, Links, Antworten und
+Audit-Kurzverlauf.
 
 #### `POST /api/admin/cases/:id/tokens`
 
@@ -1646,15 +1704,15 @@ Nur mit zusätzlicher Bestätigung; löscht R2 und D1; Audit-Event ohne Inhalt.
 
 ### 19.1 Erlaubte Typen
 
-| Art | MIME | Maximalgröße | Vorschau |
-|---|---|---:|---|
-| JPEG | `image/jpeg` | 12 MB | inline |
-| PNG | `image/png` | 12 MB | inline |
-| WebP | `image/webp` | 12 MB | inline |
-| HEIC/HEIF | `image/heic`, `image/heif` | 12 MB | Download, bis Browserunterstützung geprüft |
-| MP4 | `video/mp4` | 50 MB | inline mit Range |
-| QuickTime | `video/quicktime` | 50 MB | abhängig vom Browser, sonst Download |
-| WebM | `video/webm` | 50 MB | inline mit Range |
+| Art       | MIME                       | Maximalgröße | Vorschau                                   |
+| --------- | -------------------------- | -----------: | ------------------------------------------ |
+| JPEG      | `image/jpeg`               |        12 MB | inline                                     |
+| PNG       | `image/png`                |        12 MB | inline                                     |
+| WebP      | `image/webp`               |        12 MB | inline                                     |
+| HEIC/HEIF | `image/heic`, `image/heif` |        12 MB | Download, bis Browserunterstützung geprüft |
+| MP4       | `video/mp4`                |        50 MB | inline mit Range                           |
+| QuickTime | `video/quicktime`          |        50 MB | abhängig vom Browser, sonst Download       |
+| WebM      | `video/webm`               |        50 MB | inline mit Range                           |
 
 ### 19.2 Verboten
 
@@ -1691,7 +1749,8 @@ export function detectMediaType(prefix: Uint8Array): AllowedMediaType | null {
 }
 ```
 
-Die endgültige Funktion enthält konkrete Signaturtests und wird tabellengetrieben getestet.
+Die endgültige Funktion enthält konkrete Signaturtests und wird tabellengetrieben
+getestet.
 
 ### 19.4 R2-Key
 
@@ -1814,7 +1873,8 @@ Ein Cronlauf sucht:
 - `failed` mit weniger als 5 Versuchen;
 - Queue-Ereignis abgelaufen oder verloren.
 
-Er stellt Nachrichten erneut ein. Nach maximal fünf Versuchen wird `abandoned` gesetzt und im Admin-Dashboard sichtbar gemacht.
+Er stellt Nachrichten erneut ein. Nach maximal fünf Versuchen wird `abandoned` gesetzt
+und im Admin-Dashboard sichtbar gemacht.
 
 ---
 
@@ -1865,7 +1925,10 @@ Admin kann ein Manifest herunterladen:
 }
 ```
 
-Dateien werden einzeln oder als kontrolliertes Exportpaket geladen. Ein ZIP im Worker wird im Free-Tier nicht serverseitig erzeugt, weil Kompression CPU-intensiv wäre. Falls ZIP erforderlich wird, erzeugt der Admin-Client es lokal im Browser oder die Funktion wird auf einen späteren Meilenstein verschoben.
+Dateien werden einzeln oder als kontrolliertes Exportpaket geladen. Ein ZIP im Worker
+wird im Free-Tier nicht serverseitig erzeugt, weil Kompression CPU-intensiv wäre. Falls
+ZIP erforderlich wird, erzeugt der Admin-Client es lokal im Browser oder die Funktion
+wird auf einen späteren Meilenstein verschoben.
 
 ---
 
@@ -1883,11 +1946,20 @@ Dateien werden einzeln oder als kontrolliertes Exportpaket geladen. Ein ZIP im W
 - konsumiert aktuellen `main`;
 - produziert isolierten Branch `feature/home-variants-datatransfer`.
 
-**Ausführungsmodus:** Der Controller provisioniert Worktree und Branch vor dem Dispatch aus `origin/main`. Task 0 verifiziert diesen Zustand und erstellt weder einen zweiten Worktree noch einen zweiten Branch.
+**Ausführungsmodus:** Der Controller provisioniert Worktree und Branch vor dem Dispatch
+aus `origin/main`. Task 0 verifiziert diesen Zustand und erstellt weder einen zweiten
+Worktree noch einen zweiten Branch.
 
-**Status:** abgeschlossen am 2026-08-04. **Evidenz:** Der vorprovisionierte Controller-Worktree auf `feature/home-variants-datatransfer` war nach `git fetch origin --prune` sauber und exakt bei `origin/main` (`ce6e3c1`); Baseline vollständig grün.
+**Status:** abgeschlossen am 2026-08-04. **Evidenz:** Der vorprovisionierte
+Controller-Worktree auf `feature/home-variants-datatransfer` war nach
+`git fetch origin --prune` sauber und exakt bei `origin/main` (`ce6e3c1`); Baseline
+vollständig grün.
 
-**Lokale Development-Konfiguration:** Für `pnpm test` und `pnpm build` im sauberen Checkout Werte aus `.env.example` explizit setzen, nicht als Shellcode sourcen und keine `.env` committen; `PUBLIC_TURNSTILE_SITE_KEY` ist für `site-config` erforderlich.
+**Lokale Development-Konfiguration:** Für `pnpm test` und `pnpm build` im sauberen
+Checkout Werte aus `.env.example` explizit setzen, nicht als Shellcode sourcen und keine
+`.env` committen; `PUBLIC_TURNSTILE_SITE_KEY` und `PUBLIC_BASE_PATH=/` sind für den
+Development-Build erforderlich. Der offizielle Cloudflare-Test-Sitekey darf nur lokal
+verwendet werden.
 
 - [x] **Schritt 1:** Vorprovisionierten Ausgangsstand verifizieren.
 
@@ -1907,7 +1979,8 @@ pnpm test
 pnpm build
 ```
 
-**Erwartung:** alle Befehle erfolgreich; Entwicklungsplatzhalter dürfen nur als dokumentierte Warnungen erscheinen.
+**Erwartung:** alle Befehle erfolgreich; Entwicklungsplatzhalter dürfen nur als
+dokumentierte Warnungen erscheinen.
 
 - [x] **Schritt 3:** Vorprovisionierten Worktree verifizieren.
 
@@ -1939,12 +2012,17 @@ git commit -m "docs: masterplan für startseiten und datentransfer"
 
 - produziert freigegebene Dateinamen und Kennzeichnungen für Home-Komponenten.
 
-- [x] **Schritt 1:** Failing Test für Nachweise jedes veröffentlichten Bildes geschrieben.
+- [x] **Schritt 1:** Failing Test für Nachweise jedes veröffentlichten Bildes
+      geschrieben.
 - [x] **Schritt 2:** RED bestätigt: Nachweisdatei und veröffentlichte Assets fehlten.
-- [x] **Schritt 3:** Drei Designpreviews ausschließlich aus den benannten `assets/`-Einträgen des geprüften ZIP nach `docs/design/` kopiert.
-- [x] **Schritt 4:** `docs/BILDNACHWEISE.md` mit vollständiger Methode, Herkunft/Prompt, Bearbeitung, Zweck, Kennzeichnung, Freigabe- und Austauschstatus angelegt.
-- [x] **Schritt 5:** Vier getrennt generierte Rastermotive als bereinigte WebP-Assets gespeichert; lokale SVG-Illustration ergänzt.
-- [x] **Schritt 6:** Policy-Test verbietet jeden Designpreview-Dateinamen rekursiv unter `public/`.
+- [x] **Schritt 3:** Drei Designpreviews ausschließlich aus den benannten
+      `assets/`-Einträgen des geprüften ZIP nach `docs/design/` kopiert.
+- [x] **Schritt 4:** `docs/BILDNACHWEISE.md` mit vollständiger Methode, Herkunft/Prompt,
+      Bearbeitung, Zweck, Kennzeichnung, Freigabe- und Austauschstatus angelegt.
+- [x] **Schritt 5:** Vier getrennt generierte Rastermotive als bereinigte WebP-Assets
+      gespeichert; lokale SVG-Illustration ergänzt.
+- [x] **Schritt 6:** Policy-Test verbietet jeden Designpreview-Dateinamen rekursiv unter
+      `public/`.
 - [x] **Schritt 7:** GREEN: `pnpm vitest run tests/image-policy.test.ts` (3/3).
 
 ```bash
@@ -1958,13 +2036,22 @@ git add docs/design docs/BILDNACHWEISE.md public/images/home tests/image-policy.
 git commit -m "feat: designreferenzen und bildrichtlinie ergänzen"
 ```
 
-**Fixrunde 1:** Der Policy-Test ermittelt veröffentlichte Visuals jetzt dynamisch anhand webüblicher Bildendungen unter `public/` und verlangt pro Datei einen vollständigen Nachweis. Für `public/favicon.svg` und `public/logo.svg` sind nur belegbare Repositorydaten dokumentiert; ursprüngliche Erstellung, Quelle und externe Freigabe bleiben ausdrücklich offen. Die Preview-Sperre prüft den Basisnamen und erfasst damit auch verschachtelte Pfade. RED: fehlende Nachweise für bestehenden Repositorybestand und nicht erkannter synthetischer Nested-Pfad. GREEN: `tests/image-policy.test.ts` 5/5, `pnpm check` 0 Fehler/Warnungen, `pnpm test` 39 + 6 und `pnpm build` 12 Seiten unter dokumentierter Development-Umgebung mit 11 erwarteten Warnungen.
+**Fixrunde 1:** Der Policy-Test ermittelt veröffentlichte Visuals jetzt dynamisch anhand
+webüblicher Bildendungen unter `public/` und verlangt pro Datei einen vollständigen
+Nachweis. Für `public/favicon.svg` und `public/logo.svg` sind nur belegbare
+Repositorydaten dokumentiert; ursprüngliche Erstellung, Quelle und externe Freigabe
+bleiben ausdrücklich offen. Die Preview-Sperre prüft den Basisnamen und erfasst damit
+auch verschachtelte Pfade. RED: fehlende Nachweise für bestehenden Repositorybestand und
+nicht erkannter synthetischer Nested-Pfad. GREEN: `tests/image-policy.test.ts` 5/5,
+`pnpm check` 0 Fehler/Warnungen, `pnpm test` 39 + 6 und `pnpm build` 12 Seiten unter
+dokumentierter Development-Umgebung mit 11 erwarteten Warnungen.
 
 ---
 
 ## Task 2: Gemeinsames Inhaltsmodell, Meilensteine und TODO-Registry
 
-**Status:** abgeschlossen am 2026-08-04. Code-Evidenz: Commits `24470f5`, `c83e466`, `0364114`.
+**Status:** abgeschlossen am 2026-08-04. Code-Evidenz: Commits `24470f5`, `c83e466`,
+`0364114`.
 
 **Dateien:**
 
@@ -1985,31 +2072,67 @@ git commit -m "feat: designreferenzen und bildrichtlinie ergänzen"
 - `historicalMilestones`;
 - `getOpenProductionBlockers()`.
 
-- [x] **Schritt 1:** Failing Tests für eindeutige Variant-IDs, genau eine Standardvariante und Standard-ID `4`. RED: fehlende reale Module; GREEN: 2 Tests.
-- [x] **Schritt 2:** Failing Tests für eindeutige TODO-IDs, erlaubte Statuswerte und vollständige Akzeptanzkriterien. RED: fehlendes reales Modul; GREEN: 5 Tests einschließlich Prozessvalidator.
-- [x] **Schritt 3:** Registry implementieren. 65 initiale, nicht geheime Einträge mit Status, Owner, Kriterien und Produktionsblockern.
-- [x] **Schritt 4:** Historische Meilensteine H0–H16 übertragen; H15 enthält verbindlich `Neue Seite TODO` und `strukturierte TODO-Registry`.
-- [x] **Schritt 5:** `siteConfig` bezieht gemeinsame Telefon- und Terminfakten aus `sharedHomeFacts`; Startseitenkopie liegt in `sharedHomeCopy`, direkte Consumer verwenden diese Quelle.
+- [x] **Schritt 1:** Failing Tests für eindeutige Variant-IDs, genau eine
+      Standardvariante und Standard-ID `4`. RED: fehlende reale Module; GREEN: 2 Tests.
+- [x] **Schritt 2:** Failing Tests für eindeutige TODO-IDs, erlaubte Statuswerte und
+      vollständige Akzeptanzkriterien. RED: fehlendes reales Modul; GREEN: 5 Tests
+      einschließlich Prozessvalidator.
+- [x] **Schritt 3:** Registry implementieren. 65 initiale, nicht geheime Einträge mit
+      Status, Owner, Kriterien und Produktionsblockern.
+- [x] **Schritt 4:** Historische Meilensteine H0–H16 übertragen; H15 enthält verbindlich
+      `Neue Seite TODO` und `strukturierte TODO-Registry`.
+- [x] **Schritt 5:** `siteConfig` bezieht gemeinsame Telefon- und Terminfakten aus
+      `sharedHomeFacts`; Startseitenkopie liegt in `sharedHomeCopy`, direkte Consumer
+      verwenden diese Quelle.
 - [x] **Schritt 6:** Validator erweitern:
   - Produktionsbuild scheitert bei offenem `productionBlocker`;
   - accidental `TODO|TBD|CHANGEME` außerhalb Registry/Docs bleibt Fehler;
   - Registry selbst ist kein unbeabsichtigter Platzhalter.
-- [x] **Schritt 7:** Tests. `pnpm vitest run tests/home-variants.test.ts tests/todo-registry.test.ts` (7/7), `pnpm validate:content`, `pnpm check` (0 Fehler/Warnungen), `pnpm test` (32 + 6), `pnpm build` unter dokumentierter Development-Umgebung.
+- [x] **Schritt 7:** Tests.
+      `pnpm vitest run tests/home-variants.test.ts tests/todo-registry.test.ts` (7/7),
+      `pnpm validate:content`, `pnpm check` (0 Fehler/Warnungen), `pnpm test` (32 + 6),
+      `pnpm build` unter dokumentierter Development-Umgebung.
 
 ```bash
 pnpm vitest run tests/home-variants.test.ts tests/todo-registry.test.ts
 pnpm validate:content
 ```
 
-- [x] **Schritt 8:** Commit `24470f5` (`feat: startseiten und projekt-todos zentral modellieren`).
+- [x] **Schritt 8:** Commit `24470f5`
+      (`feat: startseiten und projekt-todos zentral modellieren`).
 
-**Fixrunde 1:** RED: H15-Charakterisierung lieferte abweichenden Text; gerenderte Home-Copy hatte keinen Wert. GREEN: `tests/milestones.test.ts` und `tests/home-copy.test.ts` (2/2). `pnpm check` meldet 0 Fehler/Warnungen; `pnpm test` 32 + 6; `pnpm build` erstellt 12 Seiten. Commit `c83e466` (`fix: gemeinsame home-copy und H15 korrigieren`).
+**Fixrunde 1:** RED: H15-Charakterisierung lieferte abweichenden Text; gerenderte
+Home-Copy hatte keinen Wert. GREEN: `tests/milestones.test.ts` und
+`tests/home-copy.test.ts` (2/2). `pnpm check` meldet 0 Fehler/Warnungen; `pnpm test`
+32 + 6; `pnpm build` erstellt 12 Seiten. Commit `c83e466`
+(`fix: gemeinsame home-copy und H15 korrigieren`).
 
-**Fixrunde 2:** H15s zwei verbindliche historische Werte werden beim Platzhalterscan gezielt und nur beim ersten exakten Vorkommen neutralisiert; alle anderen Dateien und Platzhalter bleiben geprüft. RED: `tests/content-validator.test.ts` meldete `src/content/milestones.ts`; GREEN: 1/1, temporärer fremder `TODO` in `src` bleibt Validatorfehler. `pnpm check` meldet 0 Fehler/Warnungen; `pnpm test` 33 + 6; `pnpm build` erstellt 12 Seiten mit 11 erwarteten Development-Warnungen. Commit `0364114` (`fix: H15 vom platzhalter-gate ausnehmen`).
+**Fixrunde 2:** H15s zwei verbindliche historische Werte werden beim Platzhalterscan
+gezielt und nur beim ersten exakten Vorkommen neutralisiert; alle anderen Dateien und
+Platzhalter bleiben geprüft. RED: `tests/content-validator.test.ts` meldete
+`src/content/milestones.ts`; GREEN: 1/1, temporärer fremder `TODO` in `src` bleibt
+Validatorfehler. `pnpm check` meldet 0 Fehler/Warnungen; `pnpm test` 33 + 6;
+`pnpm build` erstellt 12 Seiten mit 11 erwarteten Development-Warnungen. Commit
+`0364114` (`fix: H15 vom platzhalter-gate ausnehmen`).
 
-**Fixrunde 3:** RED: Ein kanonischer H15-Ziel- und Evidenztext außerhalb des H15-Datensatzes wurde durch die wertbasierte Ausnahme geschluckt. GREEN: Der Validator neutralisiert nur noch den vollständigen kanonischen serialisierten H15-Datensatz; fremde gleiche Werte bleiben Platzhalterfehler. `tests/content-validator.test.ts` 2/2, `pnpm check` 0 Fehler/Warnungen, `pnpm test` 34 + 6 und `pnpm build` unter dokumentierter Development-Umgebung mit 11 erwarteten Warnungen und 12 Seiten. Commit `840c9d2` (`fix: H15 validator scope`).
+**Fixrunde 3:** RED: Ein kanonischer H15-Ziel- und Evidenztext außerhalb des
+H15-Datensatzes wurde durch die wertbasierte Ausnahme geschluckt. GREEN: Der Validator
+neutralisiert nur noch den vollständigen kanonischen serialisierten H15-Datensatz;
+fremde gleiche Werte bleiben Platzhalterfehler. `tests/content-validator.test.ts` 2/2,
+`pnpm check` 0 Fehler/Warnungen, `pnpm test` 34 + 6 und `pnpm build` unter
+dokumentierter Development-Umgebung mit 11 erwarteten Warnungen und 12 Seiten. Commit
+`840c9d2` (`fix: H15 validator scope`).
 
-**Fixrunde 4:** Ein vollständiger Testlauf nach Task 1 deckte ein Race auf: `tests/content-validator.test.ts` überschrieb zeitweise das getrackte `src/content/milestones.ts`, während `tests/milestones.test.ts` das Modul parallel importierte. Der Negativtest arbeitet nun ausschließlich mit synthetischem Inhalt und der kleinen reinen Funktion `exemptHistoricalH15Placeholders()`; der reale Validator-Prozesstest bleibt erhalten. RED: Die zunächst identische Transformation ließ den kanonischen H15-Block unverändert. GREEN: fokussiert 3/3; `pnpm check` 0 Fehler/Warnungen; zwei aufeinanderfolgende vollständige Läufe jeweils 37 + 6 Tests; `pnpm build` unter dokumentierter Development-Umgebung mit 11 erwarteten Warnungen und 12 Seiten. Commit `debe5c0` (`test: H15-validator race beseitigen`).
+**Fixrunde 4:** Ein vollständiger Testlauf nach Task 1 deckte ein Race auf:
+`tests/content-validator.test.ts` überschrieb zeitweise das getrackte
+`src/content/milestones.ts`, während `tests/milestones.test.ts` das Modul parallel
+importierte. Der Negativtest arbeitet nun ausschließlich mit synthetischem Inhalt und
+der kleinen reinen Funktion `exemptHistoricalH15Placeholders()`; der reale
+Validator-Prozesstest bleibt erhalten. RED: Die zunächst identische Transformation ließ
+den kanonischen H15-Block unverändert. GREEN: fokussiert 3/3; `pnpm check` 0
+Fehler/Warnungen; zwei aufeinanderfolgende vollständige Läufe jeweils 37 + 6 Tests;
+`pnpm build` unter dokumentierter Development-Umgebung mit 11 erwarteten Warnungen und
+12 Seiten. Commit `debe5c0` (`test: H15-validator race beseitigen`).
 
 ```bash
 git add src/content src/config/site.ts scripts/validate-content.ts tests
@@ -2038,8 +2161,13 @@ git commit -m "feat: startseiten und projekt-todos zentral modellieren"
 - CSS Custom Properties bleiben globale stabile Schnittstelle;
 - Varianten dürfen nur eigene `data-home-variant`-Scopes überschreiben.
 
-- [x] **Schritt 1:** Build-Artefakt-Inspektor `scripts/inspect-home-build.ts` prüft reale `dist/index.html`- und CSS-Assets auf First-Party-CSS, vorhandene Assets, fehlende Inline-Styles, fehlende Remote-Styles/-Fonts und CSP `style-src 'self'` ohne `unsafe-inline`. Bestehender Build: Characterization-GREEN.
-- [x] **Schritt 2:** CSS ohne sichtbare Änderung aus `global.css` in Layerdateien aufteilen; Selektoren, Deklarationen, Breakpoints und Komponentenreihenfolge bleiben erhalten.
+- [x] **Schritt 1:** Build-Artefakt-Inspektor `scripts/inspect-home-build.ts` prüft
+      reale `dist/index.html`- und CSS-Assets auf First-Party-CSS, vorhandene Assets,
+      fehlende Inline-Styles, fehlende Remote-Styles/-Fonts und CSP `style-src 'self'`
+      ohne `unsafe-inline`. Bestehender Build: Characterization-GREEN.
+- [x] **Schritt 2:** CSS ohne sichtbare Änderung aus `global.css` in Layerdateien
+      aufteilen; Selektoren, Deklarationen, Breakpoints und Komponentenreihenfolge
+      bleiben erhalten.
 - [x] **Schritt 3:** Typografiestacks definieren:
 
 ```css
@@ -2047,13 +2175,30 @@ git commit -m "feat: startseiten und projekt-todos zentral modellieren"
 --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
 ```
 
-- [x] **Schritt 4:** minimale Abstands-, Radius-, Schatten- und Farb-Tokens ergänzen; bestehende Custom Properties bleiben kompatibel und global.
-- [x] **Schritt 5:** `pnpm check`, Build sowie Home- und Kontakt-Artefaktinspektor unter dokumentierter lokaler Development-Konfiguration ausgeführt; Website 39/39 und Worker 6/6 grün.
-- [x] **Schritt 6:** Intentional Commit `refactor: css in belastbares designsystem aufteilen`.
+- [x] **Schritt 4:** minimale Abstands-, Radius-, Schatten- und Farb-Tokens ergänzen;
+      bestehende Custom Properties bleiben kompatibel und global.
+- [x] **Schritt 5:** `pnpm check`, Build sowie Home- und Kontakt-Artefaktinspektor unter
+      dokumentierter lokaler Development-Konfiguration ausgeführt; Website 39/39 und
+      Worker 6/6 grün.
+- [x] **Schritt 6:** Intentional Commit
+      `refactor: css in belastbares designsystem aufteilen`.
 
-**Abschluss 2026-08-04:** `BaseLayout.astro` importiert `global.css` sowie die sieben Module in fester Reihenfolge; `global.css` deklariert weiterhin die globale Layerordnung. Die 125 bestehenden CSS-Zeilen bleiben erhalten, mit der allein erforderlichen, visuell äquivalenten Umstellung des bisherigen Body-Stacks auf `var(--font-body)`. Der Entwicklung-Build erzeugt 12 Seiten mit 11 dokumentierten Platzhalterwarnungen. Home- und Kontakt-Artefakte sind CSP-konform.
+**Abschluss 2026-08-04:** `BaseLayout.astro` importiert `global.css` sowie die sieben
+Module in fester Reihenfolge; `global.css` deklariert weiterhin die globale
+Layerordnung. Die 125 bestehenden CSS-Zeilen bleiben erhalten, mit der allein
+erforderlichen, visuell äquivalenten Umstellung des bisherigen Body-Stacks auf
+`var(--font-body)`. Der Entwicklung-Build erzeugt 12 Seiten mit 11 dokumentierten
+Platzhalterwarnungen. Home- und Kontakt-Artefakte sind CSP-konform.
 
-**Fixrunde 1:** Der Home-Inspektor parst Linkattribute jetzt für doppelt, einfach und nicht zitierte Werte. `rel`-Tokens und `as=font` werden case-insensitiv klassifiziert; unquotierte gemischt geschriebene Remote-Stylesheets und Font-Preloads sind durch Regressionstest geschützt. `inspect:home-build` ist als Paket-Skript definiert und wird in CI nach dem Build vor dem bestehenden Kontaktinspektor ausgeführt. RED: fehlender Helper sowie fehlendes Skript. GREEN: fokussiert 17/17; `pnpm check` 0 Fehler/Warnungen/Hinweise; Development-Build 12 Seiten und 11 erwartete Platzhalterwarnungen; Home-/Kontakt-Inspektoren grün; Vollsuite Website 41/41 und Worker 6/6.
+**Fixrunde 1:** Der Home-Inspektor parst Linkattribute jetzt für doppelt, einfach und
+nicht zitierte Werte. `rel`-Tokens und `as=font` werden case-insensitiv klassifiziert;
+unquotierte gemischt geschriebene Remote-Stylesheets und Font-Preloads sind durch
+Regressionstest geschützt. `inspect:home-build` ist als Paket-Skript definiert und wird
+in CI nach dem Build vor dem bestehenden Kontaktinspektor ausgeführt. RED: fehlender
+Helper sowie fehlendes Skript. GREEN: fokussiert 17/17; `pnpm check` 0
+Fehler/Warnungen/Hinweise; Development-Build 12 Seiten und 11 erwartete
+Platzhalterwarnungen; Home-/Kontakt-Inspektoren grün; Vollsuite Website 41/41 und Worker
+6/6.
 
 ```bash
 git add src/styles src/layouts/BaseLayout.astro scripts/inspect-home-build.ts
@@ -2077,11 +2222,14 @@ git commit -m "refactor: css in belastbares designsystem aufteilen"
 - Props `currentPath`;
 - IDs `start-variant-trigger` und `start-variant-menu`.
 
-- [x] **Schritt 1:** Playwright-Test für Hover, Fokus, Escape und vier Einträge schreiben.
-- [x] **Schritt 2:** Test gegen aktuellen Stand ausführen; erwarteter Fehler: Menü fehlt.
+- [x] **Schritt 1:** Playwright-Test für Hover, Fokus, Escape und vier Einträge
+      schreiben.
+- [x] **Schritt 2:** Test gegen aktuellen Stand ausführen; erwarteter Fehler: Menü
+      fehlt.
 - [x] **Schritt 3:** Desktop-Komponente implementieren.
 - [x] **Schritt 4:** Mobilmenü verschachteln.
-- [x] **Schritt 5:** Escape- und Outside-Click-Verhalten in First-Party-Modul implementieren.
+- [x] **Schritt 5:** Escape- und Outside-Click-Verhalten in First-Party-Modul
+      implementieren.
 - [x] **Schritt 6:** CSP-Artefakttest um neues Modul erweitern.
 - [x] **Schritt 7:** Tests und Build.
 
@@ -2098,9 +2246,23 @@ git add src/components src/scripts src/styles/navigation.css tests/e2e/navigatio
 git commit -m "feat: vier startseiten über barrierefreies dropdown auswählbar machen"
 ```
 
-**Abschluss 2026-08-04:** `StartVariantMenu.astro` rendert auf Desktop den normalen Start-Link, eine separate Chevron-Schaltfläche sowie vier Einträge aus `homeVariants`; alle URLs laufen über `withBase`. Das externe First-Party-Modul öffnet bei Hover/Fokus und schließt bei Escape oder Outside-Click, ohne Inline-Handler. Das Mobilmenü enthält dieselbe verschachtelte Viererliste mit sichtbarer Standardmarkierung und ohne doppelte IDs. Playwright 1.60.0 nutzt Build plus Preview mit dokumentierter Development-Umgebung. RED: fehlende Desktop-/Mobilmenü-Selektoren und Einträge. GREEN: 5/5 Navigation-E2E, 42/42 Website-Tests, 6/6 Worker-Tests, `pnpm check`, Build sowie Home-/Kontakt-Artefaktinspektoren grün.
+**Abschluss 2026-08-04:** `StartVariantMenu.astro` rendert auf Desktop den normalen
+Start-Link, eine separate Chevron-Schaltfläche sowie vier Einträge aus `homeVariants`;
+alle URLs laufen über `withBase`. Das externe First-Party-Modul öffnet bei Hover/Fokus
+und schließt bei Escape oder Outside-Click, ohne Inline-Handler. Das Mobilmenü enthält
+dieselbe verschachtelte Viererliste mit sichtbarer Standardmarkierung und ohne doppelte
+IDs. Playwright 1.60.0 nutzt Build plus Preview mit dokumentierter Development-Umgebung.
+RED: fehlende Desktop-/Mobilmenü-Selektoren und Einträge. GREEN: 5/5 Navigation-E2E,
+42/42 Website-Tests, 6/6 Worker-Tests, `pnpm check`, Build sowie
+Home-/Kontakt-Artefaktinspektoren grün.
 
-**Fixrunde 1/5 – 2026-08-04:** `mouseleave` schloss das Menü zuvor auch dann, wenn der Fokus weiter auf einem Menüeintrag lag; der nachgelagerte `focusout`-Guard konnte diesen Verlust nicht verhindern. RED: fokussierter `Startseite 1`-Eintrag, Zeiger aus Container bewegt, Menü nicht mehr sichtbar. GREEN: `mouseleave` schließt nur ohne `document.activeElement` im Container; der neue E2E-Test hält Menü und Fokus sichtbar. 6/6 Navigation-E2E, `pnpm check`, Development-Build, Home-/Kontakt-Artefaktinspektoren sowie Website 42/42 und Worker 6/6 grün.
+**Fixrunde 1/5 – 2026-08-04:** `mouseleave` schloss das Menü zuvor auch dann, wenn der
+Fokus weiter auf einem Menüeintrag lag; der nachgelagerte `focusout`-Guard konnte diesen
+Verlust nicht verhindern. RED: fokussierter `Startseite 1`-Eintrag, Zeiger aus Container
+bewegt, Menü nicht mehr sichtbar. GREEN: `mouseleave` schließt nur ohne
+`document.activeElement` im Container; der neue E2E-Test hält Menü und Fokus sichtbar.
+6/6 Navigation-E2E, `pnpm check`, Development-Build, Home-/Kontakt-Artefaktinspektoren
+sowie Website 42/42 und Worker 6/6 grün.
 
 ---
 
@@ -2137,7 +2299,18 @@ git add src/components/home src/layouts/HomeLayout.astro src/pages tests/e2e/hom
 git commit -m "feat: gemeinsames routing für vier startseiten einführen"
 ```
 
-**Abschluss 2026-08-04:** `HomePage.astro` enthält nun den einmaligen bisherigen Startseiteninhalt und markiert seine Wurzel mit `data-home-variant`; `HomeLayout.astro` kapselt die gemeinsamen Metadaten. `/` übergibt `defaultHomeVariantId` (`4`), während `[variant].astro` seine vier statischen Pfade ausschließlich aus `homeVariants` erzeugt. Root und Varianten canonicalisieren auf `/`; `resolveRobots()` erzwingt in Development `noindex,nofollow`, in Production gelten die expliziten Root-/Variantenwerte. RED: fehlende Home-Wurzel und fehlender Robots-Resolver; GREEN: 3/3 Home-E2E, 6/6 Navigation-E2E, 44/44 Website-Tests, 6/6 Worker-Tests, `pnpm check`, dokumentierter Development-Build und beide Build-Inspektoren. Der Build enthält genau `/startseiten/1/` bis `/startseiten/4/`, keine `/startseiten/5/`. Ohne dokumentierte Development-Umgebungsvariablen schlagen `pnpm build` und `pnpm test` vor dem Task-Code an der fehlenden Turnstile-Konfiguration fehl.
+**Abschluss 2026-08-04:** `HomePage.astro` enthält nun den einmaligen bisherigen
+Startseiteninhalt und markiert seine Wurzel mit `data-home-variant`; `HomeLayout.astro`
+kapselt die gemeinsamen Metadaten. `/` übergibt `defaultHomeVariantId` (`4`), während
+`[variant].astro` seine vier statischen Pfade ausschließlich aus `homeVariants` erzeugt.
+Root und Varianten canonicalisieren auf `/`; `resolveRobots()` erzwingt in Development
+`noindex,nofollow`, in Production gelten die expliziten Root-/Variantenwerte. RED:
+fehlende Home-Wurzel und fehlender Robots-Resolver; GREEN: 3/3 Home-E2E, 6/6
+Navigation-E2E, 44/44 Website-Tests, 6/6 Worker-Tests, `pnpm check`, dokumentierter
+Development-Build und beide Build-Inspektoren. Der Build enthält genau `/startseiten/1/`
+bis `/startseiten/4/`, keine `/startseiten/5/`. Ohne dokumentierte
+Development-Umgebungsvariablen schlagen `pnpm build` und `pnpm test` vor dem Task-Code
+an der fehlenden Turnstile-Konfiguration fehl.
 
 ---
 
@@ -2162,9 +2335,16 @@ git commit -m "feat: gemeinsames routing für vier startseiten einführen"
 git commit -m "feat: startseite 1 als modernisierte bestandsvariante"
 ```
 
-**Abschluss 2026-08-04:** Variante 1 verwendet eine eigene Bestandskomponente mit der freigegebenen Hero-Copy und ausschließlich unter `data-home-variant="1"` begrenzten Verfeinerungen. Varianten 2–4 behalten den bisherigen gemeinsamen Fallback unverändert. Desktop- und Mobil-Snapshots wurden nach visueller Prüfung aufgenommen; Hero-Copy, Fallback-Isolation und 320-CSS-Pixel-Reflow sind per E2E abgedeckt.
+**Abschluss 2026-08-04:** Variante 1 verwendet eine eigene Bestandskomponente mit der
+freigegebenen Hero-Copy und ausschließlich unter `data-home-variant="1"` begrenzten
+Verfeinerungen. Varianten 2–4 behalten den bisherigen gemeinsamen Fallback unverändert.
+Desktop- und Mobil-Snapshots wurden nach visueller Prüfung aufgenommen; Hero-Copy,
+Fallback-Isolation und 320-CSS-Pixel-Reflow sind per E2E abgedeckt.
 
-**Fixrunde 1/5 – 2026-08-04:** Die drei bestehenden Service-TODO-Karten liegen nun einmalig in `sharedServicePlaceholderCards` und werden von Bestandsfallback sowie Variante 1 gerendert. Der Development-Validator meldet damit wieder die vorherigen 11 erlaubten Platzhalterdateien; Texte, Fakten, Design und Snapshots bleiben unverändert.
+**Fixrunde 1/5 – 2026-08-04:** Die drei bestehenden Service-TODO-Karten liegen nun
+einmalig in `sharedServicePlaceholderCards` und werden von Bestandsfallback sowie
+Variante 1 gerendert. Der Development-Validator meldet damit wieder die vorherigen 11
+erlaubten Platzhalterdateien; Texte, Fakten, Design und Snapshots bleiben unverändert.
 
 ---
 
@@ -2192,7 +2372,11 @@ git commit -m "feat: startseite 1 als modernisierte bestandsvariante"
 git commit -m "feat: startseite 2 im premium-klinischen design"
 ```
 
-**Abschluss 2026-08-04:** Variante 2 rendert ausschließlich über `HomeVariant2` mit lokalem, sichtbar als `Symbolbild` gekennzeichnetem Hero. Alle neuen Regeln sind auf `[data-home-variant="2"]` begrenzt; Varianten 1, 3 und 4 bleiben isoliert. E2E deckt Copy, CTAs, Bildattribute, Pflichtbereiche, axe ohne schwere/kritische Befunde, 320-CSS-Pixel-Reflow und einen maskierten OSM-Desktop-Snapshot ab.
+**Abschluss 2026-08-04:** Variante 2 rendert ausschließlich über `HomeVariant2` mit
+lokalem, sichtbar als `Symbolbild` gekennzeichnetem Hero. Alle neuen Regeln sind auf
+`[data-home-variant="2"]` begrenzt; Varianten 1, 3 und 4 bleiben isoliert. E2E deckt
+Copy, CTAs, Bildattribute, Pflichtbereiche, axe ohne schwere/kritische Befunde,
+320-CSS-Pixel-Reflow und einen maskierten OSM-Desktop-Snapshot ab.
 
 ---
 
@@ -2218,7 +2402,14 @@ git commit -m "feat: startseite 2 im premium-klinischen design"
 git commit -m "feat: startseite 3 im ruhigen editorial-design"
 ```
 
-**Abschluss 2026-08-04:** Variante 3 rendert ausschließlich über `HomeVariant3` mit freigegebener Hero- und Philosophie-Copy sowie lokalem, sichtbar als `Symbolbild` gekennzeichnetem Hero. `OpeningHours`, `OsmMap`, `siteConfig.accessibility` und `sharedServicePlaceholderCards` bleiben gemeinsame Fakten- und Komponentenquellen. Alle neuen Regeln sind auf `[data-home-variant="3"]` begrenzt; Varianten 1, 2 und 4 bleiben isoliert. E2E deckt Copy, Telefon-/Inhalts-CTAs, Bildattribute, Pflichtbereiche, CSS-/Markup-Isolation, axe ohne schwere/kritische Befunde, 320-CSS-Pixel-Reflow und einen nach visueller Prüfung übernommenen, maskierten OSM-Desktop-Snapshot ab.
+**Abschluss 2026-08-04:** Variante 3 rendert ausschließlich über `HomeVariant3` mit
+freigegebener Hero- und Philosophie-Copy sowie lokalem, sichtbar als `Symbolbild`
+gekennzeichnetem Hero. `OpeningHours`, `OsmMap`, `siteConfig.accessibility` und
+`sharedServicePlaceholderCards` bleiben gemeinsame Fakten- und Komponentenquellen. Alle
+neuen Regeln sind auf `[data-home-variant="3"]` begrenzt; Varianten 1, 2 und 4 bleiben
+isoliert. E2E deckt Copy, Telefon-/Inhalts-CTAs, Bildattribute, Pflichtbereiche,
+CSS-/Markup-Isolation, axe ohne schwere/kritische Befunde, 320-CSS-Pixel-Reflow und
+einen nach visueller Prüfung übernommenen, maskierten OSM-Desktop-Snapshot ab.
 
 ---
 
@@ -2249,7 +2440,16 @@ git commit -m "feat: startseite 3 im ruhigen editorial-design"
 git commit -m "feat: startseite 4 als moderne standard-landingpage"
 ```
 
-**Abschluss 2026-08-04:** `/` und `/startseiten/4/` rendern dieselbe `HomeVariant4`-Struktur mit freigegebener dreiteiliger Hero-Copy, lokalem 1920 × 1080 WebP, sichtbarer Caption unter den Bildpixeln und `fetchpriority="high"`. `OpeningHours`, `OsmMap`, `siteConfig.accessibility` und `sharedServicePlaceholderCards` bleiben gemeinsame Fakten- und Komponentenquellen; unbestätigte Inhalte der Designvorschau wurden nicht übernommen. Alle neuen Regeln sind auf `[data-home-variant="4"]` begrenzt, Varianten 1–3 bleiben visuell unverändert. E2E deckt Root-/Varianten-Gleichheit, Canonical/Robots, Schnellzugriffe, Pflichtbereiche, sichtbare Standardmarkierung, CSS-Isolation, axe ohne schwere/kritische Befunde, 320-CSS-Pixel-Reflow und einen visuell geprüften, OSM-maskierten Desktop-Snapshot ab.
+**Abschluss 2026-08-04:** `/` und `/startseiten/4/` rendern dieselbe
+`HomeVariant4`-Struktur mit freigegebener dreiteiliger Hero-Copy, lokalem 1920 × 1080
+WebP, sichtbarer Caption unter den Bildpixeln und `fetchpriority="high"`.
+`OpeningHours`, `OsmMap`, `siteConfig.accessibility` und `sharedServicePlaceholderCards`
+bleiben gemeinsame Fakten- und Komponentenquellen; unbestätigte Inhalte der
+Designvorschau wurden nicht übernommen. Alle neuen Regeln sind auf
+`[data-home-variant="4"]` begrenzt, Varianten 1–3 bleiben visuell unverändert. E2E deckt
+Root-/Varianten-Gleichheit, Canonical/Robots, Schnellzugriffe, Pflichtbereiche,
+sichtbare Standardmarkierung, CSS-Isolation, axe ohne schwere/kritische Befunde,
+320-CSS-Pixel-Reflow und einen visuell geprüften, OSM-maskierten Desktop-Snapshot ab.
 
 ---
 
@@ -2281,7 +2481,18 @@ git commit -m "feat: startseite 4 als moderne standard-landingpage"
 git commit -m "feat: zentrale todo-seite und synchrones markdown einführen"
 ```
 
-**Abschluss 2026-08-04:** `/todo/` rendert die öffentliche Sicht direkt aus `projectTodos`, gruppiert 52 aktive Produktionsblocker vor fünf weiteren offenen Aufgaben und hält die acht belegten Designaufgaben DES-001 bis DES-008 als eingeklappte Historie. Interne Einträge werden vor Zählung, Sortierung, Website und Markdown vollständig verworfen. Native Radiofilter und gescopte `:has()`-Regeln filtern Kategorie, Status und Verantwortliche ohne JavaScript; das externe First-Party-Skript ergänzt ausschließlich Ergebniszahl und Reset-Komfort über sichere DOM-APIs. Seite und Development-Banner sind base-path-sicher, die Seite fordert auch in Produktion `noindex,nofollow` an. Der pure Generator erzeugt `docs/TODO.md` ohne Laufzeitstempel deterministisch; CI regeneriert die Datei und prüft ihren Git-Diff. Unit- und E2E-Tests decken öffentliche Sichtgrenze, Statuszähler, P0-/ID-Sortierung, bytegleiche Generierung, Canonical/Robots, No-JS-Filter, JS-Komfort und 320-Pixel-Reflow ab.
+**Abschluss 2026-08-04:** `/todo/` rendert die öffentliche Sicht direkt aus
+`projectTodos`, gruppiert 52 aktive Produktionsblocker vor fünf weiteren offenen
+Aufgaben und hält die acht belegten Designaufgaben DES-001 bis DES-008 als eingeklappte
+Historie. Interne Einträge werden vor Zählung, Sortierung, Website und Markdown
+vollständig verworfen. Native Radiofilter und gescopte `:has()`-Regeln filtern
+Kategorie, Status und Verantwortliche ohne JavaScript; das externe First-Party-Skript
+ergänzt ausschließlich Ergebniszahl und Reset-Komfort über sichere DOM-APIs. Seite und
+Development-Banner sind base-path-sicher, die Seite fordert auch in Produktion
+`noindex,nofollow` an. Der pure Generator erzeugt `docs/TODO.md` ohne Laufzeitstempel
+deterministisch; CI regeneriert die Datei und prüft ihren Git-Diff. Unit- und E2E-Tests
+decken öffentliche Sichtgrenze, Statuszähler, P0-/ID-Sortierung, bytegleiche
+Generierung, Canonical/Robots, No-JS-Filter, JS-Komfort und 320-Pixel-Reflow ab.
 
 ---
 
@@ -2317,7 +2528,22 @@ git commit -m "feat: zentrale todo-seite und synchrones markdown einführen"
 git commit -m "test: startseiten mit playwright und axe absichern"
 ```
 
-**Abschluss 2026-08-04:** Playwright nutzt die drei Chromium-Projekte `desktop`, `tablet` und `mobile`; nur Desktop führt alle Specs und bestehende Goldens aus, Tablet und Mobile ausschließlich den Accessibility-Spec. Alle vier Homevarianten bestehen axe ohne schwere oder kritische Verstöße, Skip-Link-/Fokusprüfung sowie Reflow bei 640 und 320 CSS-Pixeln. Root übernimmt axe- und Tastaturvertrag auf Desktop. Eine exakte Host-Positivliste erlaubt nur Same-Origin sowie benannte OpenStreetMap-Hosts. Das pure, per Unit-Test abgedeckte Budgetgate erzwingt 100 KiB pro Raster, 256 KiB Raster gesamt, 10 KiB pro SVG, 64 KiB Build-CSS und 32 KiB First-Party-JavaScript; aktueller Build liegt bei 229772, 28987 und 4183 Byte. Haupt-CI prüft Budgets direkt nach Build; separater E2E-Workflow installiert nur Chromium und lädt Fehlerartefakte kurzzeitig hoch. RED: fehlendes Budgetmodul, fehlende drei Projekte, Paket-Skripte und Workflows. GREEN: 17/17 gezielte Unit-Tests, 76 bestandene E2E plus vier bewusste Desktop-only-Skips, Astro Check 77 Dateien mit 0/0/0 und Gesamttests 65 Website plus 6 Worker. Home-Markup/-CSS sowie Lockfile bleiben unverändert. Die siteweiten Registrypunkte A11Y-007, A11Y-008 und A11Y-010 bleiben offen, weil Task 11 nur Root und Homevarianten abdeckt.
+**Abschluss 2026-08-04:** Playwright nutzt die drei Chromium-Projekte `desktop`,
+`tablet` und `mobile`; nur Desktop führt alle Specs und bestehende Goldens aus, Tablet
+und Mobile ausschließlich den Accessibility-Spec. Alle vier Homevarianten bestehen axe
+ohne schwere oder kritische Verstöße, Skip-Link-/Fokusprüfung sowie Reflow bei 640 und
+320 CSS-Pixeln. Root übernimmt axe- und Tastaturvertrag auf Desktop. Eine exakte
+Host-Positivliste erlaubt nur Same-Origin sowie benannte OpenStreetMap-Hosts. Das pure,
+per Unit-Test abgedeckte Budgetgate erzwingt 100 KiB pro Raster, 256 KiB Raster gesamt,
+10 KiB pro SVG, 64 KiB Build-CSS und 32 KiB First-Party-JavaScript; aktueller Build
+liegt bei 229772, 28987 und 4183 Byte. Haupt-CI prüft Budgets direkt nach Build;
+separater E2E-Workflow installiert nur Chromium und lädt Fehlerartefakte kurzzeitig
+hoch. RED: fehlendes Budgetmodul, fehlende drei Projekte, Paket-Skripte und Workflows.
+GREEN: 17/17 gezielte Unit-Tests, 76 bestandene E2E plus vier bewusste
+Desktop-only-Skips, Astro Check 77 Dateien mit 0/0/0 und Gesamttests 65 Website plus 6
+Worker. Home-Markup/-CSS sowie Lockfile bleiben unverändert. Die siteweiten
+Registrypunkte A11Y-007, A11Y-008 und A11Y-010 bleiben offen, weil Task 11 nur Root und
+Homevarianten abdeckt.
 
 ---
 
@@ -2356,7 +2582,22 @@ export interface RouteContext {
 git commit -m "refactor: worker für kontakt und datentransfer modularisieren"
 ```
 
-**Abschluss 2026-08-04:** Der Worker besitzt jetzt einen schmalen Entrypoint, den zentralen Router und die vorgesehenen Grenzen `http`, `security` und `contact`; `RouteContext` entspricht der festgelegten Schnittstelle. 21 Kontakt-Regressionstests frieren Statuscodes, Fehlerkörper, Header, Validierung, Bot-/Rate-Limit-/Turnstile-Verhalten, Empfängerwahl, Mailinhalt und Logging ein; ein Strukturtest deckt die importierbare Routergrenze ab. RED war der fehlende Router, GREEN sind 22/22 Worker-Tests. Wrangler 4.107 erzeugt und prüft environment-spezifische Worker-Typen; `secrets.required` enthält ausschließlich die Namen `TURNSTILE_SECRET` und `RATE_LIMIT_SALT`, keine Werte. `pnpm worker:check`, Astro Check mit 0/0/0, Development-Build mit 17 Seiten, 65 Website-Tests sowie Playwright mit 76 bestandenen und vier bewussten Skips sind grün. Der nur lesende Remote-Healthcheck antwortet mit HTTP 200 und `environment: "development"`; es erfolgte kein Deployment. Repository-`format:check` bleibt durch den bereits vorhandenen inkompatiblen Default-Import von `prettier-plugin-astro` blockiert; neue handgeschriebene TypeScript- und Testdateien bestehen die äquivalente Prettier-Prüfung mit Print Width 88, während `wrangler.jsonc` sein bestehendes Format behält.
+**Abschluss 2026-08-04:** Der Worker besitzt jetzt einen schmalen Entrypoint, den
+zentralen Router und die vorgesehenen Grenzen `http`, `security` und `contact`;
+`RouteContext` entspricht der festgelegten Schnittstelle. 21 Kontakt-Regressionstests
+frieren Statuscodes, Fehlerkörper, Header, Validierung,
+Bot-/Rate-Limit-/Turnstile-Verhalten, Empfängerwahl, Mailinhalt und Logging ein; ein
+Strukturtest deckt die importierbare Routergrenze ab. RED war der fehlende Router, GREEN
+sind 22/22 Worker-Tests. Wrangler 4.107 erzeugt und prüft environment-spezifische
+Worker-Typen; `secrets.required` enthält ausschließlich die Namen `TURNSTILE_SECRET` und
+`RATE_LIMIT_SALT`, keine Werte. `pnpm worker:check`, Astro Check mit 0/0/0,
+Development-Build mit 17 Seiten, 65 Website-Tests sowie Playwright mit 76 bestandenen
+und vier bewussten Skips sind grün. Der nur lesende Remote-Healthcheck antwortet mit
+HTTP 200 und `environment: "development"`; es erfolgte kein Deployment.
+Repository-`format:check` bleibt durch den bereits vorhandenen inkompatiblen
+Default-Import von `prettier-plugin-astro` blockiert; neue handgeschriebene TypeScript-
+und Testdateien bestehen die äquivalente Prettier-Prüfung mit Print Width 88, während
+`wrangler.jsonc` sein bestehendes Format behält.
 
 ---
 
@@ -2398,9 +2639,9 @@ pnpm exec wrangler queues create \
 - Cron täglich;
 - Worker route `tierarztpraxis-schaffer.telacore.org/api/*`.
 
-- [ ] Ressourcen-IDs eintragen: D1-ID eingetragen; R2 fehlt wegen API-Code `10042`.
-- [ ] R2 `r2.dev` deaktiviert lassen: ohne aktiviertes R2 und Bucket noch nicht nachweisbar.
-- [ ] R2 Lifecycle 60 Tage: ohne aktiviertes R2 und Bucket noch nicht anlegbar.
+- [x] Ressourcen eintragen: D1-ID und R2-Development-Bucket in EU dokumentiert.
+- [x] R2 `r2.dev` deaktiviert lassen: read-only geprüft.
+- [x] R2 Lifecycle 60 Tage: Regel `expiry-60-days` aktiv.
 - [x] Development-Secret-Namen deklarieren, noch keine Werte setzen:
   - `TOKEN_PEPPER`;
   - `SESSION_PEPPER`;
@@ -2413,7 +2654,19 @@ pnpm exec wrangler queues create \
 git commit -m "chore: d1 r2 queues und same-origin-api konfigurieren"
 ```
 
-**Zwischenstand 2026-08-04 – teilweise/blockiert:** Die D1-Datenbank `tierarztpraxis-schaffer-transfer-development` wurde mit EU-Jurisdiktion erstellt und als `TRANSFER_DB` mit ID `27da967d-21c2-4a37-98a1-9e6cfd7451a1` konfiguriert. Hauptqueue `tierarztpraxis-transfer-notifications-development` und DLQ `tierarztpraxis-transfer-notifications-dlq-development` wurden erstellt; Development enthält Producer, Consumer und DLQ-Zuordnung ohne Tuningwerte. Same-Origin-Route `tierarztpraxis-schaffer.telacore.org/api/*`, Cron `0 3 * * *` UTC, vier zusätzliche Secret-Namen sowie das vorgesehene lokale R2-Binding sind konfiguriert. Wrangler-Typen sind regeneriert; `worker:check`, 22 Worker-Tests, 65 Website-Tests und Development-Dry-run sind grün. Das einmalige erneute EU-R2-Listing scheiterte weiterhin mit API-Code `10042`; deshalb erfolgte kein R2-Create-Versuch. Bucket, private `r2.dev`-/Custom-Domain-Nachweise und 60-Tage-Lifecycle fehlen weiterhin. Es gab kein Deployment, keine Production-Änderung und keine Secret-Wert-Mutation. Task 13 bleibt offen; Task 14 kann auf D1 aufbauen.
+**Zwischenstand 2026-08-11 – R2 und D1 erledigt:** Die D1-Datenbank
+`tierarztpraxis-schaffer-transfer-development` wurde mit EU-Jurisdiktion erstellt und
+als `TRANSFER_DB` mit ID `27da967d-21c2-4a37-98a1-9e6cfd7451a1` konfiguriert. Die
+freigegebene Remote-Migration `0001_datatransfer.sql` wurde am 2026-08-11 mit 17
+SQL-Befehlen erfolgreich angewendet; `d1 migrations list --remote` meldet keine
+ausstehenden Migrationen und die direkte Schemaabfrage bestätigt neun
+Transfer-Fachtabellen in `EEUR`. Der private R2-Bucket
+`tierarztpraxis-schaffer-transfer-development` wurde am 2026-08-11 in EU mit Standard
+Storage Class erstellt; `r2.dev` und Custom Domains sind deaktiviert beziehungsweise
+nicht verbunden. Die Lifecycle-Regel `expiry-60-days` löscht Objekte nach 60 Tagen; der
+Bucket ist leer. Hauptqueue und DLQ bestehen weiterhin. Es gab keine Production-Änderung
+und keine Secret-Wert-Mutation. Die D1-Time-Travel-Restoreübung aus Task 25 bleibt
+offen.
 
 ---
 
@@ -2439,7 +2692,7 @@ git commit -m "chore: d1 r2 queues und same-origin-api konfigurieren"
 - [x] Schema-Test anlegen.
 - [x] Migration lokal anwenden.
 - [x] Constraints und Indizes testen.
-- [ ] Migration gegen Development nach manueller Bestätigung anwenden.
+- [x] Migration gegen Development nach manueller Bestätigung anwenden.
 - [x] Backup/Time-Travel-Eintrag dokumentieren.
 - [x] Commit:
 
@@ -2447,9 +2700,29 @@ git commit -m "chore: d1 r2 queues und same-origin-api konfigurieren"
 git commit -m "feat: d1-schema für datentransfer anlegen"
 ```
 
-**Zwischenstand 2026-08-04 – lokal fertig, Remote-Freigabe ausstehend:** Die Migration `0001_datatransfer.sql` bildet §17 mit neun Fachtabellen und sechs benannten Indizes ab. `transfer_submissions.case_id` referenziert `transfer_cases(id) ON DELETE CASCADE`; damit entfernt eine Falllöschung auch Submissions und deren abhängige Dateien und Links, während Audit-Ereignisse gemäß Schema mit `case_id = NULL` erhalten bleiben. Der ausführbare Schema-Test wendet die Migration über Wrangler in isoliertem lokalen State an und belegt Tabellen, Indizes, Status-/Boolean-/Längen-/Größenchecks, eindeutige `public_id`/Token-HMACs, Foreign-Key-Rejection, die vollständige Löschkaskade und einen zweiten idempotenten Migrationslauf. Der dokumentierte lokale Paketlauf führte 17 SQL-Befehle erfolgreich aus; `d1 migrations list` meldete anschließend keine offene Migration. `worker:check`, 27 Worker-Tests und 65 Website-Tests sind grün. Der read-only geprüfte Development-D1-Stand bleibt unverändert bei null Tabellen in EU-Jurisdiktion; aktueller Time-Travel-Bookmark: `00000001-00000000-000050bd-098c67ca6b334390ef3948b650c190ea`. Ohne neue manuelle Bestätigung wurde keine Remote-Migration angewandt und kein Restore, Deployment oder Production-Zugriff ausgeführt. Task 14 bleibt bis zum bestätigten Remote-Lauf teilweise offen.
+**Zwischenstand 2026-08-11 – Remote-Migration erledigt:** Die Migration
+`0001_datatransfer.sql` bildet §17 mit neun Fachtabellen und sechs benannten Indizes ab.
+`transfer_submissions.case_id` referenziert `transfer_cases(id) ON DELETE CASCADE`;
+damit entfernt eine Falllöschung auch Submissions und deren abhängige Dateien und Links,
+während Audit-Ereignisse gemäß Schema mit `case_id = NULL` erhalten bleiben. Der lokale
+Schema-Test belegt Tabellen, Indizes, Status-/Boolean-/Längen-/Größenchecks, eindeutige
+`public_id`/Token-HMACs, Foreign-Key-Rejection, die vollständige Löschkaskade und einen
+zweiten idempotenten Migrationslauf. Die freigegebene Remote-Ausführung gegen
+Development lief am 2026-08-11 mit 17 SQL-Befehlen erfolgreich;
+`d1 migrations list --remote` meldet `No migrations to apply`. Eine read-only
+Schemaabfrage bestätigt die neun Transfer-Fachtabellen in der primären Region `EEUR`.
+`worker:check`, 272 Worker- Tests und 1 Runtime-Test sind grün. Task 14 ist hinsichtlich
+der Development-Migration abgeschlossen; die D1-Time-Travel-Restoreübung aus Task 25
+bleibt offen.
 
-**Fixrunde 1:** §15.1 und §15.4 erfordern eine interne Fallnotiz und eine interne Rückrufnotiz. `transfer_cases` enthält deshalb nun die nullable Felder `internal_note` und `callback_note`, jeweils mit maximal 4.000 Zeichen. RED: der reale Wrangler-Schematest scheiterte mit `table transfer_cases has no column named internal_note`; GREEN: beide Felder akzeptieren 4.000 Zeichen und verwerfen 4.001 Zeichen, gezielter Schematest 5/5. Beide Felder bleiben ausschließlich Admin/Server und sind für Public-DTOs sowie Customer-API-Antworten gesperrt. Keine weiteren Schema- oder API-Änderungen.
+**Fixrunde 1:** §15.1 und §15.4 erfordern eine interne Fallnotiz und eine interne
+Rückrufnotiz. `transfer_cases` enthält deshalb nun die nullable Felder `internal_note`
+und `callback_note`, jeweils mit maximal 4.000 Zeichen. RED: der reale
+Wrangler-Schematest scheiterte mit
+`table transfer_cases has no column named internal_note`; GREEN: beide Felder
+akzeptieren 4.000 Zeichen und verwerfen 4.001 Zeichen, gezielter Schematest 5/5. Beide
+Felder bleiben ausschließlich Admin/Server und sind für Public-DTOs sowie
+Customer-API-Antworten gesperrt. Keine weiteren Schema- oder API-Änderungen.
 
 ---
 
@@ -2482,7 +2755,20 @@ git commit -m "feat: d1-schema für datentransfer anlegen"
 git commit -m "feat: sichere datentransfer-tokens und sessions"
 ```
 
-**Abschluss 2026-08-04:** HMAC-SHA-256 nutzt ausschließlich Workers Web Crypto mit nicht extrahierbaren Schlüsseln; Signaturprüfung erfolgt nach strikter Hexvalidierung über natives `crypto.subtle.verify()`. Transfer-, Session- und CSRF-Secrets stammen aus jeweils 32 Bytes `crypto.getRandomValues()` und verwenden kanonisches Base64URL ohne Padding. Transfertokens erzwingen Version, genau zwei Separatoren, 12–16 Base32-Zeichen, Mindestentropie, Ablauf, Widerruf und gespeicherte HMAC-Bindung. Sessions erzwingen den host-only Cookievertrag, genau einen kanonischen Cookie, 30 Minuten Sliding Expiry und zwölf Stunden absolute Laufzeit; Session- und CSRF-HMACs sind mit `session-v1\0` beziehungsweise `csrf-v1\0` getrennt. CSRF-Rotation ersetzt den gespeicherten HMAC und macht den alten Token unwirksam. RED: beide fokussierten Suites scheiterten an den vier fehlenden Produktionsmodulen. GREEN: 39/39 fokussierte, 66/66 Worker- und 65/65 Website-Tests sowie `worker:check`. Keine Node-Crypto-API, Dependency, Logs, Config-, Migrations-, Router-, Frontend- oder externe Zustandsänderung. Task-13-R2- und Task-14-Remote-Migrationsblock bleiben unverändert.
+**Abschluss 2026-08-04:** HMAC-SHA-256 nutzt ausschließlich Workers Web Crypto mit nicht
+extrahierbaren Schlüsseln; Signaturprüfung erfolgt nach strikter Hexvalidierung über
+natives `crypto.subtle.verify()`. Transfer-, Session- und CSRF-Secrets stammen aus
+jeweils 32 Bytes `crypto.getRandomValues()` und verwenden kanonisches Base64URL ohne
+Padding. Transfertokens erzwingen Version, genau zwei Separatoren, 12–16 Base32-Zeichen,
+Mindestentropie, Ablauf, Widerruf und gespeicherte HMAC-Bindung. Sessions erzwingen den
+host-only Cookievertrag, genau einen kanonischen Cookie, 30 Minuten Sliding Expiry und
+zwölf Stunden absolute Laufzeit; Session- und CSRF-HMACs sind mit `session-v1\0`
+beziehungsweise `csrf-v1\0` getrennt. CSRF-Rotation ersetzt den gespeicherten HMAC und
+macht den alten Token unwirksam. RED: beide fokussierten Suites scheiterten an den vier
+fehlenden Produktionsmodulen. GREEN: 39/39 fokussierte, 66/66 Worker- und 65/65
+Website-Tests sowie `worker:check`. Keine Node-Crypto-API, Dependency, Logs, Config-,
+Migrations-, Router-, Frontend- oder externe Zustandsänderung. Task-13-R2- und
+Task-14-Remote-Migrationsblock bleiben unverändert.
 
 ---
 
@@ -2492,7 +2778,8 @@ git commit -m "feat: sichere datentransfer-tokens und sessions"
 
 - Create: `worker/src/transfers/routes-public.ts`
 - Create: `worker/src/transfers/cases.ts`
-- Modify/reuse: `worker/src/security/turnstile.ts`, `worker/src/security/rate-limit.ts`, `worker/src/transfers/sessions.ts`
+- Modify/reuse: `worker/src/security/turnstile.ts`, `worker/src/security/rate-limit.ts`,
+  `worker/src/transfers/sessions.ts`
 - Modify: `worker/src/env.ts`, `worker/src/router.ts`
 - Test: `worker/test/transfer-api.test.ts`
 
@@ -2512,7 +2799,23 @@ git commit -m "feat: sichere datentransfer-tokens und sessions"
 git commit -m "feat: öffentliche session- und fall-api für datentransfer"
 ```
 
-**Abschluss 2026-08-04:** Development routet die drei exakten Public-Pfade typisiert auf die vorhandenen Transferbindings; Production antwortet fail-closed mit `503`. Sessionaustausch erzwingt exakte Same-Origin-Prüfung, JSON-/4-KiB-/Feldgrenzen, domain-separiertes IP-Rate-Limit und Turnstile mit expliziter Action vor jeder Token-/D1-Prüfung. Token-, Fall- und Turnstilefehler bleiben generisch; ein fehlender Public-ID-Lookup führt trotzdem Dummy-HMAC-Verifikation aus. Session- und CSRF-HMAC werden zusammen mit dem Tokenzähler in einem D1-Batch geschrieben, Rohsecrets nie persistiert. Case-GET sucht ausschließlich über Session-HMAC, prüft Sliding-/Absolutablauf und Fallstatus, verlängert DB und Cookie und bindet jede Snapshot-Abfrage nur an die Session-`case_id`. DTO-Allowlists schließen interne Notizen, Kontaktfelder, Adminidentitäten, HMACs und R2-Interna rekursiv aus. Logout verlangt exakte Origin, gültige Session und sessiongebundenes CSRF, widerruft gebunden und löscht den Cookie. RED: Missing-Route-Suite sowie anschließend fünf Session- und vier GET-/Logout-Vertragsfälle. GREEN: 25/25 Transfer-, 27/27 Contact-Regressions-, 91/91 Worker- und 65/65 Website-Tests sowie `worker:check`. Keine Dependency-, Config-, Migrations-, Frontend- oder externe Zustandsänderung; Development-D1 blieb remote leer. Task-13-R2- und Task-14-Remote-Migrationsblock bleiben offen.
+**Abschluss 2026-08-04:** Development routet die drei exakten Public-Pfade typisiert auf
+die vorhandenen Transferbindings; Production antwortet fail-closed mit `503`.
+Sessionaustausch erzwingt exakte Same-Origin-Prüfung, JSON-/4-KiB-/Feldgrenzen,
+domain-separiertes IP-Rate-Limit und Turnstile mit expliziter Action vor jeder
+Token-/D1-Prüfung. Token-, Fall- und Turnstilefehler bleiben generisch; ein fehlender
+Public-ID-Lookup führt trotzdem Dummy-HMAC-Verifikation aus. Session- und CSRF-HMAC
+werden zusammen mit dem Tokenzähler in einem D1-Batch geschrieben, Rohsecrets nie
+persistiert. Case-GET sucht ausschließlich über Session-HMAC, prüft
+Sliding-/Absolutablauf und Fallstatus, verlängert DB und Cookie und bindet jede
+Snapshot-Abfrage nur an die Session-`case_id`. DTO-Allowlists schließen interne Notizen,
+Kontaktfelder, Adminidentitäten, HMACs und R2-Interna rekursiv aus. Logout verlangt
+exakte Origin, gültige Session und sessiongebundenes CSRF, widerruft gebunden und löscht
+den Cookie. RED: Missing-Route-Suite sowie anschließend fünf Session- und vier
+GET-/Logout-Vertragsfälle. GREEN: 25/25 Transfer-, 27/27 Contact-Regressions-, 91/91
+Worker- und 65/65 Website-Tests sowie `worker:check`. Keine Dependency-, Config-,
+Migrations-, Frontend- oder externe Zustandsänderung; Development-D1 blieb remote leer.
+Task-13-R2- und Task-14-Remote-Migrationsblock bleiben offen.
 
 ---
 
@@ -2524,14 +2827,19 @@ git commit -m "feat: öffentliche session- und fall-api für datentransfer"
 - Create: `worker/src/transfers/links.ts`
 - Test: `worker/test/submissions.test.ts`
 
-- [ ] Text- und Feldgrenzen;
-- [ ] `https:`-Links;
-- [ ] keine serverseitige Linkvorschau;
-- [ ] Quotenreservierung;
-- [ ] Status `draft`;
-- [ ] Finalisierung erst nach Uploads;
-- [ ] Notfallbestätigung erforderlich;
-- [ ] Tests für IDOR und Quoten.
+- [x] Text- und Feldgrenzen;
+- [x] `https:`-Links;
+- [x] keine serverseitige Linkvorschau;
+- [x] Quotenreservierung;
+- [x] Status `draft`;
+- [x] Finalisierung erst nach Uploads;
+- [x] Notfallbestätigung erforderlich;
+- [x] Tests für IDOR und Quoten.
+
+**Verifiziert 2026-08-11:** `submissions.test.ts` deckt Feld-/Textgrenzen, HTTPS-Links,
+Notfallbestätigung, Draftstatus, atomare Quotenreservierung, Session-/Fallbindung und
+Finalisierung erst nach vollständigen Uploads ab.
+
 - [ ] Commit:
 
 ```bash
@@ -2549,15 +2857,20 @@ git commit -m "feat: fallberichte und sichere links speichern"
 - Create: `worker/src/transfers/limits.ts`
 - Test: `worker/test/upload.test.ts`
 
-- [ ] Magic-Byte-Tabellentests;
-- [ ] fehlendes oder falsches `Content-Length`;
-- [ ] MIME-Widerspruch;
-- [ ] mehrfache Slotnutzung;
-- [ ] Stream-Upload;
-- [ ] R2-Rollback bei D1-Fehler;
-- [ ] Quoten atomar aktualisieren;
-- [ ] verwaiste Objekte markieren;
-- [ ] Tests mit R2-Testbinding.
+- [x] Magic-Byte-Tabellentests;
+- [x] fehlendes oder falsches `Content-Length`;
+- [x] MIME-Widerspruch;
+- [x] mehrfache Slotnutzung;
+- [x] Stream-Upload;
+- [x] R2-Rollback bei D1-Fehler;
+- [x] Quoten atomar aktualisieren;
+- [x] verwaiste Objekte markieren;
+- [x] Tests mit R2-Testbinding.
+
+**Verifiziert 2026-08-11:** `upload.test.ts` deckt Magic Bytes, Header-/MIME-Prüfung,
+Streaming, Slot-Claims, Quotenbindung, R2-/D1-Kompensation und Orphan-Schutz ab;
+`test-runtime/upload-r2.test.ts` bestätigt den echten Workerd-R2-Testbinding.
+
 - [ ] Commit:
 
 ```bash
@@ -2573,15 +2886,20 @@ git commit -m "feat: bilder und videos sicher nach r2 streamen"
 - Create: `worker/src/transfers/file-response.ts`
 - Test: `worker/test/file-response.test.ts`
 
-- [ ] Kunden-Sessionauth;
-- [ ] Admin-Accessauth;
-- [ ] IDOR-Test;
-- [ ] `Range` für MP4/WebM;
-- [ ] `206`, `Content-Range`, `Accept-Ranges`;
-- [ ] `nosniff`;
-- [ ] `inline` nur bei `inline_safe`;
-- [ ] sonst Attachment;
-- [ ] kein Cache.
+- [x] Kunden-Sessionauth;
+- [x] Admin-Accessauth;
+- [x] IDOR-Test;
+- [x] `Range` für MP4/WebM;
+- [x] `206`, `Content-Range`, `Accept-Ranges`;
+- [x] `nosniff`;
+- [x] `inline` nur bei `inline_safe`;
+- [x] sonst Attachment;
+- [x] kein Cache.
+
+**Verifiziert 2026-08-11:** `file-response.test.ts` und Access-/Transfer-Tests prüfen
+Session-/Adminbindung, IDOR-Schutz, Video-Range, sichere Disposition, `nosniff` und
+`no-store`.
+
 - [ ] Commit:
 
 ```bash
@@ -2604,18 +2922,24 @@ git commit -m "feat: transferdateien geschützt und range-fähig ausliefern"
 - Create: `src/styles/datentransfer.css`
 - Test: `tests/transfer-client.test.ts`, `tests/e2e/datentransfer.spec.ts`
 
-- [ ] Notfallwarnung vor Tokenfeld.
-- [ ] Fragment lesen, Token austauschen, Fragment entfernen.
-- [ ] Sessionstatus.
-- [ ] Formular und Datei-Auswahl.
-- [ ] Uploadfortschritt mit `XMLHttpRequest`, weil Fetch keinen stabilen Uploadprogress liefert.
-- [ ] Einzelretry.
-- [ ] Finalisierung.
-- [ ] Thread.
-- [ ] Sessionlogout.
-- [ ] keine Tokenpersistenz in `localStorage`.
-- [ ] `sessionStorage` nur für CSRF.
-- [ ] axe und Tastatur.
+- [x] Notfallwarnung vor Tokenfeld.
+- [x] Fragment lesen, Token austauschen, Fragment entfernen.
+- [x] Sessionstatus.
+- [x] Formular und Datei-Auswahl.
+- [x] Uploadfortschritt mit `XMLHttpRequest`, weil Fetch keinen stabilen Uploadprogress
+      liefert.
+- [x] Einzelretry.
+- [x] Finalisierung.
+- [x] Thread.
+- [x] Sessionlogout.
+- [x] keine Tokenpersistenz in `localStorage`.
+- [x] `sessionStorage` nur für CSRF.
+- [x] axe und Tastatur.
+
+**Verifiziert 2026-08-11:** Transfer-Client-Unit-Tests und Playwright decken Fragment-
+Bereinigung, Sessionstatus, XHR-Fortschritt, Einzelretry, Finalisierung, Thread, Logout,
+Storage-Vertrag, Axe, Tastatur und 320-Pixel-Reflow ab.
+
 - [ ] Commit:
 
 ```bash
@@ -2633,14 +2957,18 @@ git commit -m "feat: kundenseite für sicheren datentransfer"
 - Create: `worker/src/transfers/routes-admin.ts`
 - Test: `worker/test/access.test.ts`
 
-- [ ] ungültiger Header;
-- [ ] falscher Issuer;
-- [ ] falsche Audience;
-- [ ] abgelaufen;
-- [ ] gültige Admin-E-Mail;
-- [ ] JWKS-Caching;
-- [ ] lokale Testschlüssel;
-- [ ] `GET /api/admin/session`.
+- [x] ungültiger Header;
+- [x] falscher Issuer;
+- [x] falsche Audience;
+- [x] abgelaufen;
+- [x] gültige Admin-E-Mail;
+- [x] JWKS-Caching;
+- [x] lokale Testschlüssel;
+- [x] `GET /api/admin/session`.
+
+**Verifiziert 2026-08-11:** `access.test.ts` prüft Header, Issuer, Audience, Ablauf,
+Admin-E-Mail, JWKS-Cache/Rotation, lokale RS256-Testschlüssel, Origin und Sessionroute.
+
 - [ ] Commit:
 
 ```bash
@@ -2660,17 +2988,22 @@ git commit -m "feat: admin-api mit cloudflare-access-jwt absichern"
 - Create: `src/scripts/admin-transfer-client.ts`
 - Test: `tests/e2e/admin-datentransfer.spec.ts`
 
-- [ ] Access-Shell ohne sensible statische Daten.
-- [ ] Fall erzeugen.
-- [ ] Token einmal anzeigen.
-- [ ] Copy-Link.
-- [ ] Druckansicht.
-- [ ] Liste und Filter.
-- [ ] Detailansicht.
-- [ ] Token widerrufen/rotieren.
-- [ ] Status setzen.
-- [ ] `in Praxisakte übernommen`.
-- [ ] keine Aktion ohne Access-JWT.
+- [x] Access-Shell ohne sensible statische Daten.
+- [x] Fall erzeugen.
+- [x] Token einmal anzeigen.
+- [x] Copy-Link.
+- [x] Druckansicht.
+- [x] Liste und Filter.
+- [x] Detailansicht.
+- [x] Token widerrufen/rotieren.
+- [x] Status setzen.
+- [x] `in Praxisakte übernommen`.
+- [x] keine Aktion ohne Access-JWT.
+
+**Verifiziert 2026-08-11:** Admin-API-Unit-Tests und Playwright prüfen statische
+Access-Shell, einmalige Tokenanzeige, Copy-Link, Druckansicht, Liste/Filter, Detail,
+Rotation, Widerruf, Status-/Exportaktionen und fail-closed Adminzugriff.
+
 - [ ] Commit:
 
 ```bash
@@ -2688,12 +3021,17 @@ git commit -m "feat: access-geschütztes admin-dashboard für datentransfer"
 - Modify: `TransferThread.astro`
 - Test: `worker/test/replies.test.ts`, `tests/e2e/datentransfer.spec.ts`
 
-- [ ] Antwort optional.
-- [ ] Textgrenze 8.000.
-- [ ] Status `callback_planned` ohne Antwort.
-- [ ] Kundenthread zeigt Antwort und Status.
-- [ ] keine internen Notizen.
-- [ ] Benachrichtigungswunsch respektieren.
+- [x] Antwort optional.
+- [x] Textgrenze 8.000.
+- [x] Status `callback_planned` ohne Antwort.
+- [x] Kundenthread zeigt Antwort und Status.
+- [x] keine internen Notizen.
+- [x] Benachrichtigungswunsch respektieren.
+
+**Verifiziert 2026-08-11:** `replies.test.ts` und Transfer-E2E prüfen optionale
+8.000-Zeichen-Antworten, callback-only, Kundenthread, interne Notizen und
+Benachrichtigungsentscheidung.
+
 - [ ] Commit:
 
 ```bash
@@ -2711,14 +3049,19 @@ git commit -m "feat: optionale praxisantwort und rückrufstatus"
 - Modify: `worker/src/index.ts`
 - Test: `worker/test/notifications.test.ts`
 
-- [ ] Notification-D1-Zeile zuerst;
-- [ ] Queue-Nachricht nur mit ID;
-- [ ] Praxis-Mail minimal;
-- [ ] Kunden-Mail ohne Token und Antwort;
-- [ ] Retry;
-- [ ] DLQ;
-- [ ] Status in D1;
-- [ ] Tests.
+- [x] Notification-D1-Zeile zuerst;
+- [x] Queue-Nachricht nur mit ID;
+- [x] Praxis-Mail minimal;
+- [x] Kunden-Mail ohne Token und Antwort;
+- [x] Retry;
+- [x] DLQ;
+- [x] Status in D1;
+- [x] Tests.
+
+**Verifiziert 2026-08-11:** `notifications.test.ts` prüft D1-first, opaque UUID-
+Queue-Nachrichten, datensparsame E-Mails, Retry/Fehlerstatus und ungültige Nachrichten;
+die Development-Wrangler-Konfiguration bindet Hauptqueue und DLQ.
+
 - [ ] Commit:
 
 ```bash
@@ -2737,14 +3080,23 @@ git commit -m "feat: datensparsame transfer-benachrichtigungen über queues"
 - Test: `worker/test/cleanup.test.ts`
 - Create: `docs/DATENTRANSFER-BETRIEB.md`
 
-- [ ] abgelaufene Sessions;
-- [ ] Tokens;
-- [ ] Drafts;
-- [ ] verwaiste R2-Objekte;
-- [ ] geschlossene Fälle;
-- [ ] Notification-Reconciliation;
-- [ ] R2-Lifecycle 60 Tage dokumentieren;
-- [ ] D1-Time-Travel-Restoreübung;
+- [x] abgelaufene Sessions;
+- [x] Tokens;
+- [x] Drafts;
+- [x] verwaiste R2-Objekte;
+- [x] geschlossene Fälle;
+- [x] Notification-Reconciliation;
+- [x] R2-Lifecycle 60 Tage dokumentieren;
+- [x] D1-Time-Travel-Restoreübung;
+
+**Verifiziert 2026-08-11:** `cleanup.test.ts` prüft Sessions, Tokens, Drafts,
+geschlossene Fälle, verwaiste R2-Objekte und Notification-Reconciliation. Die
+60-Tage-Lifecycle-Regel ist remote aktiv und im Betriebshandbuch dokumentiert. Die
+isolierte D1-Time-Travel-Restoreübung stellte einen anonymisierten Datensatz über alle
+neun Transfer-Tabellen wieder her; `PRAGMA foreign_key_check` blieb leer und eine
+absichtlich nach dem Bookmark ausgeführte Mutation wurde zurückgesetzt. Das isolierte
+Ziel wurde nach der Prüfung gelöscht; `TRANSFER_DB` blieb unangetastet.
+
 - [ ] Commit:
 
 ```bash
@@ -2762,14 +3114,19 @@ git commit -m "feat: datentransfer automatisch bereinigen und überwachen"
 - Create: `docs/DATENSCHUTZ-ENTSCHEIDUNGEN.md`
 - Modify: `src/content/project-todos.ts`
 
-- [ ] Verantwortlicher und Zweck.
-- [ ] Token, D1, R2, Access, Queue und Mail beschreiben.
-- [ ] Aufbewahrung als noch freizugebende Entscheidung.
-- [ ] Betroffenenrechte.
-- [ ] kein Notfall.
-- [ ] Portal keine offizielle Akte, solange Übernahmeprozess nicht freigegeben.
-- [ ] Rechtstext deutlich als Arbeitsfassung.
-- [ ] Produktionsblocker bleiben offen.
+- [x] Verantwortlicher und Zweck.
+- [x] Token, D1, R2, Access, Queue und Mail beschreiben.
+- [x] Aufbewahrung als noch freizugebende Entscheidung.
+- [x] Betroffenenrechte.
+- [x] kein Notfall.
+- [x] Portal keine offizielle Akte, solange Übernahmeprozess nicht freigegeben.
+- [x] Rechtstext deutlich als Arbeitsfassung.
+- [x] Produktionsblocker bleiben offen.
+
+**Verifiziert 2026-08-11:** Datenschutzseite, Impressum, Entscheidungsdokument und
+TODO-Registry beschreiben Zweck, D1/R2/Access/Queue/Mail, Betroffenenrechte, Notfall-
+Ausschluss, Aktenübergabe und offene Rechts-/Aufbewahrungsfreigaben.
+
 - [ ] Commit:
 
 ```bash
@@ -2828,6 +3185,14 @@ git diff --exit-code
 
 **Commit:**
 
+**Abnahme 2026-08-11:** `pnpm test` ist mit 81 Website-Tests, 272 Worker-Tests und 1
+Runtime-Test grün; `worker:check`, Astro Check, Formatprüfung und `git diff --check`
+sind ebenfalls grün. Die Validator-Tests laufen in der lokalen Kleinumgebung bewusst
+dateiseriell (`fileParallelism: false`, `maxWorkers: 1`), damit Spawn-/Build-Tests keine
+Ressourcen-Timeouts vortäuschen. Die vollständige Playwright-Suite läuft mit dem
+stabilen Standard von einem Worker und besteht mit 97 Tests und 4 bewussten Skips; ein
+paralleler 6-Worker-Lauf erzeugte nur lokale Ressourcen-Timeouts.
+
 ```bash
 git commit -m "test: startseiten todo und datentransfer vollständig gaten"
 ```
@@ -2835,6 +3200,20 @@ git commit -m "test: startseiten todo und datentransfer vollständig gaten"
 ---
 
 ## Task 28: Development-Deployment und End-to-End-Abnahme
+
+**Fortsetzung 2026-08-11:** R2-Development-Bucket und Lifecycle sind eingerichtet. Die
+Development-D1-Migration ist freigegeben und erfolgreich angewendet; die read-only
+Schemaabfrage bestätigt neun Transfer-Fachtabellen in `EEUR`, und
+`d1 migrations list --remote` meldet keine ausstehenden Migrationen. Die lokale
+Playwright-Abnahme besteht mit 97 Tests und 4 bewussten Skips auf dem stabilen
+1-Worker-Lauf; `playwright.config.ts` unterstützt zusätzlich einen expliziten
+`PLAYWRIGHT_PORT`. Die sechs Development-Secrets sind gesetzt, die beiden
+Access-Anwendungen sind mit expliziter Admin-Policy aktiv, und Worker-Version
+`fc3b44df-bb8c-462b-9b4b-f98db6ebce6b` ist deployed. Healthcheck sowie
+Queue-Producer/Consumer sind bestätigt. Die isolierte D1-Time-Travel-Restoreübung ist
+bestanden und dokumentiert. Task 28 bleibt nur für die vollständige interaktive
+Access-OTP-Remote-E2E und die abschließende Development-Abnahme offen. Der
+Produktionsstand blieb unverändert.
 
 ### 28.1 Reihenfolge
 
@@ -2924,7 +3303,8 @@ Dieser Task wird erst begonnen, wenn Meilenstein 2 vollständig abgenommen ist.
 - vorherige Worker-Version aktivieren;
 - D1-Migrationen sind vorwärtskompatibel zu planen;
 - destruktive Migrationen sind in Meilenstein 2 verboten;
-- Featureflag `DATATRANSFER_ENABLED=false` schaltet Transfer-Routen auf kontrollierte Wartungsantwort;
+- Featureflag `DATATRANSFER_ENABLED=false` schaltet Transfer-Routen auf kontrollierte
+  Wartungsantwort;
 - bestehendes `/v1/contact` bleibt aktiv.
 
 ### Datentransfer
@@ -2940,21 +3320,21 @@ Dieser Task wird erst begonnen, wenn Meilenstein 2 vollständig abgenommen ist.
 
 ## 25. Offene Architekturentscheidungen mit Default
 
-| Entscheidung | Default in diesem Plan | Änderbar bis |
-|---|---|---|
-| Nummerierung der Previews | bisherige Seite = 1, neue Previews = 2–4, Preview 3 = Startseite 4/Standard | vor Task 5 |
-| Admin-Shell | statisch auf GitHub Pages, Daten ausschließlich über Access-API | vor Task 22 |
-| Same-origin Transfer-API | `/api/*` Worker Route | vor Task 13 |
-| Max. Video | 50 MB | vor Task 18 |
-| Max. Fallvolumen | 100 MB | vor Task 18 |
-| Tokenablauf | 14 Tage, max. 30 | vor Task 15 |
-| Portalaufbewahrung | 30 Tage nach Schließen, 60-Tage-R2-Backstop | rechtliche Freigabe vor Produktion |
-| Antworten | optional, Rückrufstatus gleichwertig | fest |
-| E-Mailinhalt | keine Berichte/Anhänge | fest |
-| Malware-Scanning | im MVP nicht behauptet; sichere Typen und private Bereitstellung | vor Produktion erneut bewerten |
-| PDF-Uploads | im MVP nicht erlaubt | späterer Meilenstein |
-| Generierte Personenbilder | nur Symbolbild, nie echtes Team | fest |
-| TODO-Seite | öffentlich noindex, ohne Secrets | vor Produktion erneut entscheiden |
+| Entscheidung              | Default in diesem Plan                                                      | Änderbar bis                       |
+| ------------------------- | --------------------------------------------------------------------------- | ---------------------------------- |
+| Nummerierung der Previews | bisherige Seite = 1, neue Previews = 2–4, Preview 3 = Startseite 4/Standard | vor Task 5                         |
+| Admin-Shell               | statisch auf GitHub Pages, Daten ausschließlich über Access-API             | vor Task 22                        |
+| Same-origin Transfer-API  | `/api/*` Worker Route                                                       | vor Task 13                        |
+| Max. Video                | 50 MB                                                                       | vor Task 18                        |
+| Max. Fallvolumen          | 100 MB                                                                      | vor Task 18                        |
+| Tokenablauf               | 14 Tage, max. 30                                                            | vor Task 15                        |
+| Portalaufbewahrung        | 30 Tage nach Schließen, 60-Tage-R2-Backstop                                 | rechtliche Freigabe vor Produktion |
+| Antworten                 | optional, Rückrufstatus gleichwertig                                        | fest                               |
+| E-Mailinhalt              | keine Berichte/Anhänge                                                      | fest                               |
+| Malware-Scanning          | im MVP nicht behauptet; sichere Typen und private Bereitstellung            | vor Produktion erneut bewerten     |
+| PDF-Uploads               | im MVP nicht erlaubt                                                        | späterer Meilenstein               |
+| Generierte Personenbilder | nur Symbolbild, nie echtes Team                                             | fest                               |
+| TODO-Seite                | öffentlich noindex, ohne Secrets                                            | vor Produktion erneut entscheiden  |
 
 ---
 
@@ -3021,7 +3401,8 @@ Die Planung stützt sich auf die jeweils aktuellen offiziellen Dokumentationen:
 - Cloudflare Workers – Routes und Wrangler-Konfiguration;
 - Cloudflare Workers – Vitest Integration;
 - GitHub Pages – Custom Domains und Actions Deployment;
-- EUR-Lex – DSGVO, insbesondere Grundsätze, Informationspflicht, Auftragsverarbeitung, Privacy by Design und Sicherheit;
+- EUR-Lex – DSGVO, insbesondere Grundsätze, Informationspflicht, Auftragsverarbeitung,
+  Privacy by Design und Sicherheit;
 - BfDI – Standard-Datenschutzmodell und Stand der Technik.
 
 ---
@@ -3043,4 +3424,5 @@ Empfohlener Ablauf:
 - erst nach kompletter E2E-Abnahme `main`;
 - Produktionsfreigabe als eigener, explizit genehmigter Meilenstein.
 
-Der nächste unmittelbar ausführbare Schritt ist **Task 1**; dessen Archivinput ist bereits verifiziert.
+Der nächste unmittelbar ausführbare Schritt ist **Task 1**; dessen Archivinput ist
+bereits verifiziert.

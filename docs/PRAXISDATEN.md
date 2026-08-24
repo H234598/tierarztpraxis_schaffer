@@ -1,8 +1,8 @@
 # Bestätigte und offene Praxisdaten
 
 Diese Datei ist die fachliche Datenquelle für Angaben, die nicht aus dem alten
-Testbestand geraten werden dürfen. Jede bestätigte Information nennt ihre
-Quelle und das Bestätigungsdatum.
+Testbestand geraten werden dürfen. Jede bestätigte Information nennt ihre Quelle und das
+Bestätigungsdatum.
 
 ## Barrierefreiheit vor Ort
 
@@ -18,13 +18,12 @@ Quelle und das Bestätigungsdatum.
 
 ## Freigegebener Text für Website und FAQ
 
-> Die Praxis befindet sich vollständig im Erdgeschoss. Am Eingang ist eine
-> kleine Türschwelle vorhanden; die Eingangstür hat Standardbreite. Ein Aufzug
-> wird nicht benötigt. Geeignete Parkplätze befinden sich direkt vor der
-> Praxis. Benötigen Sie beim Zugang oder während Ihres Besuchs Unterstützung,
-> hilft Ihnen unser Team jederzeit gerne. Bitte rufen Sie uns bei besonderen
-> Anforderungen vor Ihrem Besuch kurz an, damit wir Sie bestmöglich
-> unterstützen können.
+> Die Praxis befindet sich vollständig im Erdgeschoss. Am Eingang ist eine kleine
+> Türschwelle vorhanden; die Eingangstür hat Standardbreite. Ein Aufzug wird nicht
+> benötigt. Geeignete Parkplätze befinden sich direkt vor der Praxis. Benötigen Sie beim
+> Zugang oder während Ihres Besuchs Unterstützung, hilft Ihnen unser Team jederzeit
+> gerne. Bitte rufen Sie uns bei besonderen Anforderungen vor Ihrem Besuch kurz an,
+> damit wir Sie bestmöglich unterstützen können.
 
 ## Formulierungsregeln
 
@@ -33,8 +32,8 @@ Quelle und das Bestätigungsdatum.
   entsprechende Kennzeichnung und Abmessung nicht bestätigt sind.
 - Die kleine Türschwelle immer transparent erwähnen.
 - Die Teamunterstützung als konkrete Hilfsmöglichkeit nennen.
-- Für individuelle Anforderungen einen kurzen telefonischen Kontakt vor dem
-  Besuch empfehlen.
+- Für individuelle Anforderungen einen kurzen telefonischen Kontakt vor dem Besuch
+  empfehlen.
 
 ## Noch offene Detailangaben
 
@@ -43,7 +42,6 @@ Diese Punkte sind weiterhin zu prüfen und bleiben bis dahin Platzhalter:
 - genaue lichte Breite der Eingangstür in Zentimetern;
 - ungefähre Höhe der Türschwelle in Zentimetern;
 - Zugänglichkeit und Ausstattung des Praxis-WCs;
-- Bewegungsflächen für Rollstuhl oder Rollator im Empfangs- und
-  Behandlungsbereich;
+- Bewegungsflächen für Rollstuhl oder Rollator im Empfangs- und Behandlungsbereich;
 - genaue Beschaffenheit, Breite und Kennzeichnung der Parkplätze;
 - barrierearme Erreichbarkeit mit öffentlichen Verkehrsmitteln.

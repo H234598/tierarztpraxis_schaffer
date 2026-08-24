@@ -55,9 +55,7 @@ export function contactErrorMessage(error: unknown): string {
   }
 }
 
-export function setupContactForm(
-  options: ContactFormSetupOptions = {},
-): void {
+export function setupContactForm(options: ContactFormSetupOptions = {}): void {
   const root = options.root ?? document;
   const fetchImpl = options.fetchImpl ?? fetch;
   const formDataFactory =
@@ -86,8 +84,7 @@ export function setupContactForm(
     const token = String(data.get("cf-turnstile-response") ?? "");
 
     if (!email && !phone) {
-      status.textContent =
-        "Bitte geben Sie eine E-Mail-Adresse oder Telefonnummer an.";
+      status.textContent = "Bitte geben Sie eine E-Mail-Adresse oder Telefonnummer an.";
       return;
     }
     if (!token) {

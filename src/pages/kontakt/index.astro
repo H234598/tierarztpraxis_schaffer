@@ -3,6 +3,9 @@ import ContactForm from "../../components/ContactForm.astro";
 import OsmMap from "../../components/OsmMap.astro";
 import { siteConfig } from "../../config/site";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const contactFormEnabled =
+  siteConfig.isDevelopment || import.meta.env.PUBLIC_ENABLE_CONTACT_FORM === "true";
 ---
 
 <BaseLayout
@@ -14,7 +17,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
     <div class="content">
       <p class="eyebrow">Kontakt und Anfahrt</p>
       <h1>Am schnellsten erreichen Sie uns telefonisch</h1>
-      <p><a class="button" href={siteConfig.phone.href}>{siteConfig.phone.display} anrufen</a></p>
+      <p>
+        <a class="button" href={siteConfig.phone.href}
+          >{siteConfig.phone.display} anrufen</a
+        >
+      </p>
     </div>
   </header>
 
@@ -25,7 +32,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
         <address>
           <strong>{siteConfig.shortName}</strong><br />
           {siteConfig.address.street}<br />
-          {siteConfig.address.postalCode} {siteConfig.address.city}
+          {siteConfig.address.postalCode}
+          {siteConfig.address.city}
         </address>
         <p>Telefon: <a href={siteConfig.phone.href}>{siteConfig.phone.display}</a></p>
       </article>
@@ -41,6 +49,21 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
   </section>
 
   <section class="section section--white">
-    <div class="content"><ContactForm /></div>
+    <div class="content">
+      {
+        contactFormEnabled ? (
+          <ContactForm />
+        ) : (
+          <article class="card">
+            <h2>Kontaktformular derzeit nicht freigegeben</h2>
+            <p>
+              Die rechtliche Freigabe steht noch aus. Bitte erreichen Sie die Praxis
+              telefonisch unter{" "}
+              <a href={siteConfig.phone.href}>{siteConfig.phone.display}</a>.
+            </p>
+          </article>
+        )
+      }
+    </div>
   </section>
 </BaseLayout>
