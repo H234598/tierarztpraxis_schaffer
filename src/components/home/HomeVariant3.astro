@@ -1,0 +1,96 @@
+---
+import OpeningHours from "../OpeningHours.astro";
+import OsmMap from "../OsmMap.astro";
+import {
+  sharedServicePlaceholderCards,
+  variant3HomeCopy,
+} from "../../content/home-content";
+import { siteConfig } from "../../config/site";
+import { withBase } from "../../utils/paths";
+---
+
+<section class="home-3__hero">
+  <div class="container home-3__hero-grid">
+    <div class="home-3__hero-copy">
+      <p class="eyebrow">{variant3HomeCopy.hero.eyebrow}</p>
+      <h1>{variant3HomeCopy.hero.title}</h1>
+      <p>{variant3HomeCopy.hero.intro}</p>
+      <div class="button-row">
+        <a class="button" href={siteConfig.phone.href}>Telefonisch Termin anfragen</a>
+        <a class="button button--secondary" href={withBase("sprechzeiten/")}
+          >Sprechzeiten ansehen</a
+        >
+      </div>
+      <p class="home-3__appointment-note">{siteConfig.appointmentNote}</p>
+    </div>
+    <figure class="home-3__hero-figure">
+      <img
+        class="home-3__hero-image"
+        src={withBase("images/home/variant-3/hero-ruhiges-gespraech.webp")}
+        alt=""
+        width="1800"
+        height="1125"
+      />
+      <figcaption>Symbolbild</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="home-3__services section" aria-labelledby="home-3-services-heading">
+  <div class="container">
+    <header class="home-3__section-heading">
+      <p class="eyebrow">Für Ihr Tier</p>
+      <h2 id="home-3-services-heading">Leistungen</h2>
+    </header>
+    <div class="home-3__service-row">
+      {
+        sharedServicePlaceholderCards.map((card) => (
+          <article>
+            <h3>{card.title}</h3>
+            <p>{card.text}</p>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<section class="home-3__centerpiece section">
+  <div class="container home-3__centerpiece-grid">
+    <article class="home-3__opening-hours">
+      <p class="eyebrow">Gut vorbereitet</p>
+      <h2>Sprechzeiten</h2>
+      <OpeningHours />
+    </article>
+    <article class="home-3__philosophy">
+      <p class="eyebrow">Unsere Haltung</p>
+      <h2>{variant3HomeCopy.philosophy.title}</h2>
+      {variant3HomeCopy.philosophy.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+    </article>
+  </div>
+</section>
+
+<section class="home-3__orientation section">
+  <div class="container home-3__orientation-grid">
+    <article class="home-3__accessibility">
+      <p class="eyebrow">Vor Ort</p>
+      <h2>Zugänglichkeit</h2>
+      <p>{siteConfig.accessibility.faqAnswer}</p>
+      <a href={withBase("barrierefreiheit/")}>Erklärung lesen</a>
+    </article>
+    <article>
+      <h2>Häufige Fragen</h2>
+      <p>Antworten zu Terminen, Notfällen, Anfahrt, Dokumenten und Barrierefreiheit.</p>
+      <a href={withBase("faq/")}>FAQ öffnen</a>
+    </article>
+    <article>
+      <h2>Stellenangebote</h2>
+      <p>Aktuelle Ausschreibungen und der künftige sichere Bewerbungsweg.</p>
+      <a href={withBase("stellenangebote/")}>Stellenangebote ansehen</a>
+    </article>
+  </div>
+</section>
+
+<section class="home-3__map section">
+  <div class="container"><OsmMap /></div>
+</section>

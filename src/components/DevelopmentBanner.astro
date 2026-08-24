@@ -1,13 +1,15 @@
 ---
 import { siteConfig } from "../config/site";
+import { withBase } from "../utils/paths";
 ---
 
 {
   siteConfig.isDevelopment && (
     <aside class="development-banner" aria-label="Hinweis zur Entwicklungsversion">
-      <strong>Entwicklungsversion:</strong> Einige Praxis- und Rechtsangaben sind
-      noch nicht abschließend bestätigt. Das Kontaktformular versendet echte
-      Testnachrichten ausschließlich an das eingerichtete Testpostfach.
+      <strong>Entwicklungsversion:</strong> Einige Praxis- und Rechtsangaben sind noch
+      nicht abschließend bestätigt. Das Kontaktformular versendet echte Testnachrichten
+      ausschließlich an das eingerichtete Testpostfach.{" "}
+      <a href={withBase("todo/")}>Projekt-TODOs</a>.
     </aside>
   )
 }

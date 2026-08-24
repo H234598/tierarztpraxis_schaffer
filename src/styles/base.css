@@ -1,0 +1,47 @@
+@layer base {
+  body {
+    min-width: 20rem;
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.65;
+  }
+  h1,
+  h2,
+  h3 {
+    color: var(--green-dark);
+    line-height: 1.12;
+    text-wrap: balance;
+  }
+  h1 {
+    font-size: clamp(2.5rem, 7vw, 5.2rem);
+    letter-spacing: -0.045em;
+  }
+  h2 {
+    font-size: clamp(1.65rem, 4vw, 2.7rem);
+    letter-spacing: -0.025em;
+  }
+  h3 {
+    font-size: 1.3rem;
+  }
+  p,
+  li,
+  dd {
+    max-width: 72ch;
+  }
+  a {
+    color: var(--green-dark);
+    text-underline-offset: 0.2em;
+  }
+  :focus-visible {
+    outline: 0.22rem solid #f3a91c;
+    outline-offset: 0.2rem;
+    border-radius: 0.2rem;
+  }
+  address {
+    font-style: normal;
+  }
+  small {
+    color: var(--muted);
+  }
+}

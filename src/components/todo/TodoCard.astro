@@ -1,0 +1,59 @@
+---
+import {
+  projectTodoCategoryLabels,
+  projectTodoStatusLabels,
+  type ProjectTodo,
+} from "../../content/project-todos";
+
+interface Props {
+  item: ProjectTodo;
+}
+
+const { item } = Astro.props;
+---
+
+<article
+  class="todo-card"
+  data-todo-card
+  data-todo-id={item.id}
+  data-category={item.category}
+  data-status={item.status}
+  data-owner={item.owner}
+  data-visibility={item.visibility}
+>
+  <header class="todo-card__header">
+    <p class="todo-card__id">{item.id}</p>
+    <h3>{item.title}</h3>
+  </header>
+  <p>{item.description}</p>
+  <dl class="todo-card__meta">
+    <div><dt>Status</dt><dd>{projectTodoStatusLabels[item.status]}</dd></div>
+    <div><dt>Priorität</dt><dd>{item.priority}</dd></div>
+    <div><dt>Kategorie</dt><dd>{projectTodoCategoryLabels[item.category]}</dd></div>
+    <div><dt>Verantwortlich</dt><dd>{item.owner}</dd></div>
+    <div>
+      <dt>Aktualisiert</dt><dd>
+        <time datetime={item.updatedAt}>{item.updatedAt}</time>
+      </dd>
+    </div>
+  </dl>
+  <details class="todo-card__details">
+    <summary>Akzeptanzkriterien und Quellen</summary>
+    <h4>Akzeptanzkriterien</h4>
+    <ul>
+      {item.acceptanceCriteria.map((criterion) => <li>{criterion}</li>)}
+    </ul>
+    <h4>Quelle</h4>
+    <p>{item.source}</p>
+    <h4>Betroffene Pfade</h4>
+    <ul>
+      {
+        item.relatedPaths.map((path) => (
+          <li>
+            <code>{path}</code>
+          </li>
+        ))
+      }
+    </ul>
+  </details>
+</article>

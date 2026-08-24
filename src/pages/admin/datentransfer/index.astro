@@ -1,0 +1,47 @@
+---
+import AdminCaseDetail from "../../../components/datentransfer/AdminCaseDetail.astro";
+import AdminCaseList from "../../../components/datentransfer/AdminCaseList.astro";
+import AdminTokenForm from "../../../components/datentransfer/AdminTokenForm.astro";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import "../../../styles/admin-datentransfer.css";
+---
+
+<BaseLayout
+  title="Datentransfer verwalten | Tierarztpraxis Schäffer"
+  description="Access-geschützte Verwaltung für Datentransfer-Fälle."
+  canonicalPath="/admin/datentransfer/"
+  robots="noindex,nofollow"
+>
+  <header class="page-header">
+    <div class="content">
+      <p class="eyebrow">Praxisbereich</p>
+      <h1>Datentransfer verwalten</h1>
+      <p>Fälle, Zugänge und Übertragungsstatus verwalten.</p>
+    </div>
+  </header>
+  <div class="admin-transfer-shell content" data-admin-transfer-root>
+    <p class="admin-transfer-status" role="status" aria-live="polite" data-admin-status>
+      Admin-Zugang wird geprüft.
+    </p>
+    <section
+      class="admin-auth-required"
+      data-admin-auth-required
+      hidden
+      aria-labelledby="admin-auth-heading"
+    >
+      <h2 id="admin-auth-heading">Admin-Zugang erforderlich</h2>
+      <p>Cloudflare Access konnte keine gültige Sitzung bestätigen.</p>
+    </section>
+    <div class="admin-transfer-workspace" data-admin-workspace hidden>
+      <p data-admin-identity></p>
+      <AdminTokenForm />
+      <AdminCaseList />
+      <AdminCaseDetail />
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { setupAdminTransferClient } from "../../../scripts/admin-transfer-client";
+  setupAdminTransferClient();
+</script>

@@ -1,6 +1,7 @@
 # Tierarztpraxis Dr. Schäffer – Website
 
-Moderne, barrierebewusst entwickelte Website für die Tierarztpraxis Dr. Schäffer in Fürth.
+Moderne, barrierebewusst entwickelte Website für die Tierarztpraxis Dr. Schäffer in
+Fürth.
 
 ## Aktueller Stand
 
@@ -9,7 +10,10 @@ Das Repository enthält jetzt zwei auslieferbare Teile:
 1. eine statische Astro-Website für GitHub Pages;
 2. einen gehärteten Cloudflare-Worker für das Kontaktformular.
 
-Die Website läuft bis zur Bestätigung aller fachlichen und rechtlichen Pflichtdaten im Entwicklungsmodus. Sie zeigt einen sichtbaren Hinweis, verhindert Suchmaschinenindexierung und darf markierte Platzhalter enthalten. Das Kontaktformular versendet bereits echte Testnachrichten an die serverseitig konfigurierte Testadresse.
+Die Website läuft bis zur Bestätigung aller fachlichen und rechtlichen Pflichtdaten im
+Entwicklungsmodus. Sie zeigt einen sichtbaren Hinweis, verhindert
+Suchmaschinenindexierung und darf markierte Platzhalter enthalten. Das Kontaktformular
+versendet bereits echte Testnachrichten an die serverseitig konfigurierte Testadresse.
 
 ## Adressen
 
@@ -60,9 +64,12 @@ pnpm build
 
 ## Barrierefreiheit
 
-Die Praxis liegt vollständig im Erdgeschoss. Am Eingang gibt es eine kleine Türschwelle; die Eingangstür hat Standardbreite. Ein Aufzug ist nicht erforderlich. Geeignete Parkplätze liegen direkt vor der Praxis, und das Team unterstützt jederzeit.
+Die Praxis liegt vollständig im Erdgeschoss. Am Eingang gibt es eine kleine Türschwelle;
+die Eingangstür hat Standardbreite. Ein Aufzug ist nicht erforderlich. Geeignete
+Parkplätze liegen direkt vor der Praxis, und das Team unterstützt jederzeit.
 
-Für die Website ist WCAG 2.2 AA das Qualitätsziel. Eine formale Zertifizierung wird nicht behauptet.
+Für die Website ist WCAG 2.2 AA das Qualitätsziel. Eine formale Zertifizierung wird
+nicht behauptet.
 
 ## Dokumentation
 

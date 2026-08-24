@@ -9,8 +9,7 @@ const site =
     ? "https://tierarztpraxis-schaffer.telacore.org"
     : "https://h234598.github.io");
 const base =
-  process.env.PUBLIC_BASE_PATH ??
-  (production ? "/" : "/tierarztpraxis_schaffer");
+  process.env.PUBLIC_BASE_PATH ?? (production ? "/" : "/tierarztpraxis_schaffer");
 
 export default defineConfig({
   site,

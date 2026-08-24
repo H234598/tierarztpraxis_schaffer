@@ -51,7 +51,17 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Manifeste und Lockdatei unverändert halten
-        run: git diff --exit-code -- package.json worker/package.json pnpm-workspace.yaml pnpm-lock.yaml
+        run:
+          git diff --exit-code -- package.json worker/package.json pnpm-workspace.yaml
+          pnpm-lock.yaml
+
+      - name: Format prüfen
+        run: pnpm format:check
+
+      - name: Generierte Projektübersicht synchron halten
+        run: |
+          pnpm todo:generate
+          git diff --exit-code -- docs/TODO.md
 
       - name: Astro und TypeScript prüfen
         run: pnpm check
@@ -64,6 +74,15 @@ jobs:
 
       - name: Entwicklungsbuild erstellen
         run: pnpm build
+
+      - name: Startseiten-Budgets prüfen
+        run: pnpm check:home-budgets
+
+      - name: Erzeugtes Startseiten-CSS prüfen
+        run: pnpm inspect:home-build
+
+      - name: Erzeugtes Datentransfer-Bundle diagnostizieren
+        run: pnpm exec tsx scripts/inspect-transfer-build.ts
 
       - name: Erzeugtes Kontaktformular-Bundle diagnostizieren
         run: pnpm exec tsx scripts/inspect-contact-build.ts

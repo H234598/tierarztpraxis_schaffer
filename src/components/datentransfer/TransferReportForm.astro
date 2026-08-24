@@ -1,0 +1,97 @@
+---
+import { withBase } from "../../utils/paths";
+---
+
+<section class="transfer-card" aria-labelledby="transfer-report-heading">
+  <header class="transfer-heading">
+    <p class="eyebrow">Neue Einreichung</p>
+    <h2 id="transfer-report-heading" tabindex="-1">Bericht und Dateien</h2>
+  </header>
+  <form class="transfer-report" data-transfer-report>
+    <label>
+      <span>Überschrift <span aria-hidden="true">*</span></span>
+      <input name="title" type="text" minlength="3" maxlength="120" required />
+    </label>
+    <label>
+      <span>Beobachtung und Bericht <span aria-hidden="true">*</span></span>
+      <textarea name="message" rows="8" minlength="20" maxlength="8000" required
+      ></textarea>
+      <small>20 bis 8.000 Zeichen. Bitte nur Angaben zu diesem Fall eintragen.</small>
+    </label>
+    <label>
+      <span>Seit wann</span>
+      <input name="observedSince" type="text" maxlength="200" />
+      <small>Optional: Datum oder kurze Angabe wie „seit gestern Abend“.</small>
+    </label>
+
+    <fieldset>
+      <legend>Dringlichkeit</legend>
+      <label class="transfer-choice">
+        <input name="urgency" type="radio" value="normal" checked />
+        <span>Normal</span>
+      </label>
+      <label class="transfer-choice" data-callback-choice>
+        <input name="urgency" type="radio" value="callback_requested" />
+        <span>Zeitnaher Rückruf erwünscht</span>
+      </label>
+    </fieldset>
+
+    <label data-callback-phone hidden>
+      <span>Telefonnummer für Rückruf <span aria-hidden="true">*</span></span>
+      <input name="callbackPhone" type="tel" autocomplete="tel" maxlength="40" />
+    </label>
+    <label>
+      <span>E-Mail für Antwortbenachrichtigung</span>
+      <input
+        name="notificationEmail"
+        type="email"
+        autocomplete="email"
+        maxlength="254"
+      />
+      <small
+        >Optional. Die E-Mail enthält keine medizinischen Inhalte und keinen Token.</small
+      >
+    </label>
+    <label>
+      <span>Links</span>
+      <textarea name="links" rows="4" maxlength="16391"></textarea>
+      <small>Optional, höchstens acht HTTPS-Links; ein Link pro Zeile.</small>
+    </label>
+    <label>
+      <span>Dateien</span>
+      <input
+        name="files"
+        type="file"
+        multiple
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/webm"
+      />
+      <small
+        >JPEG, PNG, WebP, HEIC, HEIF bis 12 MiB; MP4, QuickTime, WebM bis 50 MiB.</small
+      >
+    </label>
+
+    <label class="transfer-choice">
+      <input name="privacyAccepted" type="checkbox" value="true" required />
+      <span
+        >Datenschutzhinweise gelesen. <a href={withBase("datenschutz/")}
+          >Datenschutzhinweise öffnen</a
+        ></span
+      >
+    </label>
+    <label class="transfer-choice transfer-choice--emergency">
+      <input name="notEmergencyConfirmed" type="checkbox" value="true" required />
+      <span>Ich bestätige: Kein Notfall. <span aria-hidden="true">*</span></span>
+    </label>
+
+    <button class="button" type="submit">Bericht sicher senden</button>
+  </form>
+  <p class="transfer-final-status" aria-live="polite" data-transfer-final-status></p>
+  <button
+    class="button button--secondary"
+    type="button"
+    data-transfer-finalize-retry
+    hidden
+  >
+    Abschluss erneut versuchen
+  </button>
+</section>

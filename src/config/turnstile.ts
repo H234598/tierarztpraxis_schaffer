@@ -26,9 +26,7 @@ export function resolveTurnstileSiteKey(
   if (value === undefined || value.length === 0) {
     if (options.allowTestKeys) return defaultPassingTestSitekey;
 
-    throw new TurnstileConfigurationError(
-      "PUBLIC_TURNSTILE_SITE_KEY fehlt.",
-    );
+    throw new TurnstileConfigurationError("PUBLIC_TURNSTILE_SITE_KEY fehlt.");
   }
 
   if (value.trim() !== value || /\s/u.test(value)) {

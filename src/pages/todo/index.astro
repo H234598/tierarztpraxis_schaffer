@@ -1,0 +1,157 @@
+---
+import TodoCard from "../../components/todo/TodoCard.astro";
+import { createPublicTodoView, projectTodos } from "../../content/project-todos";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import "../../styles/todo.css";
+
+const view = createPublicTodoView(projectTodos);
+const total =
+  view.counts.open +
+  view.counts.inProgress +
+  view.counts.blocked +
+  view.counts.done +
+  view.counts.notApplicable;
+---
+
+<BaseLayout
+  title="Projektübersicht | Tierarztpraxis Dr. Schäffer"
+  description="Öffentliche Übersicht über offene und erledigte Aufgaben des Websiteprojekts."
+  canonicalPath="/todo/"
+  robots="noindex,nofollow"
+>
+  <div class="todo-page" data-todo-page>
+    <header class="todo-page__intro">
+      <div class="content">
+        <p class="eyebrow">Websiteprojekt</p>
+        <h1>Projektübersicht</h1>
+        <p>
+          Diese Seite zeigt öffentlich dokumentierte Aufgaben des Websiteprojekts. Sie
+          beschreibt keine Praxisleistung und keinen medizinischen Bearbeitungsstand.
+        </p>
+      </div>
+    </header>
+
+    <section class="todo-page__status" aria-labelledby="todo-status-heading">
+      <div class="container">
+        <h2 id="todo-status-heading">Status auf einen Blick</h2>
+        <dl class="todo-counts">
+          <div><dt>Offen</dt><dd data-todo-count="open">{view.counts.open}</dd></div>
+          <div>
+            <dt>In Arbeit</dt><dd data-todo-count="in-progress">
+              {view.counts.inProgress}
+            </dd>
+          </div>
+          <div>
+            <dt>Blockiert</dt><dd data-todo-count="blocked">{view.counts.blocked}</dd>
+          </div>
+          <div><dt>Erledigt</dt><dd data-todo-count="done">{view.counts.done}</dd></div>
+          <div>
+            <dt>Nicht zutreffend</dt><dd data-todo-count="not-applicable">
+              {view.counts.notApplicable}
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="todo-page__filters" aria-labelledby="todo-filter-heading">
+      <div class="container">
+        <h2 id="todo-filter-heading">Aufgaben filtern</h2>
+        <form data-todo-filters>
+          <fieldset>
+            <legend>Kategorie</legend>
+            <label
+              ><input type="radio" name="todo-category" value="all" checked /> Alle</label
+            >
+            {
+              view.filters.categories.map((option) => (
+                <label>
+                  <input type="radio" name="todo-category" value={option.value} />{" "}
+                  {option.label}
+                </label>
+              ))
+            }
+          </fieldset>
+          <fieldset>
+            <legend>Status</legend>
+            <label
+              ><input type="radio" name="todo-status" value="all" checked /> Alle</label
+            >
+            {
+              view.filters.statuses.map((option) => (
+                <label>
+                  <input type="radio" name="todo-status" value={option.value} />{" "}
+                  {option.label}
+                </label>
+              ))
+            }
+          </fieldset>
+          <fieldset>
+            <legend>Verantwortlich</legend>
+            <label
+              ><input type="radio" name="todo-owner" value="all" checked /> Alle</label
+            >
+            {
+              view.filters.owners.map((option) => (
+                <label>
+                  <input type="radio" name="todo-owner" value={option.value} />{" "}
+                  {option.label}
+                </label>
+              ))
+            }
+          </fieldset>
+          <div class="todo-page__filter-actions">
+            <button class="button button--secondary" type="reset"
+              >Filter zurücksetzen</button
+            >
+            <p data-todo-result-count hidden aria-live="polite">
+              {total} Aufgaben entsprechen dem Filter
+            </p>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="todo-page__group" aria-labelledby="todo-blockers-heading">
+      <div class="container">
+        <header class="todo-page__group-heading">
+          <p class="eyebrow">Vor Produktionsfreigabe zu schließen</p>
+          <h2 id="todo-blockers-heading">Produktionsblocker</h2>
+        </header>
+        <div class="todo-grid">
+          {view.productionBlockers.map((item) => <TodoCard item={item} />)}
+        </div>
+      </div>
+    </section>
+
+    <section class="todo-page__group" aria-labelledby="todo-remaining-heading">
+      <div class="container">
+        <header class="todo-page__group-heading">
+          <h2 id="todo-remaining-heading">Weitere Aufgaben</h2>
+        </header>
+        <div class="todo-grid">
+          {view.remainingTodos.map((item) => <TodoCard item={item} />)}
+        </div>
+      </div>
+    </section>
+
+    <section class="todo-page__group" aria-labelledby="todo-history-heading">
+      <div class="container">
+        <details class="todo-history" data-todo-history>
+          <summary id="todo-history-heading"
+            >Erledigte Historie ({view.completedTodos.length})</summary
+          >
+          <div class="todo-grid">
+            {view.completedTodos.map((item) => <TodoCard item={item} />)}
+          </div>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    import { setupTodoFilters } from "../../scripts/todo-filters";
+
+    setupTodoFilters(document);
+  </script>
+</BaseLayout>

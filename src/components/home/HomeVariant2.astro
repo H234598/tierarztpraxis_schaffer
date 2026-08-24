@@ -1,0 +1,107 @@
+---
+import OpeningHours from "../OpeningHours.astro";
+import OsmMap from "../OsmMap.astro";
+import {
+  sharedHomeFacts,
+  sharedServicePlaceholderCards,
+  variant2HomeCopy,
+} from "../../content/home-content";
+import { siteConfig } from "../../config/site";
+import { withBase } from "../../utils/paths";
+---
+
+<section class="home-2__hero">
+  <div class="container home-2__hero-grid">
+    <div class="home-2__hero-copy">
+      <p class="eyebrow">{variant2HomeCopy.hero.eyebrow}</p>
+      <h1>{variant2HomeCopy.hero.title}</h1>
+      <p>{variant2HomeCopy.hero.intro}</p>
+      <a class="button" href={siteConfig.phone.href}>Termin telefonisch anfragen</a>
+      <article class="home-2__emergency-card">
+        <p class="eyebrow">Im Notfall</p>
+        <h2>Im Notfall</h2>
+        <p>
+          {sharedHomeFacts.emergencyNote} Bitte kündigen Sie Ihr Kommen telefonisch an.
+        </p>
+        <div class="button-row">
+          <a class="button button--danger" href={siteConfig.phone.href}>
+            {siteConfig.phone.display} anrufen
+          </a>
+          <a class="button button--secondary" href={withBase("notfall/")}
+            >Notfallhinweise</a
+          >
+        </div>
+      </article>
+    </div>
+    <figure class="home-2__hero-figure">
+      <img
+        class="home-2__hero-image"
+        src={withBase("images/home/variant-2/hero-vet-pets.webp")}
+        alt=""
+        width="1800"
+        height="1200"
+      />
+      <figcaption>Symbolbild</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="home-2__services section">
+  <div class="container home-2__services-grid">
+    <div class="home-2__opening-hours">
+      <p class="eyebrow">Sprechzeiten</p>
+      <h2>Öffnungszeiten</h2>
+      <OpeningHours />
+    </div>
+    <div>
+      <p class="eyebrow">Für Ihr Tier</p>
+      <h2>Leistungen</h2>
+      <div class="home-2__service-cards">
+        {
+          sharedServicePlaceholderCards.map((card) => (
+            <article class="card">
+              <h3>{card.title}</h3>
+              <p>{card.text}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="home-2__practice section section--white">
+  <div class="container home-2__practice-grid">
+    <div>
+      <p class="eyebrow">Praxis</p>
+      <h2>Unsere Praxis</h2>
+      <p>{variant2HomeCopy.hero.intro}</p>
+      <a href={withBase("praxis/")}>Praxisangaben ansehen</a>
+    </div>
+    <aside class="home-2__accessibility" aria-labelledby="accessibility-heading">
+      <p class="eyebrow">Zugänglichkeit</p>
+      <h2 id="accessibility-heading">Zugänglichkeit</h2>
+      <p>{siteConfig.accessibility.faqAnswer}</p>
+      <a href={withBase("barrierefreiheit/")}>Erklärung lesen</a>
+    </aside>
+  </div>
+</section>
+
+<section class="home-2__links section">
+  <div class="container home-2__link-cards">
+    <article class="card">
+      <h2>Häufige Fragen</h2>
+      <p>Antworten zu Terminen, Notfällen, Anfahrt, Dokumenten und Barrierefreiheit.</p>
+      <a href={withBase("faq/")}>FAQ öffnen</a>
+    </article>
+    <article class="card">
+      <h2>Stellenangebote</h2>
+      <p>Aktuelle Ausschreibungen und der künftige sichere Bewerbungsweg.</p>
+      <a href={withBase("stellenangebote/")}>Stellenangebote ansehen</a>
+    </article>
+  </div>
+</section>
+
+<section class="home-2__map section section--white">
+  <div class="container"><OsmMap /></div>
+</section>

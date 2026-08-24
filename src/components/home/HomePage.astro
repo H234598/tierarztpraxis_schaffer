@@ -1,0 +1,28 @@
+---
+import HomeVariant1 from "./HomeVariant1.astro";
+import HomeVariant2 from "./HomeVariant2.astro";
+import HomeVariant3 from "./HomeVariant3.astro";
+import HomeVariant4 from "./HomeVariant4.astro";
+import type { RequestedRobots } from "../../config/robots";
+import type { HomeVariantId } from "../../content/home-variants";
+import HomeLayout from "../../layouts/HomeLayout.astro";
+
+interface HomePageProps {
+  readonly variant: HomeVariantId;
+  readonly canonicalPath: "/";
+  readonly robots: RequestedRobots;
+}
+
+interface Props extends HomePageProps {}
+
+const { variant, canonicalPath, robots } = Astro.props;
+---
+
+<HomeLayout canonicalPath={canonicalPath} robots={robots}>
+  <div data-home-variant={variant}>
+    {variant === "1" ? <HomeVariant1 /> : null}
+    {variant === "2" ? <HomeVariant2 /> : null}
+    {variant === "3" ? <HomeVariant3 /> : null}
+    {variant === "4" ? <HomeVariant4 /> : null}
+  </div>
+</HomeLayout>

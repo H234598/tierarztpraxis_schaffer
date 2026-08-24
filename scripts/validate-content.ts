@@ -2,6 +2,9 @@ import { readdir, readFile } from "node:fs/promises";
 import { extname, join, relative } from "node:path";
 
 import { resolveTurnstileSiteKey } from "../src/config/turnstile";
+import { getOpenProductionBlockers } from "../src/content/project-todos";
+import { exemptHistoricalH15Placeholders } from "./historical-h15-placeholder";
+import { exemptPublicTodoFeatureReferences } from "./public-todo-feature";
 
 interface ValidationProblem {
   readonly path: string;
@@ -11,13 +14,10 @@ interface ValidationProblem {
 const deploymentMode = process.env.SITE_DEPLOYMENT_MODE ?? "development";
 const allowPlaceholders =
   process.env.ALLOW_PLACEHOLDERS === "true" ||
-  (deploymentMode === "development" &&
-    process.env.ALLOW_PLACEHOLDERS === undefined);
-const allowTurnstileTestKeys =
-  process.env.ALLOW_TURNSTILE_TEST_KEYS === "true";
+  (deploymentMode === "development" && process.env.ALLOW_PLACEHOLDERS === undefined);
+const allowTurnstileTestKeys = process.env.ALLOW_TURNSTILE_TEST_KEYS === "true";
 
-const canonicalProductionUrl =
-  "https://tierarztpraxis-schaffer.telacore.org";
+const canonicalProductionUrl = "https://tierarztpraxis-schaffer.telacore.org";
 const allowedSourceExtensions = new Set([
   ".astro",
   ".css",
@@ -32,8 +32,10 @@ const placeholderPatterns = [
   { label: "TODO", pattern: /\bTODO\b/iu },
   { label: "TBD", pattern: /\bTBD\b/iu },
   { label: "CHANGEME", pattern: /\bCHANGEME\b/iu },
+  { label: "noch zu klärende Angabe", pattern: /\bnoch zu\b/iu },
 ];
 const problems: ValidationProblem[] = [];
+const todoRegistryPath = "src/content/project-todos.ts";
 
 if (deploymentMode !== "development" && deploymentMode !== "production") {
   throw new Error(
@@ -54,8 +56,17 @@ function addProblem(path: string, message: string): void {
 }
 
 function inspectText(path: string, content: string): void {
+  const contentWithoutHistoricalH15 =
+    path === "src/content/milestones.ts"
+      ? exemptHistoricalH15Placeholders(content)
+      : content;
+  const contentToInspect = exemptPublicTodoFeatureReferences(
+    path,
+    contentWithoutHistoricalH15,
+  );
+
   for (const { label, pattern } of placeholderPatterns) {
-    if (pattern.test(content)) {
+    if (pattern.test(contentToInspect)) {
       addProblem(path, `enthält den Platzhalter ${label}`);
     }
   }
@@ -88,10 +99,10 @@ async function inspectDirectory(directory: string): Promise<void> {
       continue;
     }
 
-    const displayPath = relative(process.cwd(), absolutePath).replaceAll(
-      "\\",
-      "/",
-    );
+    const displayPath = relative(process.cwd(), absolutePath).replaceAll("\\", "/");
+
+    if (displayPath === todoRegistryPath) continue;
+
     inspectText(displayPath, await readFile(absolutePath, "utf8"));
   }
 }
@@ -118,6 +129,13 @@ if (deploymentMode === "production" && allowTurnstileTestKeys) {
 }
 
 if (deploymentMode === "production") {
+  for (const blocker of getOpenProductionBlockers()) {
+    addProblem(
+      "projectTodos",
+      `offene Produktionsblocker: ${blocker.id} – ${blocker.title}`,
+    );
+  }
+
   if (process.env.PUBLIC_SITE_URL !== canonicalProductionUrl) {
     addProblem(
       "environment.PUBLIC_SITE_URL",
@@ -135,10 +153,7 @@ if (deploymentMode === "production") {
 
 const uniqueProblems = [
   ...new Map(
-    problems.map((problem) => [
-      `${problem.path}\u0000${problem.message}`,
-      problem,
-    ]),
+    problems.map((problem) => [`${problem.path}\u0000${problem.message}`, problem]),
   ).values(),
 ];
 
