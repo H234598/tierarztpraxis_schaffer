@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" role="img" aria-labelledby="title desc">
+  <title id="title">Stilisierte Praxisrezeption</title>
+  <desc id="desc">Eine abstrakte Rezeption mit Pflanzen und Pfotenmotiv.</desc>
+  <rect width="960" height="600" fill="#f8f3ea"/>
+  <path d="M0 470h960v130H0z" fill="#e7ddd0"/>
+  <path d="M120 365h720v105H120z" fill="#2c706a"/>
+  <path d="M160 405h640v65H160z" fill="#245d58"/>
+  <path d="M220 250h310v115H220z" rx="18" fill="#fffaf2"/>
+  <path d="M255 285h240v18H255zM255 320h160v14H255z" fill="#d9c7af"/>
+  <path d="M710 390c-52-15-76-65-48-114 16 42 40 55 68 60-8-46 8-81 48-103 3 60-21 110-68 157z" fill="#709779"/>
+  <path d="M762 401c40-33 80-29 111 10-46 15-83 10-111-10z" fill="#557a62"/>
+  <path d="M708 470h72l-15-116h-42z" fill="#b98763"/>
+  <g fill="#e58970">
+    <circle cx="608" cy="226" r="21"/>
+    <circle cx="665" cy="226" r="21"/>
+    <circle cx="580" cy="272" r="19"/>
+    <circle cx="693" cy="272" r="19"/>
+    <path d="M595 325c0-46 34-70 57-70s57 24 57 70c0 23-19 35-57 35s-57-12-57-35z"/>
+  </g>
+  <path d="M100 470h760" stroke="#cdb9a2" stroke-width="8"/>
+</svg>
