@@ -18,9 +18,7 @@ export const buildAssetPath = (distDirectory: string, source: string): string =>
   const marker = "/_assets/";
   const markerIndex = pathname.indexOf(marker);
   const relativeSource =
-    markerIndex >= 0
-      ? pathname.slice(markerIndex + 1)
-      : pathname.replace(/^\/+/, "");
+    markerIndex >= 0 ? pathname.slice(markerIndex + 1) : pathname.replace(/^\/+/, "");
   const path = resolve(distDirectory, relativeSource);
   const relativePath = relative(distDirectory, path);
   if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
