@@ -1,0 +1,221 @@
+@layer components {
+  [data-todo-page] {
+    --todo-accent: #245b43;
+    --todo-soft: #edf5f0;
+    --todo-blocker: #8a2c21;
+    background: #f8faf8;
+    overflow-wrap: anywhere;
+  }
+
+  [data-todo-page] .todo-page__intro {
+    padding-block: clamp(3rem, 8vw, 6rem);
+    background: linear-gradient(135deg, #eef6f1, #fff8ed);
+  }
+
+  [data-todo-page] .todo-page__intro h1 {
+    max-width: 12ch;
+  }
+
+  [data-todo-page] .todo-page__status,
+  [data-todo-page] .todo-page__filters,
+  [data-todo-page] .todo-page__group {
+    padding-block: clamp(2.5rem, 6vw, 4.5rem);
+  }
+
+  [data-todo-page] .todo-page__filters,
+  [data-todo-page] .todo-page__group:nth-of-type(even) {
+    background: white;
+  }
+
+  [data-todo-page] .todo-counts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0 0;
+  }
+
+  [data-todo-page] .todo-counts div {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: white;
+  }
+
+  [data-todo-page] .todo-counts dt {
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  [data-todo-page] .todo-counts dd {
+    margin: 0.25rem 0 0;
+    color: var(--todo-accent);
+    font-size: 2rem;
+    font-weight: 850;
+  }
+
+  [data-todo-page] [data-todo-filters] {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  [data-todo-page] [data-todo-filters] fieldset {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    min-width: 0;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+  }
+
+  [data-todo-page] [data-todo-filters] legend {
+    padding-inline: 0.35rem;
+    font-weight: 800;
+  }
+
+  [data-todo-page] [data-todo-filters] label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    max-width: 100%;
+    padding: 0.45rem 0.7rem;
+    border-radius: 999px;
+    background: var(--todo-soft);
+    overflow-wrap: anywhere;
+  }
+
+  [data-todo-page] .todo-page__filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  [data-todo-page] [data-todo-result-count] {
+    margin: 0;
+    font-weight: 750;
+  }
+
+  [data-todo-page] .todo-page__group-heading {
+    margin-bottom: 1.5rem;
+  }
+
+  [data-todo-page] .todo-page__group:first-of-type h2 {
+    color: var(--todo-blocker);
+  }
+
+  [data-todo-page] .todo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+    gap: 1rem;
+  }
+
+  [data-todo-page] .todo-card {
+    min-width: 0;
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    background: white;
+    box-shadow: 0 0.5rem 1.5rem rgb(23 61 46 / 7%);
+  }
+
+  [data-todo-page] .todo-card[hidden] {
+    display: none;
+  }
+
+  [data-todo-page] .todo-card__header {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  [data-todo-page] .todo-card__header h3,
+  [data-todo-page] .todo-card__id {
+    margin: 0;
+  }
+
+  [data-todo-page] .todo-card__id {
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+  }
+
+  [data-todo-page] .todo-card__meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+    gap: 0.65rem;
+    margin-block: 1rem;
+  }
+
+  [data-todo-page] .todo-card__meta div {
+    min-width: 0;
+  }
+
+  [data-todo-page] .todo-card__meta dt {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  [data-todo-page] .todo-card__meta dd {
+    margin: 0.15rem 0 0;
+    overflow-wrap: anywhere;
+    font-weight: 750;
+  }
+
+  [data-todo-page] .todo-card__details summary,
+  [data-todo-page] .todo-history > summary {
+    cursor: pointer;
+    font-weight: 800;
+  }
+
+  [data-todo-page] .todo-card__details code {
+    overflow-wrap: anywhere;
+  }
+
+  [data-todo-page] .todo-history > summary {
+    margin-bottom: 1.5rem;
+    color: var(--green-dark);
+    font-size: clamp(1.5rem, 4vw, 2.25rem);
+  }
+
+  [data-todo-page]:has(input[name="todo-category"][value="accessibility"]:checked)
+    .todo-card:not([data-category="accessibility"]),
+  [data-todo-page]:has(input[name="todo-category"][value="content"]:checked)
+    .todo-card:not([data-category="content"]),
+  [data-todo-page]:has(input[name="todo-category"][value="datatransfer"]:checked)
+    .todo-card:not([data-category="datatransfer"]),
+  [data-todo-page]:has(input[name="todo-category"][value="design"]:checked)
+    .todo-card:not([data-category="design"]),
+  [data-todo-page]:has(input[name="todo-category"][value="infrastructure"]:checked)
+    .todo-card:not([data-category="infrastructure"]),
+  [data-todo-page]:has(input[name="todo-category"][value="legal"]:checked)
+    .todo-card:not([data-category="legal"]),
+  [data-todo-page]:has(input[name="todo-category"][value="operations"]:checked)
+    .todo-card:not([data-category="operations"]),
+  [data-todo-page]:has(input[name="todo-category"][value="security"]:checked)
+    .todo-card:not([data-category="security"]),
+  [data-todo-page]:has(input[name="todo-category"][value="testing"]:checked)
+    .todo-card:not([data-category="testing"]),
+  [data-todo-page]:has(input[name="todo-status"][value="open"]:checked)
+    .todo-card:not([data-status="open"]),
+  [data-todo-page]:has(input[name="todo-status"][value="in-progress"]:checked)
+    .todo-card:not([data-status="in-progress"]),
+  [data-todo-page]:has(input[name="todo-status"][value="blocked"]:checked)
+    .todo-card:not([data-status="blocked"]),
+  [data-todo-page]:has(input[name="todo-status"][value="done"]:checked)
+    .todo-card:not([data-status="done"]),
+  [data-todo-page]:has(input[name="todo-status"][value="not-applicable"]:checked)
+    .todo-card:not([data-status="not-applicable"]),
+  [data-todo-page]:has(input[name="todo-owner"][value="Praxis"]:checked)
+    .todo-card:not([data-owner="Praxis"]),
+  [data-todo-page]:has(input[name="todo-owner"][value="Repository"]:checked)
+    .todo-card:not([data-owner="Repository"]),
+  [data-todo-page]:has(input[name="todo-owner"][value="Cloudflare"]:checked)
+    .todo-card:not([data-owner="Cloudflare"]),
+  [data-todo-page]:has(input[name="todo-owner"][value="Rechtliche Prüfung"]:checked)
+    .todo-card:not([data-owner="Rechtliche Prüfung"]) {
+    display: none;
+  }
+}
