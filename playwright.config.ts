@@ -15,6 +15,11 @@ export default defineConfig({
   workers: e2eWorkers,
   retries: process.env.CI ? 2 : 0,
   reporter: [["list"], ["html", { open: "never" }]],
+  expect: {
+    toHaveScreenshot: {
+      stylePath: "tests/e2e/snapshot.css",
+    },
+  },
   snapshotPathTemplate: "{testDir}/{testFilePath}-snapshots/{arg}-{platform}{ext}",
   projects: [
     {
