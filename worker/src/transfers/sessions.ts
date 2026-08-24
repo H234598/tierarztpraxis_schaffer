@@ -8,8 +8,7 @@ import {
 const sessionDomain = "session-v1\0";
 const slidingLifetimeMs = 30 * 60 * 1_000;
 const absoluteLifetimeMs = 12 * 60 * 60 * 1_000;
-const cookieAttributes =
-  "Path=/api/transfers/; Secure; HttpOnly; SameSite=Strict";
+const cookieAttributes = "Path=/api/transfers/; Secure; HttpOnly; SameSite=Strict";
 
 export interface TransferSessionStorage {
   sessionHmac: string;
@@ -51,15 +50,10 @@ export function parseSessionCookie(cookieHeader: string | null): string | null {
     sessionValue = part.slice("dt_session=".length);
   }
 
-  return sessionValue !== null && isSessionSecret(sessionValue)
-    ? sessionValue
-    : null;
+  return sessionValue !== null && isSessionSecret(sessionValue) ? sessionValue : null;
 }
 
-export function nextSessionExpiry(
-  now: Date,
-  absoluteExpiresAt: string,
-): string | null {
+export function nextSessionExpiry(now: Date, absoluteExpiresAt: string): string | null {
   const nowTimestamp = now.getTime();
   const absoluteTimestamp = Date.parse(absoluteExpiresAt);
   if (!Number.isFinite(nowTimestamp) || !Number.isFinite(absoluteTimestamp)) {
@@ -83,9 +77,7 @@ export async function createTransferSession(
   now: Date,
 ): Promise<GeneratedTransferSession> {
   const cookieValue = generateRandomSecret();
-  const absoluteExpiresAt = new Date(
-    now.getTime() + absoluteLifetimeMs,
-  ).toISOString();
+  const absoluteExpiresAt = new Date(now.getTime() + absoluteLifetimeMs).toISOString();
   const expiresAt = nextSessionExpiry(now, absoluteExpiresAt);
   if (expiresAt === null) throw new TypeError("Invalid session timestamp");
 

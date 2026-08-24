@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { loadAdminStoredFile, loadCustomerStoredFile, parseSingleRange, storedFileResponse } from "../src/transfers/file-response";
+import {
+  loadAdminStoredFile,
+  loadCustomerStoredFile,
+  parseSingleRange,
+  storedFileResponse,
+} from "../src/transfers/file-response";
 import { routePublicTransfer } from "../src/transfers/routes-public";
 import type { DevelopmentRouteContext } from "../src/env";
 
@@ -36,13 +41,22 @@ describe("Single-Range-Parser", () => {
 });
 
 function stream(...bytes: number[]): ReadableStream<Uint8Array> {
-  return new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array(bytes)); controller.close(); } });
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(new Uint8Array(bytes));
+      controller.close();
+    },
+  });
 }
 
 describe("Geschützte R2-Antwort", () => {
   const metadata = {
-    r2Key: "private/key", originalName: "Befund\r\nüber.mp4", mediaType: "video/mp4",
-    size: 10, etag: "etag-1", inlineSafe: 1,
+    r2Key: "private/key",
+    originalName: "Befund\r\nüber.mp4",
+    mediaType: "video/mp4",
+    size: 10,
+    etag: "etag-1",
+    inlineSafe: 1,
   };
   const calls: R2GetOptions[] = [];
   const bucket = {
@@ -51,32 +65,56 @@ describe("Geschützte R2-Antwort", () => {
       const range = options?.range;
       const offset = typeof range === "object" && "offset" in range ? range.offset : 0;
       const length = typeof range === "object" && "length" in range ? range.length : 10;
-      return { body: stream(...Array.from({ length }, (_, index) => offset + index)), size: 10, etag: "etag-1", ...(range ? { range: { offset, length } } : {}) };
+      return {
+        body: stream(...Array.from({ length }, (_, index) => offset + index)),
+        size: 10,
+        etag: "etag-1",
+        ...(range ? { range: { offset, length } } : {}),
+      };
     },
   };
 
   it("liefert Range-Stream mit ETag-Precondition und sicheren Headern", async () => {
     calls.length = 0;
-    const response = await storedFileResponse(bucket as never, metadata, "bytes=2-5", "request-1");
+    const response = await storedFileResponse(
+      bucket as never,
+      metadata,
+      "bytes=2-5",
+      "request-1",
+    );
     expect(response).toBeInstanceOf(Response);
     if (!(response instanceof Response)) return;
     expect(response.status).toBe(206);
     expect(response.headers.get("content-range")).toBe("bytes 2-5/10");
     expect(response.headers.get("content-length")).toBe("4");
     expect(response.headers.get("accept-ranges")).toBe("bytes");
-    expect(response.headers.get("content-disposition")).toContain("filename*=UTF-8''Befund__%C3%BCber.mp4");
-    expect(calls[0]).toMatchObject({ onlyIf: { etagMatches: "etag-1" }, range: { offset: 2, length: 4 } });
-    expect(new Uint8Array(await response.arrayBuffer())).toEqual(new Uint8Array([2, 3, 4, 5]));
+    expect(response.headers.get("content-disposition")).toContain(
+      "filename*=UTF-8''Befund__%C3%BCber.mp4",
+    );
+    expect(calls[0]).toMatchObject({
+      onlyIf: { etagMatches: "etag-1" },
+      range: { offset: 2, length: 4 },
+    });
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(
+      new Uint8Array([2, 3, 4, 5]),
+    );
   });
 
   it("verweigert unzulässige Range ohne R2-Lesevorgang", async () => {
     calls.length = 0;
-    await expect(storedFileResponse(bucket as never, metadata, "bytes=99-", "request-1")).resolves.toBe("invalid");
+    await expect(
+      storedFileResponse(bucket as never, metadata, "bytes=99-", "request-1"),
+    ).resolves.toBe("invalid");
     expect(calls).toHaveLength(0);
   });
 
   it("liefert unsichere Medien nur als Attachment ohne Range", async () => {
-    const response = await storedFileResponse(bucket as never, { ...metadata, mediaType: "image/heic", inlineSafe: 0 }, "bytes=2-5", "request-1");
+    const response = await storedFileResponse(
+      bucket as never,
+      { ...metadata, mediaType: "image/heic", inlineSafe: 0 },
+      "bytes=2-5",
+      "request-1",
+    );
     expect(response).toBeInstanceOf(Response);
     if (!(response instanceof Response)) return;
     expect(response.status).toBe(200);
@@ -86,32 +124,90 @@ describe("Geschützte R2-Antwort", () => {
 
   it("hält inkonsistentes Inline-Flag, fehlendes und falsches R2 fail-closed", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    await expect(storedFileResponse(bucket as never, { ...metadata, inlineSafe: 2 }, null, "request-1")).resolves.toBe("unavailable");
-    await expect(storedFileResponse({ get: async () => null } as never, metadata, null, "request-1")).resolves.toBe("unavailable");
-    await expect(storedFileResponse({ get: async () => ({ body: stream(1), size: 9, etag: "wrong" }) } as never, metadata, null, "request-1")).resolves.toBe("unavailable");
+    await expect(
+      storedFileResponse(
+        bucket as never,
+        { ...metadata, inlineSafe: 2 },
+        null,
+        "request-1",
+      ),
+    ).resolves.toBe("unavailable");
+    await expect(
+      storedFileResponse(
+        { get: async () => null } as never,
+        metadata,
+        null,
+        "request-1",
+      ),
+    ).resolves.toBe("unavailable");
+    await expect(
+      storedFileResponse(
+        { get: async () => ({ body: stream(1), size: 9, etag: "wrong" }) } as never,
+        metadata,
+        null,
+        "request-1",
+      ),
+    ).resolves.toBe("unavailable");
     expect(error).toHaveBeenCalledWith("transfer_file_object_unavailable", "request-1");
   });
 
   it("kodiert lone-surrogate-Dateinamen ohne Throw", async () => {
-    const response = await storedFileResponse(bucket as never, { ...metadata, originalName: "x\ud800.jpg" }, null, "request-1");
+    const response = await storedFileResponse(
+      bucket as never,
+      { ...metadata, originalName: "x\ud800.jpg" },
+      null,
+      "request-1",
+    );
     expect(response).toBeInstanceOf(Response);
   });
 
   it.each([
-    ["get throw", { get: async () => { throw new Error("r2"); } }],
+    [
+      "get throw",
+      {
+        get: async () => {
+          throw new Error("r2");
+        },
+      },
+    ],
     ["conditional miss", { get: async () => ({ size: 10, etag: "etag-1" }) }],
-    ["etag mismatch", { get: async () => ({ body: stream(1), size: 10, etag: "other" }) }],
-    ["size mismatch", { get: async () => ({ body: stream(1), size: 9, etag: "etag-1" }) }],
-    ["range mismatch", { get: async () => ({ body: stream(1), size: 10, etag: "etag-1", range: { offset: 3, length: 4 } }) }],
+    [
+      "etag mismatch",
+      { get: async () => ({ body: stream(1), size: 10, etag: "other" }) },
+    ],
+    [
+      "size mismatch",
+      { get: async () => ({ body: stream(1), size: 9, etag: "etag-1" }) },
+    ],
+    [
+      "range mismatch",
+      {
+        get: async () => ({
+          body: stream(1),
+          size: 10,
+          etag: "etag-1",
+          range: { offset: 3, length: 4 },
+        }),
+      },
+    ],
   ])("weist R2-%s mit festem Event ab", async (_label, failingBucket) => {
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    await expect(storedFileResponse(failingBucket as never, metadata, "bytes=2-5", "request-1")).resolves.toBe("unavailable");
+    await expect(
+      storedFileResponse(failingBucket as never, metadata, "bytes=2-5", "request-1"),
+    ).resolves.toBe("unavailable");
     expect(error).toHaveBeenCalledWith("transfer_file_object_unavailable", "request-1");
   });
 });
 
 describe("D1-Dateibindung", () => {
-  const row = { r2Key: "private/key", originalName: "x.jpg", mediaType: "image/jpeg", size: 3, etag: "etag", inlineSafe: 1 };
+  const row = {
+    r2Key: "private/key",
+    originalName: "x.jpg",
+    mediaType: "image/jpeg",
+    size: 3,
+    etag: "etag",
+    inlineSafe: 1,
+  };
   const calls: { query: string; values: readonly unknown[] }[] = [];
   const database = {
     prepare(query: string) {
@@ -126,8 +222,23 @@ describe("D1-Dateibindung", () => {
 
   it("bindet Customer-Datei an Session, Case und frische Ablaufgrenzen", async () => {
     calls.length = 0;
-    await expect(loadCustomerStoredFile(database, "file-1", "case-1", "session-1", new Date("2026-01-01T00:00:00Z"))).resolves.toEqual(row);
-    expect(calls[0]?.values).toEqual(["file-1", "case-1", "session-1", "2026-01-01T00:00:00.000Z", "2026-01-01T00:00:00.000Z", "2026-01-01T00:00:00.000Z"]);
+    await expect(
+      loadCustomerStoredFile(
+        database,
+        "file-1",
+        "case-1",
+        "session-1",
+        new Date("2026-01-01T00:00:00Z"),
+      ),
+    ).resolves.toEqual(row);
+    expect(calls[0]?.values).toEqual([
+      "file-1",
+      "case-1",
+      "session-1",
+      "2026-01-01T00:00:00.000Z",
+      "2026-01-01T00:00:00.000Z",
+      "2026-01-01T00:00:00.000Z",
+    ]);
     expect(calls[0]?.query).toContain("active_session.revoked_at IS NULL");
   });
 
@@ -142,11 +253,20 @@ describe("D1-Dateibindung", () => {
 describe("Customer-Dateiroute", () => {
   it("weist fehlende Session vor jedem R2-Zugriff ab", async () => {
     let reads = 0;
-    const request = new Request("https://example.test/api/transfers/files/file-foreign");
+    const request = new Request(
+      "https://example.test/api/transfers/files/file-foreign",
+    );
     const response = await routePublicTransfer({
-      request, url: new URL(request.url), requestId: "request-1",
+      request,
+      url: new URL(request.url),
+      requestId: "request-1",
       env: {
-        TRANSFER_FILES: { get: async () => { reads += 1; return null; } },
+        TRANSFER_FILES: {
+          get: async () => {
+            reads += 1;
+            return null;
+          },
+        },
         TRANSFER_DB: { prepare: () => ({ bind: () => ({ first: async () => null }) }) },
         SESSION_PEPPER: "pepper",
       },

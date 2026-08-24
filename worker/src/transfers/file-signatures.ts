@@ -43,7 +43,11 @@ function isoBmffType(prefix: Uint8Array): AllowedMediaType | null {
   if (!mediaType) return null;
   for (let offset = 16; offset < length; offset += 4) {
     const compatible = ascii(prefix, offset, 4);
-    if (compatible === "avif" || compatible === "avis" || !safeCompatibleBrands.has(compatible)) {
+    if (
+      compatible === "avif" ||
+      compatible === "avis" ||
+      !safeCompatibleBrands.has(compatible)
+    ) {
       return null;
     }
   }
@@ -60,7 +64,11 @@ export function detectMediaType(prefix: Uint8Array): AllowedMediaType | null {
   if (hasPrefix(prefix, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {
     return "image/png";
   }
-  if (prefix.length >= 12 && ascii(prefix, 0, 4) === "RIFF" && ascii(prefix, 8, 4) === "WEBP") {
+  if (
+    prefix.length >= 12 &&
+    ascii(prefix, 0, 4) === "RIFF" &&
+    ascii(prefix, 8, 4) === "WEBP"
+  ) {
     return "image/webp";
   }
   if (hasPrefix(prefix, [0x1a, 0x45, 0xdf, 0xa3])) return "video/webm";

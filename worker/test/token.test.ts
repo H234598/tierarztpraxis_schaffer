@@ -14,27 +14,19 @@ const validStaticToken = `dt1_ABCDEFGHIJKL_${"A".repeat(43)}`;
 describe("HMAC-SHA-256", () => {
   it("matches a known HMAC vector and verifies natively", async () => {
     const value = "The quick brown fox jumps over the lazy dog";
-    const expected =
-      "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8";
+    const expected = "f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8";
 
     await expect(hmacHex("key", value)).resolves.toBe(expected);
     await expect(verifyHmacHex("key", value, expected)).resolves.toBe(true);
-    await expect(
-      verifyHmacHex("key", `${value}.`, expected),
-    ).resolves.toBe(false);
+    await expect(verifyHmacHex("key", `${value}.`, expected)).resolves.toBe(false);
   });
 
-  it.each([
-    "",
-    "0".repeat(63),
-    "0".repeat(65),
-    `${"0".repeat(63)}g`,
-    " ".repeat(64),
-  ])("rejects malformed signature %j without throwing", async (signature) => {
-    await expect(verifyHmacHex("key", "value", signature)).resolves.toBe(
-      false,
-    );
-  });
+  it.each(["", "0".repeat(63), "0".repeat(65), `${"0".repeat(63)}g`, " ".repeat(64)])(
+    "rejects malformed signature %j without throwing",
+    async (signature) => {
+      await expect(verifyHmacHex("key", "value", signature)).resolves.toBe(false);
+    },
+  );
 });
 
 describe("transfer token format", () => {
@@ -80,11 +72,7 @@ describe("transfer token lifecycle", () => {
     expect(generated.storage).not.toHaveProperty("token");
     expect(generated.storage).not.toHaveProperty("secret");
     await expect(
-      verifyHmacHex(
-        tokenPepper,
-        parsed?.secret ?? "",
-        generated.storage.tokenHmac,
-      ),
+      verifyHmacHex(tokenPepper, parsed?.secret ?? "", generated.storage.tokenHmac),
     ).resolves.toBe(true);
 
     const stored: StoredTransferToken = {

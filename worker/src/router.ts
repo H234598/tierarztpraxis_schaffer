@@ -1,10 +1,7 @@
 import type { DevelopmentRouteContext, RouteContext } from "./env";
 import { CONTACT_PATH, routeContact } from "./contact/route";
 import { json } from "./http/response";
-import {
-  routePublicTransfer,
-  transferError,
-} from "./transfers/routes-public";
+import { routePublicTransfer, transferError } from "./transfers/routes-public";
 import { routeAdmin } from "./transfers/routes-admin";
 
 export async function routeRequest(context: RouteContext): Promise<Response> {

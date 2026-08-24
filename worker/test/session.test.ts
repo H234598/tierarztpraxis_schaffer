@@ -56,12 +56,8 @@ describe("transfer session lifecycle", () => {
     expect(generated.storage).not.toHaveProperty("cookieValue");
     expect(generated.storage).not.toHaveProperty("secret");
     expect(generated.storage.expiresAt).toBe("2026-08-04T10:30:00.000Z");
-    expect(generated.storage.absoluteExpiresAt).toBe(
-      "2026-08-04T22:00:00.000Z",
-    );
-    expect(generated.setCookie).toBe(
-      serializeSessionCookie(generated.cookieValue),
-    );
+    expect(generated.storage.absoluteExpiresAt).toBe("2026-08-04T22:00:00.000Z");
+    expect(generated.setCookie).toBe(serializeSessionCookie(generated.cookieValue));
   });
 
   it("caps sliding expiry at the absolute boundary", () => {
@@ -78,14 +74,8 @@ describe("transfer session lifecycle", () => {
   });
 
   it("verifies a live session with session-domain separation", async () => {
-    const sessionHmac = await hmacHex(
-      sessionPepper,
-      `session-v1\0${validCookieValue}`,
-    );
-    const csrfHmac = await hmacHex(
-      sessionPepper,
-      `csrf-v1\0${validCookieValue}`,
-    );
+    const sessionHmac = await hmacHex(sessionPepper, `session-v1\0${validCookieValue}`);
+    const csrfHmac = await hmacHex(sessionPepper, `csrf-v1\0${validCookieValue}`);
     const stored: StoredTransferSession = {
       sessionHmac,
       expiresAt: "2026-08-04T10:00:01.000Z",

@@ -20,10 +20,7 @@ import {
   serializeSessionCookie,
   verifyTransferSession,
 } from "./sessions";
-import {
-  parseTransferToken,
-  verifyTransferToken,
-} from "./tokens";
+import { parseTransferToken, verifyTransferToken } from "./tokens";
 import { hmacHex } from "../security/hmac";
 import {
   createSubmissionDraft,
@@ -32,7 +29,12 @@ import {
   type SubmissionInput,
 } from "./submissions";
 import { uploadReservedFile } from "./uploads";
-import { loadCustomerStoredFile, rangeNotSatisfiable, storedFileResponse } from "./file-response";
+import {
+  loadCustomerStoredFile,
+  rangeNotSatisfiable,
+  storedFileResponse,
+} from "./file-response";
+import { enqueueNotification } from "./notifications";
 
 const maximumSessionBodyBytes = 4 * 1_024;
 const maximumSubmissionBodyBytes = 32 * 1_024;
@@ -89,17 +91,10 @@ export function transferError(
   );
 }
 
-async function routeCreateSession(
-  context: DevelopmentRouteContext,
-): Promise<Response> {
+async function routeCreateSession(context: DevelopmentRouteContext): Promise<Response> {
   const { request, requestId, url, env } = context;
   if (request.headers.get("origin") !== url.origin) {
-    return transferError(
-      requestId,
-      403,
-      "forbidden",
-      "Request forbidden",
-    );
+    return transferError(requestId, 403, "forbidden", "Request forbidden");
   }
 
   const contentType = request.headers
@@ -117,63 +112,34 @@ async function routeCreateSession(
   }
 
   const contentLength = Number(request.headers.get("content-length"));
-  if (
-    Number.isFinite(contentLength) &&
-    contentLength > maximumSessionBodyBytes
-  ) {
-    return transferError(
-      requestId,
-      413,
-      "payload_too_large",
-      "Request body too large",
-    );
+  if (Number.isFinite(contentLength) && contentLength > maximumSessionBodyBytes) {
+    return transferError(requestId, 413, "payload_too_large", "Request body too large");
   }
 
   const bodyText = await request.text();
   if (new TextEncoder().encode(bodyText).byteLength > maximumSessionBodyBytes) {
-    return transferError(
-      requestId,
-      413,
-      "payload_too_large",
-      "Request body too large",
-    );
+    return transferError(requestId, 413, "payload_too_large", "Request body too large");
   }
 
   let body: unknown;
   try {
     body = JSON.parse(bodyText);
   } catch {
-    return transferError(
-      requestId,
-      400,
-      "invalid_request",
-      "Invalid request",
-      ["body"],
-    );
+    return transferError(requestId, 400, "invalid_request", "Invalid request", [
+      "body",
+    ]);
   }
   if (!isSessionRequestBody(body)) {
-    return transferError(
-      requestId,
-      400,
-      "invalid_request",
-      "Invalid request",
-      ["token", "turnstileToken"],
-    );
+    return transferError(requestId, 400, "invalid_request", "Invalid request", [
+      "token",
+      "turnstileToken",
+    ]);
   }
 
-  const rateLimitKey = await hashRateLimitKey(
-    request,
-    env,
-    "transfer-session-v1",
-  );
+  const rateLimitKey = await hashRateLimitKey(request, env, "transfer-session-v1");
   const rateLimit = await env.CONTACT_RATE_LIMITER.limit({ key: rateLimitKey });
   if (!rateLimit.success) {
-    return transferError(
-      requestId,
-      429,
-      "rate_limited",
-      "Too many requests",
-    );
+    return transferError(requestId, 429, "rate_limited", "Too many requests");
   }
 
   if (
@@ -184,41 +150,26 @@ async function routeCreateSession(
       "datatransfer_session",
     ))
   ) {
-    return transferError(
-      requestId,
-      401,
-      unauthorizedCode,
-      unauthorizedMessage,
-    );
+    return transferError(requestId, 401, unauthorizedCode, unauthorizedMessage);
   }
 
-    const parsedToken = parseTransferToken(body.token);
-    if (!parsedToken) {
-      await verifyHmacHex(env.TOKEN_PEPPER, body.token, dummyHmac);
-      return transferError(
-      requestId,
-      401,
-      unauthorizedCode,
-      unauthorizedMessage,
-    );
+  const parsedToken = parseTransferToken(body.token);
+  if (!parsedToken) {
+    await verifyHmacHex(env.TOKEN_PEPPER, body.token, dummyHmac);
+    return transferError(requestId, 401, unauthorizedCode, unauthorizedMessage);
   }
 
-    try {
-      const tokenHmac = await hmacHex(env.TOKEN_PEPPER, parsedToken.secret);
-      const now = new Date();
-      const tokenCase = await findCaseForTransferToken(
-        env.TRANSFER_DB,
-        parsedToken.publicCaseId,
-        tokenHmac,
-      );
-      if (!tokenCase) {
-        await verifyHmacHex(env.TOKEN_PEPPER, parsedToken.secret, dummyHmac);
-        return transferError(
-        requestId,
-        401,
-        unauthorizedCode,
-        unauthorizedMessage,
-      );
+  try {
+    const tokenHmac = await hmacHex(env.TOKEN_PEPPER, parsedToken.secret);
+    const now = new Date();
+    const tokenCase = await findCaseForTransferToken(
+      env.TRANSFER_DB,
+      parsedToken.publicCaseId,
+      tokenHmac,
+    );
+    if (!tokenCase) {
+      await verifyHmacHex(env.TOKEN_PEPPER, parsedToken.secret, dummyHmac);
+      return transferError(requestId, 401, unauthorizedCode, unauthorizedMessage);
     }
 
     const tokenValid = await verifyTransferToken(
@@ -234,12 +185,7 @@ async function routeCreateSession(
       now,
     );
     if (!tokenValid || !isOpenTransferCase(tokenCase, now)) {
-      return transferError(
-        requestId,
-        401,
-        unauthorizedCode,
-        unauthorizedMessage,
-      );
+      return transferError(requestId, 401, unauthorizedCode, unauthorizedMessage);
     }
 
     const session = await createTransferSession(env.SESSION_PEPPER, now);
@@ -261,11 +207,11 @@ async function routeCreateSession(
       session.storage.expiresAt,
       session.storage.absoluteExpiresAt,
     );
-      const updateToken = env.TRANSFER_DB.prepare(
-        `UPDATE transfer_tokens
+    const updateToken = env.TRANSFER_DB.prepare(
+      `UPDATE transfer_tokens
         SET last_used_at = ?, use_count = use_count + 1
       WHERE id = ? AND revoked_at IS NULL AND expires_at > ?`,
-      ).bind(nowIso, tokenCase.token_id, nowIso);
+    ).bind(nowIso, tokenCase.token_id, nowIso);
 
     await env.TRANSFER_DB.batch([insertSession, updateToken]);
 
@@ -278,38 +224,21 @@ async function routeCreateSession(
     return response;
   } catch {
     console.error("transfer_api_unexpected_error", requestId);
-    return transferError(
-      requestId,
-      503,
-      "service_unavailable",
-      "Service unavailable",
-    );
+    return transferError(requestId, 503, "service_unavailable", "Service unavailable");
   }
 }
 
-async function authenticatedSession(
-  context: DevelopmentRouteContext,
-): Promise<
-  | {
-      readonly cookieValue: string;
-      readonly row: NonNullable<
-        Awaited<ReturnType<typeof findCaseForTransferSession>>
-      >;
-    }
-  | null
-> {
-  const cookieValue = parseSessionCookie(
-    context.request.headers.get("cookie"),
-  );
+async function authenticatedSession(context: DevelopmentRouteContext): Promise<{
+  readonly cookieValue: string;
+  readonly row: NonNullable<Awaited<ReturnType<typeof findCaseForTransferSession>>>;
+} | null> {
+  const cookieValue = parseSessionCookie(context.request.headers.get("cookie"));
   if (!cookieValue) return null;
   const sessionHmac = await hmacTransferSession(
     cookieValue,
     context.env.SESSION_PEPPER,
   );
-  const row = await findCaseForTransferSession(
-    context.env.TRANSFER_DB,
-    sessionHmac,
-  );
+  const row = await findCaseForTransferSession(context.env.TRANSFER_DB, sessionHmac);
   if (!row) return null;
   const now = new Date();
   const valid = await verifyTransferSession(
@@ -324,7 +253,8 @@ async function authenticatedSession(
     now,
   );
   const tokenExpiresAt = Date.parse(row.token_expires_at);
-  const tokenValid = row.token_revoked_at === null &&
+  const tokenValid =
+    row.token_revoked_at === null &&
     Number.isFinite(tokenExpiresAt) &&
     tokenExpiresAt > now.getTime();
   return valid && tokenValid && isOpenTransferCase(row, now)
@@ -334,26 +264,13 @@ async function authenticatedSession(
 
 async function authenticatedMutation(
   context: DevelopmentRouteContext,
-): Promise<
-  | NonNullable<Awaited<ReturnType<typeof authenticatedSession>>>
-  | Response
-> {
+): Promise<NonNullable<Awaited<ReturnType<typeof authenticatedSession>>> | Response> {
   if (context.request.headers.get("origin") !== context.url.origin) {
-    return transferError(
-      context.requestId,
-      403,
-      "forbidden",
-      "Request forbidden",
-    );
+    return transferError(context.requestId, 403, "forbidden", "Request forbidden");
   }
   const authenticated = await authenticatedSession(context);
   if (!authenticated) {
-    return transferError(
-      context.requestId,
-      401,
-      unauthorizedCode,
-      unauthorizedMessage,
-    );
+    return transferError(context.requestId, 401, unauthorizedCode, unauthorizedMessage);
   }
   const csrfValid = await verifyCsrfToken(
     context.request.headers.get("x-datentransfer-csrf"),
@@ -362,12 +279,7 @@ async function authenticatedMutation(
   );
   return csrfValid
     ? authenticated
-    : transferError(
-        context.requestId,
-        403,
-        "forbidden",
-        "Request forbidden",
-      );
+    : transferError(context.requestId, 403, "forbidden", "Request forbidden");
 }
 
 async function readSubmissionInput(
@@ -388,10 +300,7 @@ async function readSubmissionInput(
     );
   }
   const contentLength = Number(context.request.headers.get("content-length"));
-  if (
-    Number.isFinite(contentLength) &&
-    contentLength > maximumSubmissionBodyBytes
-  ) {
+  if (Number.isFinite(contentLength) && contentLength > maximumSubmissionBodyBytes) {
     return transferError(
       context.requestId,
       413,
@@ -400,9 +309,7 @@ async function readSubmissionInput(
     );
   }
   const bodyText = await context.request.text();
-  if (
-    new TextEncoder().encode(bodyText).byteLength > maximumSubmissionBodyBytes
-  ) {
+  if (new TextEncoder().encode(bodyText).byteLength > maximumSubmissionBodyBytes) {
     return transferError(
       context.requestId,
       413,
@@ -413,13 +320,9 @@ async function readSubmissionInput(
   try {
     return validateSubmissionInput(JSON.parse(bodyText), { allowCallback });
   } catch {
-    return transferError(
-      context.requestId,
-      400,
-      "invalid_request",
-      "Invalid request",
-      ["submission"],
-    );
+    return transferError(context.requestId, 400, "invalid_request", "Invalid request", [
+      "submission",
+    ]);
   }
 }
 
@@ -442,12 +345,7 @@ async function routeCreateSubmission(
     caseRow.submission_count >= caseRow.max_submissions ||
     caseRow.total_bytes > caseRow.max_total_bytes - input.totalFileBytes
   ) {
-    return transferError(
-      context.requestId,
-      409,
-      "conflict",
-      "Submission unavailable",
-    );
+    return transferError(context.requestId, 409, "conflict", "Submission unavailable");
   }
 
   const created = await createSubmissionDraft(
@@ -458,21 +356,11 @@ async function routeCreateSubmission(
     new Date(),
   );
   if (created === "unauthorized") {
-    return transferError(
-      context.requestId,
-      401,
-      unauthorizedCode,
-      unauthorizedMessage,
-    );
+    return transferError(context.requestId, 401, unauthorizedCode, unauthorizedMessage);
   }
   return created
     ? json({ ok: true, ...created })
-    : transferError(
-        context.requestId,
-        409,
-        "conflict",
-        "Submission unavailable",
-      );
+    : transferError(context.requestId, 409, "conflict", "Submission unavailable");
 }
 
 async function routeFinalizeSubmission(
@@ -481,29 +369,32 @@ async function routeFinalizeSubmission(
 ): Promise<Response> {
   const authenticated = await authenticatedMutation(context);
   if (authenticated instanceof Response) return authenticated;
+  const now = new Date();
   const finalized = await finalizeSubmission(
     context.env.TRANSFER_DB,
     authenticated.row.case_id,
     authenticated.row.session_id,
     submissionId,
-    new Date(),
+    now,
   );
   if (finalized === "unauthorized") {
-    return transferError(
-      context.requestId,
-      401,
-      unauthorizedCode,
-      unauthorizedMessage,
-    );
+    return transferError(context.requestId, 401, unauthorizedCode, unauthorizedMessage);
   }
-  return finalized
-    ? json({ ok: true, submissionId })
-    : transferError(
-        context.requestId,
-        409,
-        "conflict",
-        "Submission unavailable",
-      );
+  if (!finalized) {
+    return transferError(context.requestId, 409, "conflict", "Submission unavailable");
+  }
+  try {
+    context.ctx.waitUntil(
+      enqueueNotification(
+        context.env.TRANSFER_DB,
+        context.env.TRANSFER_NOTIFICATIONS,
+        finalized.notificationId,
+      ).catch(() => undefined),
+    );
+  } catch {
+    console.error("transfer_notification_schedule_failed", context.requestId);
+  }
+  return json({ ok: true, submissionId });
 }
 
 async function routeUpload(
@@ -532,25 +423,47 @@ async function routeUpload(
   if (result === "conflict") {
     return transferError(context.requestId, 409, "conflict", "Upload unavailable");
   }
-  return transferError(context.requestId, 503, "service_unavailable", "Service unavailable");
+  return transferError(
+    context.requestId,
+    503,
+    "service_unavailable",
+    "Service unavailable",
+  );
 }
 
-async function routeDownloadFile(context: DevelopmentRouteContext, fileId: string): Promise<Response> {
+async function routeDownloadFile(
+  context: DevelopmentRouteContext,
+  fileId: string,
+): Promise<Response> {
   const authenticated = await authenticatedSession(context);
-  if (!authenticated) return transferError(context.requestId, 401, unauthorizedCode, unauthorizedMessage);
+  if (!authenticated)
+    return transferError(context.requestId, 401, unauthorizedCode, unauthorizedMessage);
   const file = await loadCustomerStoredFile(
-    context.env.TRANSFER_DB, fileId, authenticated.row.case_id, authenticated.row.session_id, new Date(),
+    context.env.TRANSFER_DB,
+    fileId,
+    authenticated.row.case_id,
+    authenticated.row.session_id,
+    new Date(),
   );
   if (!file) return transferError(context.requestId, 404, "not_found", "Not found");
-  const response = await storedFileResponse(context.env.TRANSFER_FILES, file, context.request.headers.get("range"), context.requestId);
+  const response = await storedFileResponse(
+    context.env.TRANSFER_FILES,
+    file,
+    context.request.headers.get("range"),
+    context.requestId,
+  );
   if (response === "invalid") return rangeNotSatisfiable(file.size);
-  if (response === "unavailable") return transferError(context.requestId, 503, "service_unavailable", "Service unavailable");
+  if (response === "unavailable")
+    return transferError(
+      context.requestId,
+      503,
+      "service_unavailable",
+      "Service unavailable",
+    );
   return response;
 }
 
-async function routeGetCase(
-  context: DevelopmentRouteContext,
-): Promise<Response> {
+async function routeGetCase(context: DevelopmentRouteContext): Promise<Response> {
   try {
     const authenticated = await authenticatedSession(context);
     if (!authenticated) {
@@ -563,10 +476,7 @@ async function routeGetCase(
     }
 
     const now = new Date();
-    const expiresAt = nextSessionExpiry(
-      now,
-      authenticated.row.absolute_expires_at,
-    );
+    const expiresAt = nextSessionExpiry(now, authenticated.row.absolute_expires_at);
     if (!expiresAt) {
       return transferError(
         context.requestId,
@@ -615,16 +525,9 @@ async function routeGetCase(
   }
 }
 
-async function routeLogout(
-  context: DevelopmentRouteContext,
-): Promise<Response> {
+async function routeLogout(context: DevelopmentRouteContext): Promise<Response> {
   if (context.request.headers.get("origin") !== context.url.origin) {
-    return transferError(
-      context.requestId,
-      403,
-      "forbidden",
-      "Request forbidden",
-    );
+    return transferError(context.requestId, 403, "forbidden", "Request forbidden");
   }
 
   try {
@@ -643,12 +546,7 @@ async function routeLogout(
       context.env.SESSION_PEPPER,
     );
     if (!csrfValid) {
-      return transferError(
-        context.requestId,
-        403,
-        "forbidden",
-        "Request forbidden",
-      );
+      return transferError(context.requestId, 403, "forbidden", "Request forbidden");
     }
 
     const revocation = await context.env.TRANSFER_DB.prepare(
@@ -683,10 +581,7 @@ async function routeLogout(
 async function routePublicTransferRequest(
   context: DevelopmentRouteContext,
 ): Promise<Response> {
-  if (
-    context.request.method === "POST" &&
-    context.url.pathname === sessionPath
-  ) {
+  if (context.request.method === "POST" && context.url.pathname === sessionPath) {
     return routeCreateSession(context);
   }
 
@@ -694,10 +589,7 @@ async function routePublicTransferRequest(
     return routeGetCase(context);
   }
 
-  if (
-    context.request.method === "POST" &&
-    context.url.pathname === logoutPath
-  ) {
+  if (context.request.method === "POST" && context.url.pathname === logoutPath) {
     return routeLogout(context);
   }
 
@@ -723,14 +615,10 @@ async function routePublicTransferRequest(
   }
 
   const fileMatch = context.url.pathname.match(/^\/api\/transfers\/files\/([^/]+)$/u);
-  if (context.request.method === "GET" && fileMatch?.[1]) return routeDownloadFile(context, fileMatch[1]);
+  if (context.request.method === "GET" && fileMatch?.[1])
+    return routeDownloadFile(context, fileMatch[1]);
 
-  return transferError(
-    context.requestId,
-    404,
-    "not_found",
-    "Not found",
-  );
+  return transferError(context.requestId, 404, "not_found", "Not found");
 }
 
 export async function routePublicTransfer(

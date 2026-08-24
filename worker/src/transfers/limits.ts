@@ -38,7 +38,5 @@ export function isAllowedMediaType(value: string): value is AllowedMediaType {
 }
 
 export function maximumMediaBytes(mediaType: AllowedMediaType): number {
-  return imageMediaTypes.has(mediaType)
-    ? 12 * 1_024 * 1_024
-    : 50 * 1_024 * 1_024;
+  return imageMediaTypes.has(mediaType) ? 12 * 1_024 * 1_024 : 50 * 1_024 * 1_024;
 }

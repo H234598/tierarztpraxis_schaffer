@@ -1,5 +1,11 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { base64url, createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from "jose";
+import {
+  base64url,
+  createLocalJWKSet,
+  exportJWK,
+  generateKeyPair,
+  SignJWT,
+} from "jose";
 
 import { createAccessVerifier } from "../src/security/access-jwt";
 import { routeAdmin } from "../src/transfers/routes-admin";
@@ -16,7 +22,8 @@ let rotatedPublicKey: CryptoKey;
 
 beforeAll(async () => {
   ({ privateKey, publicKey } = await generateKeyPair("RS256"));
-  ({ privateKey: rotatedPrivateKey, publicKey: rotatedPublicKey } = await generateKeyPair("RS256"));
+  ({ privateKey: rotatedPrivateKey, publicKey: rotatedPublicKey } =
+    await generateKeyPair("RS256"));
 });
 
 async function assertion(
@@ -25,7 +32,15 @@ async function assertion(
   kid = "local-key",
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1_000);
-  const { iss = issuer, aud = audience, sub = "subject-1", exp = now + 60, nbf = now - 1, iat = now, ...claims } = overrides;
+  const {
+    iss = issuer,
+    aud = audience,
+    sub = "subject-1",
+    exp = now + 60,
+    nbf = now - 1,
+    iat = now,
+    ...claims
+  } = overrides;
   return new SignJWT({ email: "admin@example.test", ...claims })
     .setProtectedHeader({ alg: "RS256", kid })
     .setIssuer(String(iss))
@@ -78,10 +93,9 @@ function adminFileContext(
   if (assertionHeader !== null) {
     headers.set("cf-access-jwt-assertion", assertionHeader);
   }
-  const request = new Request(
-    "https://admin.example.test/api/admin/files/file-1",
-    { headers },
-  );
+  const request = new Request("https://admin.example.test/api/admin/files/file-1", {
+    headers,
+  });
   return {
     request,
     url: new URL(request.url),
@@ -121,24 +135,47 @@ function adminFileContext(
 describe("Cloudflare-Access-Verifier", () => {
   it("validiert lokales JWKS über kid und cached Factory trotz Key-Rotation", async () => {
     let resolverFactories = 0;
-    const first = { ...await exportJWK(publicKey), kid: "kid-1", alg: "RS256", use: "sig" };
-    const second = { ...await exportJWK(rotatedPublicKey), kid: "kid-2", alg: "RS256", use: "sig" };
+    const first = {
+      ...(await exportJWK(publicKey)),
+      kid: "kid-1",
+      alg: "RS256",
+      use: "sig",
+    };
+    const second = {
+      ...(await exportJWK(rotatedPublicKey)),
+      kid: "kid-2",
+      alg: "RS256",
+      use: "sig",
+    };
     const jwks = { keys: [first] };
     const verifier = createAccessVerifier({
       createKeyResolver(jwksUrl) {
         resolverFactories += 1;
         expect(jwksUrl.href).toBe(`${issuer}/cdn-cgi/access/certs`);
-        return async (protectedHeader, token) => createLocalJWKSet(jwks)(protectedHeader, token);
+        return async (protectedHeader, token) =>
+          createLocalJWKSet(jwks)(protectedHeader, token);
       },
     });
-    await expect(verifier.verify(await assertion({}, privateKey, "kid-1"), teamDomain, audience)).resolves.toEqual({
-      email: "admin@example.test", subject: "subject-1",
+    await expect(
+      verifier.verify(await assertion({}, privateKey, "kid-1"), teamDomain, audience),
+    ).resolves.toEqual({
+      email: "admin@example.test",
+      subject: "subject-1",
     });
     jwks.keys.push(second);
-    await expect(verifier.verify(await assertion({}, rotatedPrivateKey, "kid-2"), teamDomain, audience)).resolves.toEqual({
-      email: "admin@example.test", subject: "subject-1",
+    await expect(
+      verifier.verify(
+        await assertion({}, rotatedPrivateKey, "kid-2"),
+        teamDomain,
+        audience,
+      ),
+    ).resolves.toEqual({
+      email: "admin@example.test",
+      subject: "subject-1",
     });
-    await expect(verifier.verify(await assertion({}, privateKey, "unknown"), teamDomain, audience)).resolves.toBeNull();
+    await expect(
+      verifier.verify(await assertion({}, privateKey, "unknown"), teamDomain, audience),
+    ).resolves.toBeNull();
     expect(resolverFactories).toBe(1);
   });
 
@@ -146,11 +183,16 @@ describe("Cloudflare-Access-Verifier", () => {
     let resolverFactories = 0;
     const verifier = createAccessVerifier({
       maxCachedJwks: 1,
-      createKeyResolver: () => { resolverFactories += 1; return async () => publicKey; },
+      createKeyResolver: () => {
+        resolverFactories += 1;
+        return async () => publicKey;
+      },
     });
     const token = await assertion();
     await expect(verifier.verify(token, teamDomain, audience)).resolves.not.toBeNull();
-    await expect(verifier.verify(token, "other.cloudflareaccess.com", audience)).resolves.toBeNull();
+    await expect(
+      verifier.verify(token, "other.cloudflareaccess.com", audience),
+    ).resolves.toBeNull();
     await expect(verifier.verify(token, teamDomain, audience)).resolves.not.toBeNull();
     expect(resolverFactories).toBe(3);
   });
@@ -169,20 +211,32 @@ describe("Cloudflare-Access-Verifier", () => {
     ["fehlende E-Mail", { email: undefined }],
     ["ungültige E-Mail", { email: "not-an-email" }],
   ])("weist %s fail-closed ab", async (_label, input) => {
-    const verifier = createAccessVerifier({ createKeyResolver: () => async () => publicKey });
-    const token = typeof input === "string" || input === null
-      ? input
-      : "alg" in input ? withAlgorithm(await assertion(), String(input.alg))
-      : "noncanonical" in input ? noncanonicalSignature(await assertion())
-      : "padded" in input ? `${await assertion()}=`
-      : await assertion(input);
+    const verifier = createAccessVerifier({
+      createKeyResolver: () => async () => publicKey,
+    });
+    const token =
+      typeof input === "string" || input === null
+        ? input
+        : "alg" in input
+          ? withAlgorithm(await assertion(), String(input.alg))
+          : "noncanonical" in input
+            ? noncanonicalSignature(await assertion())
+            : "padded" in input
+              ? `${await assertion()}=`
+              : await assertion(input);
     await expect(verifier.verify(token, teamDomain, audience)).resolves.toBeNull();
   });
 
   it("weist unbrauchbare Audience-Konfiguration und ungetrimmtes Subject ab", async () => {
-    const verifier = createAccessVerifier({ createKeyResolver: () => async () => publicKey });
-    await expect(verifier.verify(await assertion(), teamDomain, " ")).resolves.toBeNull();
-    await expect(verifier.verify(await assertion({ sub: " subject-1 " }), teamDomain, audience)).resolves.toBeNull();
+    const verifier = createAccessVerifier({
+      createKeyResolver: () => async () => publicKey,
+    });
+    await expect(
+      verifier.verify(await assertion(), teamDomain, " "),
+    ).resolves.toBeNull();
+    await expect(
+      verifier.verify(await assertion({ sub: " subject-1 " }), teamDomain, audience),
+    ).resolves.toBeNull();
   });
 
   it.each([
@@ -192,8 +246,12 @@ describe("Cloudflare-Access-Verifier", () => {
     "https://clinic.cloudflareaccess.com/path",
     "attacker.example",
   ])("weist unsichere Team-Domain ab", async (domain) => {
-    const verifier = createAccessVerifier({ createKeyResolver: () => async () => publicKey });
-    await expect(verifier.verify(await assertion(), domain, audience)).resolves.toBeNull();
+    const verifier = createAccessVerifier({
+      createKeyResolver: () => async () => publicKey,
+    });
+    await expect(
+      verifier.verify(await assertion(), domain, audience),
+    ).resolves.toBeNull();
   });
 
   it("exportiert lokale JWKS kompatibel", async () => {
@@ -202,22 +260,41 @@ describe("Cloudflare-Access-Verifier", () => {
 
   it("Adminroute prüft Origin, Assertion und gibt nur E-Mail-DTO zurück", async () => {
     const token = await assertion();
-    const verifier = createAccessVerifier({ createKeyResolver: () => async () => publicKey });
-    const context = (origin: string | null, assertionHeader: string | null): DevelopmentRouteContext => {
+    const verifier = createAccessVerifier({
+      createKeyResolver: () => async () => publicKey,
+    });
+    const context = (
+      origin: string | null,
+      assertionHeader: string | null,
+    ): DevelopmentRouteContext => {
       const headers = new Headers();
       if (origin) headers.set("origin", origin);
       if (assertionHeader) headers.set("cf-access-jwt-assertion", assertionHeader);
-      const request = new Request("https://admin.example.test/api/admin/session", { headers });
+      const request = new Request("https://admin.example.test/api/admin/session", {
+        headers,
+      });
       return {
-        request, url: new URL(request.url), requestId: "request-1",
+        request,
+        url: new URL(request.url),
+        requestId: "request-1",
         env: { ACCESS_TEAM_DOMAIN: teamDomain, ACCESS_ADMIN_API_AUD: audience },
       } as unknown as DevelopmentRouteContext;
     };
-    expect((await routeAdmin(context("https://evil.example.test", token), verifier)).status).toBe(403);
-    expect((await routeAdmin(context("https://admin.example.test", null), verifier)).status).toBe(401);
-    const response = await routeAdmin(context("https://admin.example.test", token), verifier);
+    expect(
+      (await routeAdmin(context("https://evil.example.test", token), verifier)).status,
+    ).toBe(403);
+    expect(
+      (await routeAdmin(context("https://admin.example.test", null), verifier)).status,
+    ).toBe(401);
+    const response = await routeAdmin(
+      context("https://admin.example.test", token),
+      verifier,
+    );
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true, admin: { email: "admin@example.test" } });
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      admin: { email: "admin@example.test" },
+    });
   });
 
   it("liefert Admin-Datei nur mit exakter Origin und lokal verifiziertem RS256-JWT", async () => {
@@ -231,11 +308,7 @@ describe("Cloudflare-Access-Verifier", () => {
     });
 
     const response = await routeAdmin(
-      adminFileContext(
-        state,
-        "https://admin.example.test",
-        await assertion(),
-      ),
+      adminFileContext(state, "https://admin.example.test", await assertion()),
       verifier,
     );
 
@@ -291,12 +364,7 @@ describe("Cloudflare-Access-Verifier", () => {
     });
 
     const response = await routeAdmin(
-      adminFileContext(
-        state,
-        "https://admin.example.test",
-        assertionHeader,
-        headers,
-      ),
+      adminFileContext(state, "https://admin.example.test", assertionHeader, headers),
       verifier,
     );
 
@@ -312,11 +380,7 @@ describe("Cloudflare-Access-Verifier", () => {
     });
 
     const response = await routeAdmin(
-      adminFileContext(
-        state,
-        "https://admin.example.test",
-        await assertion(),
-      ),
+      adminFileContext(state, "https://admin.example.test", await assertion()),
       verifier,
     );
 
@@ -329,7 +393,10 @@ describe("Cloudflare-Access-Verifier", () => {
   it("hält Admin-API außerhalb Development bei 503", async () => {
     const request = new Request("https://admin.example.test/api/admin/session");
     const response = await routeRequest({
-      request, url: new URL(request.url), requestId: "request-1", ctx: {} as ExecutionContext,
+      request,
+      url: new URL(request.url),
+      requestId: "request-1",
+      ctx: {} as ExecutionContext,
       env: { ENVIRONMENT: "production" },
     } as never);
     expect(response.status).toBe(503);

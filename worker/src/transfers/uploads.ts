@@ -51,7 +51,8 @@ interface UploadBucket {
   delete(key: string): Promise<void>;
 }
 
-export type UploadResult = "unauthorized" | "conflict" | "invalid" | "unavailable" | "stored";
+export type UploadResult =
+  "unauthorized" | "conflict" | "invalid" | "unavailable" | "stored";
 
 class InvalidUploadBodyError extends Error {}
 
@@ -63,16 +64,19 @@ async function compensateUploadSlot(
 ): Promise<void> {
   const setState = async (state: "pending" | "rejected"): Promise<boolean> => {
     try {
-      const result = await database.prepare(
-        "UPDATE transfer_files SET state = ? WHERE id = ? AND case_id = ? AND state = 'uploading'",
-      ).bind(state, fileId, caseId).run();
+      const result = await database
+        .prepare(
+          "UPDATE transfer_files SET state = ? WHERE id = ? AND case_id = ? AND state = 'uploading'",
+        )
+        .bind(state, fileId, caseId)
+        .run();
       return result.meta.changes === 1;
     } catch {
       return false;
     }
   };
   if (await setState(preferred)) return;
-  if (preferred === "pending" && await setState("rejected")) return;
+  if (preferred === "pending" && (await setState("rejected"))) return;
   console.error("transfer_upload_orphan");
 }
 
@@ -161,8 +165,9 @@ export async function uploadReservedFile(
   try {
     validateUploadHeaders(headers, slot);
   } catch {
-    const rejected = await database.prepare(
-      `UPDATE transfer_files SET state = 'rejected'
+    const rejected = await database
+      .prepare(
+        `UPDATE transfer_files SET state = 'rejected'
       WHERE id = ? AND case_id = ? AND state = 'pending'
         AND EXISTS (
           SELECT 1 FROM transfer_sessions AS active_session
@@ -170,18 +175,23 @@ export async function uploadReservedFile(
             AND active_session.revoked_at IS NULL
             AND active_session.expires_at > ? AND active_session.absolute_expires_at > ?
         )`,
-    ).bind(fileId, caseId, sessionId, nowIso, nowIso).run();
+      )
+      .bind(fileId, caseId, sessionId, nowIso, nowIso)
+      .run();
     return rejected.meta.changes === 1 ? "invalid" : "unauthorized";
   }
 
   const [sessionGate, claim] = await database.batch([
-    database.prepare(
-      `UPDATE transfer_sessions SET last_seen_at = last_seen_at
+    database
+      .prepare(
+        `UPDATE transfer_sessions SET last_seen_at = last_seen_at
       WHERE id = ? AND case_id = ? AND revoked_at IS NULL
         AND expires_at > ? AND absolute_expires_at > ?`,
-    ).bind(sessionId, caseId, nowIso, nowIso),
-    database.prepare(
-      `UPDATE transfer_files SET state = 'uploading'
+      )
+      .bind(sessionId, caseId, nowIso, nowIso),
+    database
+      .prepare(
+        `UPDATE transfer_files SET state = 'uploading'
       WHERE id = ? AND case_id = ? AND state = 'pending'
         AND delete_after > ?
         AND EXISTS (
@@ -199,7 +209,8 @@ export async function uploadReservedFile(
             AND active_session.revoked_at IS NULL
             AND active_session.expires_at > ? AND active_session.absolute_expires_at > ?
         )`,
-    ).bind(fileId, caseId, nowIso, nowIso, sessionId, nowIso, nowIso),
+      )
+      .bind(fileId, caseId, nowIso, nowIso, sessionId, nowIso, nowIso),
   ]);
   if (sessionGate?.meta.changes !== 1) return "unauthorized";
   if (claim?.meta.changes !== 1) return "conflict";
@@ -210,9 +221,16 @@ export async function uploadReservedFile(
     object = await bucket.put(
       slot.r2_key,
       body
-        .pipeThrough(validatedUploadStream(slot, () => { invalidBody = true; }))
+        .pipeThrough(
+          validatedUploadStream(slot, () => {
+            invalidBody = true;
+          }),
+        )
         .pipeThrough(new FixedLengthStream(slot.size)),
-      { httpMetadata: { contentType: slot.mediaType }, onlyIf: { etagDoesNotMatch: "*" } },
+      {
+        httpMetadata: { contentType: slot.mediaType },
+        onlyIf: { etagDoesNotMatch: "*" },
+      },
     );
   } catch (error) {
     if (invalidBody || error instanceof InvalidUploadBodyError) {
@@ -239,8 +257,9 @@ export async function uploadReservedFile(
   const finalizedAt = new Date().toISOString();
   let finalized: D1Result | null = null;
   try {
-    finalized = await database.prepare(
-    `UPDATE transfer_files
+    finalized = await database
+      .prepare(
+        `UPDATE transfer_files
     SET state = 'stored', verified_media_type = ?, stored_size = ?, etag = ?,
       inline_safe = ?, uploaded_at = ?
     WHERE id = ? AND case_id = ? AND state = 'uploading'
@@ -260,20 +279,22 @@ export async function uploadReservedFile(
           AND active_session.revoked_at IS NULL
           AND active_session.expires_at > ? AND active_session.absolute_expires_at > ?
       )`,
-    ).bind(
-    slot.mediaType,
-    object.size,
-    object.etag,
-    inlineSafeMediaTypes.has(slot.mediaType) ? 1 : 0,
-    finalizedAt,
-    fileId,
-    caseId,
-    slot.size,
-    finalizedAt,
-    sessionId,
-    finalizedAt,
-    finalizedAt,
-    ).run();
+      )
+      .bind(
+        slot.mediaType,
+        object.size,
+        object.etag,
+        inlineSafeMediaTypes.has(slot.mediaType) ? 1 : 0,
+        finalizedAt,
+        fileId,
+        caseId,
+        slot.size,
+        finalizedAt,
+        sessionId,
+        finalizedAt,
+        finalizedAt,
+      )
+      .run();
   } catch {
     finalized = null;
   }
@@ -285,6 +306,11 @@ export async function uploadReservedFile(
   } catch {
     console.error("transfer_upload_orphan");
   }
-  await compensateUploadSlot(database, fileId, caseId, deleted ? "pending" : "rejected");
+  await compensateUploadSlot(
+    database,
+    fileId,
+    caseId,
+    deleted ? "pending" : "rejected",
+  );
   return "unavailable";
 }

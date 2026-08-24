@@ -32,9 +32,5 @@ export async function verifyCsrfToken(
   const decoded = decodeCanonicalBase64Url(token);
   if (!decoded || decoded.byteLength < 32) return false;
 
-  return verifyHmacHex(
-    sessionPepper,
-    `${csrfDomain}${token}`,
-    expectedHmac,
-  );
+  return verifyHmacHex(sessionPepper, `${csrfDomain}${token}`, expectedHmac);
 }

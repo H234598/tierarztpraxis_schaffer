@@ -80,9 +80,9 @@ class FakeD1Statement implements D1PreparedStatement {
 
   raw<T = unknown[]>(options: { columnNames: true }): Promise<[string[], ...T[]]>;
   raw<T = unknown[]>(options?: { columnNames?: false }): Promise<T[]>;
-  raw<T = unknown[]>(
-    _options?: { columnNames?: boolean },
-  ): Promise<T[] | [string[], ...T[]]> {
+  raw<T = unknown[]>(_options?: {
+    columnNames?: boolean;
+  }): Promise<T[] | [string[], ...T[]]> {
     return unusedBinding("D1 raw");
   }
 }
@@ -108,9 +108,7 @@ class FakeD1Database implements D1Database {
     return new FakeD1Statement(this, query);
   }
 
-  async batch<T = unknown>(
-    statements: D1PreparedStatement[],
-  ): Promise<D1Result<T>[]> {
+  async batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]> {
     this.batchSize = statements.length;
     if (this.failBatch) throw new Error("simulated D1 batch failure");
     return Promise.all(statements.map((statement) => statement.run<T>()));
@@ -189,17 +187,15 @@ class FakeD1Database implements D1Database {
 
   all<T>(query: string): D1Result<T> {
     const rows = query.includes("transfer_links")
-        ? this.links
-        : query.includes("transfer_files")
-          ? this.files
-          : query.includes("transfer_replies")
-            ? this.replies
-            : query.includes("transfer_submissions")
-              ? this.submissions
+      ? this.links
+      : query.includes("transfer_files")
+        ? this.files
+        : query.includes("transfer_replies")
+          ? this.replies
+          : query.includes("transfer_submissions")
+            ? this.submissions
             : [];
-    return result(
-      rows.map((row) => Object.assign(Object.create(null), row)),
-    );
+    return result(rows.map((row) => Object.assign(Object.create(null), row)));
   }
 }
 
@@ -212,8 +208,7 @@ function developmentEnvironment(
     ENVIRONMENT: "development",
     ALLOWED_ORIGINS:
       "https://tierarztpraxis-schaffer.telacore.org,https://h234598.github.io,http://localhost:4321",
-    EXPECTED_HOSTNAMES:
-      "tierarztpraxis-schaffer.telacore.org,h234598.github.io,test",
+    EXPECTED_HOSTNAMES: "tierarztpraxis-schaffer.telacore.org,h234598.github.io,test",
     EXPECTED_TURNSTILE_ACTION: "contact_form",
     CONTACT_RECIPIENT_KEY: "contact:recipient:development",
     TEST_CONTACT_RECIPIENT: "tierarztpraxis_schaffer@herr-der-mails.de",
@@ -455,11 +450,7 @@ function findForbiddenKey(value: unknown): string | null {
 function normalizeError(value: unknown): unknown {
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
   const body = Object.assign(Object.create(null), value);
-  if (
-    body.error &&
-    typeof body.error === "object" &&
-    !Array.isArray(body.error)
-  ) {
+  if (body.error && typeof body.error === "object" && !Array.isArray(body.error)) {
     body.error.requestId = "request-id";
   }
   return body;
@@ -471,9 +462,7 @@ function execute(request: Request, env: Parameters<typeof worker.fetch>[1]) {
 
 function expectTransferHeaders(response: Response): void {
   expect(response.headers.get("cache-control")).toBe("no-store");
-  expect(response.headers.get("content-type")).toBe(
-    "application/json; charset=utf-8",
-  );
+  expect(response.headers.get("content-type")).toBe("application/json; charset=utf-8");
   expect(response.headers.get("referrer-policy")).toBe("no-referrer");
   expect(response.headers.get("x-content-type-options")).toBe("nosniff");
   expect(response.headers.get("access-control-allow-origin")).toBeNull();
@@ -544,11 +533,10 @@ describe("public transfer API", () => {
 
   it("enforces JSON and the 4 KiB body limit", async () => {
     const wrongType = await execute(
-      transferRequest(
-        "/api/transfers/session",
-        "token=x",
-        { origin: apiOrigin, "content-type": "text/plain" },
-      ),
+      transferRequest("/api/transfers/session", "token=x", {
+        origin: apiOrigin,
+        "content-type": "text/plain",
+      }),
       developmentEnvironment(),
     );
     expect(wrongType.status).toBe(415);
@@ -572,11 +560,10 @@ describe("public transfer API", () => {
     { token: "x", turnstileToken: "x".repeat(2_049) },
   ])("rejects non-exact request bodies %#", async (body) => {
     const response = await execute(
-      transferRequest(
-        "/api/transfers/session",
-        JSON.stringify(body),
-        { origin: apiOrigin, "content-type": "application/json" },
-      ),
+      transferRequest("/api/transfers/session", JSON.stringify(body), {
+        origin: apiOrigin,
+        "content-type": "application/json",
+      }),
       developmentEnvironment(),
     );
 
@@ -603,11 +590,9 @@ describe("public transfer API", () => {
   });
 
   it("domain-separates contact and transfer rate-limit keys", async () => {
-    const request = transferRequest(
-      "/api/transfers/session",
-      null,
-      { "cf-connecting-ip": "203.0.113.10" },
-    );
+    const request = transferRequest("/api/transfers/session", null, {
+      "cf-connecting-ip": "203.0.113.10",
+    });
     const env = developmentEnvironment();
 
     await expect(hashRateLimitKey(request, env)).resolves.not.toBe(
@@ -655,9 +640,7 @@ describe("public transfer API", () => {
 
   it("allows test/test only in Development and rejects oversized tokens pre-fetch", async () => {
     vi.mocked(fetch).mockResolvedValue(
-      new Response(
-        JSON.stringify({ success: true, hostname: "test", action: "test" }),
-      ),
+      new Response(JSON.stringify({ success: true, hostname: "test", action: "test" })),
     );
     await expect(
       verifyTurnstile(
@@ -730,9 +713,7 @@ describe("public transfer API", () => {
       /^dt_session=[A-Za-z0-9_-]{43}; Max-Age=1800; Path=\/api\/transfers\/; Secure; HttpOnly; SameSite=Strict$/,
     );
     expect(database.batchSize).toBe(2);
-    expect(database.runs.some((call) => call.query.includes("use_count"))).toBe(
-      true,
-    );
+    expect(database.runs.some((call) => call.query.includes("use_count"))).toBe(true);
 
     const persistence = JSON.stringify(database.runs);
     const cookieSecret = response.headers
@@ -814,9 +795,7 @@ describe("public transfer API", () => {
     expect(response.status).toBe(401);
     failures.push(normalizeError(await response.json()));
 
-    expect(new Set(failures.map((failure) => JSON.stringify(failure))).size).toBe(
-      1,
-    );
+    expect(new Set(failures.map((failure) => JSON.stringify(failure))).size).toBe(1);
   });
 
   it("runs a dummy HMAC verification when the public case lookup misses", async () => {
@@ -986,8 +965,7 @@ describe("public transfer API", () => {
     expect(
       database.runs.some(
         (call) =>
-          call.query.includes("last_seen_at") &&
-          call.values.includes("session-1"),
+          call.query.includes("last_seen_at") && call.values.includes("session-1"),
       ),
     ).toBe(true);
   });
@@ -1023,9 +1001,7 @@ describe("public transfer API", () => {
       expect(response.status).toBe(401);
       failures.push(normalizeError(await response.json()));
     }
-    expect(new Set(failures.map((failure) => JSON.stringify(failure))).size).toBe(
-      1,
-    );
+    expect(new Set(failures.map((failure) => JSON.stringify(failure))).size).toBe(1);
   });
 
   it("liefert gespeicherte Customer-Datei nur über gebundene Live-Session", async () => {
@@ -1093,34 +1069,33 @@ describe("public transfer API", () => {
   it.each([
     ["fremde File-ID", "file-foreign", null],
     ["fallfremde Datei", "file-1", "case-foreign"],
-  ])("weist %s nach frischer Bindung ohne R2 als 404 ab", async (_label, fileId, fileCaseId) => {
-    const database = new FakeD1Database();
-    const { cookie } = await sessionFixture(database);
-    database.storedFile = storedFile;
-    if (fileCaseId) {
-      database.beforeStoredFileLookup = () => {
-        database.storedFileCaseId = fileCaseId;
-      };
-    }
-    const counter = { reads: 0 };
+  ])(
+    "weist %s nach frischer Bindung ohne R2 als 404 ab",
+    async (_label, fileId, fileCaseId) => {
+      const database = new FakeD1Database();
+      const { cookie } = await sessionFixture(database);
+      database.storedFile = storedFile;
+      if (fileCaseId) {
+        database.beforeStoredFileLookup = () => {
+          database.storedFileCaseId = fileCaseId;
+        };
+      }
+      const counter = { reads: 0 };
 
-    const response = await execute(
-      authenticatedRequest(`/api/transfers/files/${fileId}`, cookie),
-      developmentEnvironment(true, database, storedFileBucket(counter)),
-    );
+      const response = await execute(
+        authenticatedRequest(`/api/transfers/files/${fileId}`, cookie),
+        developmentEnvironment(true, database, storedFileBucket(counter)),
+      );
 
-    expect(response.status).toBe(404);
-    expect(counter.reads).toBe(0);
-    const fileQuery = database.prepared.find((statement) =>
-      statement.query.includes("FROM transfer_files AS f"),
-    );
-    expect(fileQuery?.values.slice(0, 3)).toEqual([
-      fileId,
-      "case-1",
-      "session-1",
-    ]);
-    expect(fileQuery?.query).toContain("f.case_id = ?");
-  });
+      expect(response.status).toBe(404);
+      expect(counter.reads).toBe(0);
+      const fileQuery = database.prepared.find((statement) =>
+        statement.query.includes("FROM transfer_files AS f"),
+      );
+      expect(fileQuery?.values.slice(0, 3)).toEqual([fileId, "case-1", "session-1"]);
+      expect(fileQuery?.query).toContain("f.case_id = ?");
+    },
+  );
 
   it("does not expose a snapshot when sliding renewal loses a revoke race", async () => {
     const database = new FakeD1Database();
@@ -1152,12 +1127,7 @@ describe("public transfer API", () => {
     const database = new FakeD1Database();
     const { cookie, csrfToken } = await sessionFixture(database);
     const response = await execute(
-      authenticatedRequest(
-        "/api/transfers/session/logout",
-        cookie,
-        "POST",
-        csrfToken,
-      ),
+      authenticatedRequest("/api/transfers/session/logout", cookie, "POST", csrfToken),
       developmentEnvironment(true, database),
     );
 
@@ -1168,9 +1138,7 @@ describe("public transfer API", () => {
     );
     expect(
       database.runs.some(
-        (call) =>
-          call.query.includes("revoked_at") &&
-          call.values[1] === "session-1",
+        (call) => call.query.includes("revoked_at") && call.values[1] === "session-1",
       ),
     ).toBe(true);
   });
@@ -1181,12 +1149,7 @@ describe("public transfer API", () => {
     database.sessionUpdateChanges = 0;
 
     const response = await execute(
-      authenticatedRequest(
-        "/api/transfers/session/logout",
-        cookie,
-        "POST",
-        csrfToken,
-      ),
+      authenticatedRequest("/api/transfers/session/logout", cookie, "POST", csrfToken),
       developmentEnvironment(true, database),
     );
 
@@ -1217,11 +1180,7 @@ describe("public transfer API", () => {
     expect(foreign.status).toBe(403);
 
     const missing = await execute(
-      transferRequest(
-        "/api/transfers/session/logout",
-        null,
-        { origin: apiOrigin },
-      ),
+      transferRequest("/api/transfers/session/logout", null, { origin: apiOrigin }),
       developmentEnvironment(),
     );
     expect(missing.status).toBe(401);

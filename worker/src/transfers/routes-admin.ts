@@ -6,7 +6,11 @@ import {
   type VerifiedAdminIdentity,
 } from "../security/access-jwt";
 import { transferError } from "./routes-public";
-import { loadAdminStoredFile, rangeNotSatisfiable, storedFileResponse } from "./file-response";
+import {
+  loadAdminStoredFile,
+  rangeNotSatisfiable,
+  storedFileResponse,
+} from "./file-response";
 import { handleAdminCaseApi } from "./admin-cases";
 
 export async function authenticateAdminRequest(
@@ -30,9 +34,17 @@ export async function routeAdmin(
   }
   const admin = await authenticateAdminRequest(context, verifier);
   if (!admin) {
-    return transferError(context.requestId, 401, "unauthorized", "Invalid or expired credentials");
+    return transferError(
+      context.requestId,
+      401,
+      "unauthorized",
+      "Invalid or expired credentials",
+    );
   }
-  if (context.request.method === "GET" && context.url.pathname === "/api/admin/session") {
+  if (
+    context.request.method === "GET" &&
+    context.url.pathname === "/api/admin/session"
+  ) {
     return json({ ok: true, admin: { email: admin.email } });
   }
   const caseResponse = await handleAdminCaseApi(context, admin);
@@ -41,9 +53,20 @@ export async function routeAdmin(
   if (context.request.method === "GET" && fileMatch?.[1]) {
     const file = await loadAdminStoredFile(context.env.TRANSFER_DB, fileMatch[1]);
     if (!file) return transferError(context.requestId, 404, "not_found", "Not found");
-    const response = await storedFileResponse(context.env.TRANSFER_FILES, file, context.request.headers.get("range"), context.requestId);
+    const response = await storedFileResponse(
+      context.env.TRANSFER_FILES,
+      file,
+      context.request.headers.get("range"),
+      context.requestId,
+    );
     if (response === "invalid") return rangeNotSatisfiable(file.size);
-    if (response === "unavailable") return transferError(context.requestId, 503, "service_unavailable", "Service unavailable");
+    if (response === "unavailable")
+      return transferError(
+        context.requestId,
+        503,
+        "service_unavailable",
+        "Service unavailable",
+      );
     return response;
   }
   return transferError(context.requestId, 404, "not_found", "Not found");

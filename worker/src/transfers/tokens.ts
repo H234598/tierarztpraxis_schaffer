@@ -127,9 +127,5 @@ export async function verifyTransferToken(
     return false;
   }
 
-  return verifyHmacHex(
-    tokenPepper,
-    parsed.secret,
-    stored.tokenHmac,
-  );
+  return verifyHmacHex(tokenPepper, parsed.secret, stored.tokenHmac);
 }

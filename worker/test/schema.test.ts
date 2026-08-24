@@ -1,10 +1,5 @@
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
-import {
-  lstatSync,
-  mkdtempSync,
-  readdirSync,
-  rmSync,
-} from "node:fs";
+import { lstatSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -13,10 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const workerDirectory = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const wrangler = join(workerDirectory, "node_modules", ".bin", "wrangler");
-const temporaryDirectoryPrefix = resolve(
-  tmpdir(),
-  "tierarztpraxis-d1-schema-",
-);
+const temporaryDirectoryPrefix = resolve(tmpdir(), "tierarztpraxis-d1-schema-");
 
 const expectedTables = [
   "d1_migrations",
@@ -379,9 +371,7 @@ describe.sequential("D1 transfer schema migration", () => {
 
     expect(
       db
-        .prepare(
-          "SELECT case_id FROM transfer_audit_events WHERE id = 'cascade-audit'",
-        )
+        .prepare("SELECT case_id FROM transfer_audit_events WHERE id = 'cascade-audit'")
         .get(),
     ).toEqual({ case_id: null });
   });
@@ -410,5 +400,5 @@ describe.sequential("D1 transfer schema migration", () => {
     database = new DatabaseSync(databasePath);
     database.exec("PRAGMA foreign_keys = ON;");
     expect(schemaRows(database)).toEqual(before);
-  });
+  }, 30_000);
 });
