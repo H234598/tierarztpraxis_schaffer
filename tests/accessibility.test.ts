@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  accessibilityFaqAnswer,
-  practiceAccessibility,
-} from "../src/config/practice";
+import { accessibilityFaqAnswer, practiceAccessibility } from "../src/config/practice";
 
 describe("bestätigte Barrierefreiheitsangaben", () => {
   it("kennzeichnet die bekannten Angaben als bestätigt", () => {
@@ -17,9 +14,7 @@ describe("bestätigte Barrierefreiheitsangaben", () => {
     ];
 
     expect(confirmed.every((entry) => entry.status === "verified")).toBe(true);
-    expect(confirmed.every((entry) => entry.verifiedAt === "2026-07-16")).toBe(
-      true,
-    );
+    expect(confirmed.every((entry) => entry.verifiedAt === "2026-07-16")).toBe(true);
   });
 
   it("behauptet wegen der Türschwelle nicht pauschal vollständige Barrierefreiheit", () => {

@@ -9,9 +9,12 @@ import { withBase } from "../utils/paths";
       <h2>{siteConfig.shortName}</h2>
       <address>
         {siteConfig.address.street}<br />
-        {siteConfig.address.postalCode} {siteConfig.address.city}
+        {siteConfig.address.postalCode}{" "}{siteConfig.address.city}
       </address>
-      <p><a class="phone-link" href={siteConfig.phone.href}>{siteConfig.phone.display}</a></p>
+      <p>
+        <a class="phone-link" href={siteConfig.phone.href}>{siteConfig.phone.display}</a
+        >
+      </p>
     </section>
     <section>
       <h2>Direkt zu</h2>

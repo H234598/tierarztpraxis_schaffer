@@ -1,0 +1,139 @@
+@layer components {
+  [data-home-variant="2"] {
+    background: #fbfaf5;
+  }
+
+  [data-home-variant="2"] .home-2__hero {
+    overflow: hidden;
+    padding-block: clamp(2rem, 5vw, 4rem);
+    background: linear-gradient(115deg, #f7f3e8 0%, #f7f3e8 48%, #e4efea 100%);
+  }
+
+  [data-home-variant="2"] .home-2__hero-grid,
+  [data-home-variant="2"] .home-2__services-grid,
+  [data-home-variant="2"] .home-2__practice-grid {
+    display: grid;
+    gap: clamp(1.5rem, 4vw, 4rem);
+    align-items: center;
+  }
+
+  [data-home-variant="2"] .home-2__hero-copy {
+    display: grid;
+    gap: 1.25rem;
+    align-content: center;
+  }
+
+  [data-home-variant="2"] .home-2__hero-copy h1,
+  [data-home-variant="2"] .home-2__practice h2,
+  [data-home-variant="2"] .home-2__links h2 {
+    font-family: var(--font-display);
+  }
+
+  [data-home-variant="2"] .home-2__hero-copy > p:not(.eyebrow) {
+    color: var(--muted);
+    font-size: clamp(1.08rem, 2vw, 1.3rem);
+  }
+
+  [data-home-variant="2"] .home-2__hero-figure {
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    margin: 0;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+
+  [data-home-variant="2"] .home-2__hero-image {
+    display: block;
+    width: 100%;
+    min-height: 22rem;
+    object-fit: cover;
+  }
+
+  [data-home-variant="2"] .home-2__hero-figure figcaption {
+    position: absolute;
+    right: 1rem;
+    bottom: 1rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 92%);
+    color: var(--ink);
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  [data-home-variant="2"] .home-2__emergency-card,
+  [data-home-variant="2"] .home-2__accessibility {
+    display: grid;
+    gap: 0.8rem;
+    padding: clamp(1.25rem, 3vw, 1.8rem);
+    border: 1px solid #cddbd4;
+    border-radius: var(--radius);
+    background: #fffdf8;
+    box-shadow: var(--shadow-sm);
+  }
+
+  [data-home-variant="2"] .home-2__emergency-card {
+    border-color: #d8aaa1;
+    background: #fff6f1;
+  }
+
+  [data-home-variant="2"] .home-2__emergency-card h2 {
+    font-size: clamp(1.4rem, 3vw, 2rem);
+  }
+
+  [data-home-variant="2"] .home-2__services {
+    background: #f1f5f0;
+  }
+
+  [data-home-variant="2"] .home-2__opening-hours,
+  [data-home-variant="2"] .home-2__practice-grid > * {
+    display: grid;
+    gap: 1rem;
+  }
+
+  [data-home-variant="2"] .home-2__service-cards,
+  [data-home-variant="2"] .home-2__link-cards {
+    display: grid;
+    gap: 1rem;
+  }
+
+  [data-home-variant="2"] .home-2__service-cards .card,
+  [data-home-variant="2"] .home-2__link-cards .card {
+    min-width: 0;
+    border-color: #d9e2da;
+    background: #fffefb;
+  }
+
+  [data-home-variant="2"] .home-2__links {
+    background: #f7f3e8;
+  }
+
+  [data-home-variant="2"] .home-2__map {
+    padding-top: 0;
+  }
+
+  @media (min-width: 48rem) {
+    [data-home-variant="2"] .home-2__hero-grid {
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    }
+
+    [data-home-variant="2"] .home-2__services-grid,
+    [data-home-variant="2"] .home-2__practice-grid {
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    }
+
+    [data-home-variant="2"] .home-2__service-cards {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    [data-home-variant="2"] .home-2__link-cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    [data-home-variant="2"] .home-2__hero-image {
+      height: 100%;
+      min-height: 38rem;
+    }
+  }
+}

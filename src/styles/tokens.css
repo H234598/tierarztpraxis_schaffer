@@ -1,0 +1,29 @@
+@layer tokens {
+  :root {
+    --ink: #17251e;
+    --muted: #526058;
+    --green: #245b43;
+    --green-dark: #173d2e;
+    --green-soft: #e4f1e8;
+    --mint: #d7eee6;
+    --paper: #ffffff;
+    --canvas: #f7faf7;
+    --border: #c8d8cd;
+    --danger: #8a3024;
+    --danger-soft: #fff0eb;
+    --warning: #7b4b00;
+    --warning-soft: #fff3d5;
+    --shadow: 0 18px 55px rgb(23 61 46 / 12%);
+    --radius: 1.25rem;
+    --container: 76rem;
+    --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-display:
+      "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --color-ink: var(--ink);
+    --color-surface: var(--paper);
+    --space-1: 0.5rem;
+    --space-2: 1rem;
+    --radius-sm: 0.55rem;
+    --shadow-sm: 0 8px 25px rgb(23 61 46 / 8%);
+  }
+}

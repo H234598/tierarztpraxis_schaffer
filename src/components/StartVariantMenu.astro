@@ -1,0 +1,61 @@
+---
+import { homeVariants } from "../content/home-variants";
+import { withBase } from "../utils/paths";
+
+interface Props {
+  currentPath: string;
+}
+
+const { currentPath } = Astro.props;
+const isCurrent = (path: string) => currentPath === path;
+---
+
+<li class="start-variant-menu" data-start-variant-menu>
+  <a href={withBase("")}>Start</a>
+  <button
+    id="start-variant-trigger"
+    class="start-variant-menu__trigger"
+    type="button"
+    aria-label="Startseiten auswählen"
+    aria-haspopup="menu"
+    aria-expanded="false"
+    aria-controls="start-variant-menu"
+  >
+    <span aria-hidden="true">⌄</span>
+  </button>
+  <ul
+    id="start-variant-menu"
+    class="start-variant-menu__list"
+    role="menu"
+    aria-label="Startseiten auswählen"
+    hidden
+  >
+    {
+      homeVariants.map((variant) => (
+        <li role="none">
+          <a
+            href={withBase(variant.route)}
+            role="menuitem"
+            aria-current={
+              isCurrent(withBase(variant.route)) ||
+              (variant.isDefault && isCurrent(withBase("")))
+                ? "page"
+                : undefined
+            }
+          >
+            {variant.label}
+            {variant.isDefault && (
+              <span class="start-variant-menu__standard">Standard</span>
+            )}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</li>
+
+<script>
+  import { setupStartVariantMenu } from "../scripts/start-variant-menu";
+
+  setupStartVariantMenu(document);
+</script>
