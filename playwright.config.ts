@@ -8,6 +8,7 @@ const e2eWorkers =
   Number.isSafeInteger(configuredWorkers) && configuredWorkers > 0
     ? configuredWorkers
     : 1;
+const snapshotEnvironmentSuffix = process.env.CI === "true" ? "-ci-ubuntu-24.04" : "";
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -15,12 +16,7 @@ export default defineConfig({
   workers: e2eWorkers,
   retries: process.env.CI ? 2 : 0,
   reporter: [["list"], ["html", { open: "never" }]],
-  expect: {
-    toHaveScreenshot: {
-      stylePath: "tests/e2e/snapshot.css",
-    },
-  },
-  snapshotPathTemplate: "{testDir}/{testFilePath}-snapshots/{arg}-{platform}{ext}",
+  snapshotPathTemplate: `{testDir}/{testFilePath}-snapshots/{arg}-{platform}${snapshotEnvironmentSuffix}{ext}`,
   projects: [
     {
       name: "desktop",
