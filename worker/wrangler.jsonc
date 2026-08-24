@@ -7,7 +7,7 @@
   "minify": true,
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 0.1
+    "head_sampling_rate": 0.1,
   },
   "env": {
     "development": {
@@ -15,12 +15,12 @@
       "routes": [
         {
           "pattern": "api.tierarztpraxis-schaffer.telacore.org",
-          "custom_domain": true
+          "custom_domain": true,
         },
         {
           "pattern": "tierarztpraxis-schaffer.telacore.org/api/*",
-          "zone_name": "telacore.org"
-        }
+          "zone_name": "telacore.org",
+        },
       ],
       "vars": {
         "ENVIRONMENT": "development",
@@ -29,7 +29,7 @@
         "EXPECTED_TURNSTILE_ACTION": "contact_form",
         "CONTACT_RECIPIENT_KEY": "contact:recipient:development",
         "TEST_CONTACT_RECIPIENT": "tierarztpraxis_schaffer@herr-der-mails.de",
-        "MAIL_FROM": "website@tierarztpraxis-schaffer.telacore.org"
+        "MAIL_FROM": "website@tierarztpraxis-schaffer.telacore.org",
       },
       "secrets": {
         "required": [
@@ -38,46 +38,47 @@
           "TOKEN_PEPPER",
           "SESSION_PEPPER",
           "ACCESS_TEAM_DOMAIN",
-          "ACCESS_ADMIN_API_AUD"
-        ]
+          "ACCESS_ADMIN_API_AUD",
+        ],
       },
       "kv_namespaces": [
         {
           "binding": "CONTACT_CONFIG",
-          "id": "235cdcfe11094400b6ad27338b7528ac"
-        }
+          "id": "235cdcfe11094400b6ad27338b7528ac",
+        },
       ],
       "d1_databases": [
         {
           "binding": "TRANSFER_DB",
           "database_name": "tierarztpraxis-schaffer-transfer-development",
           "database_id": "27da967d-21c2-4a37-98a1-9e6cfd7451a1",
-          "migrations_dir": "migrations"
-        }
+          "migrations_dir": "migrations",
+        },
       ],
       "r2_buckets": [
         {
           "binding": "TRANSFER_FILES",
           "bucket_name": "tierarztpraxis-schaffer-transfer-development",
-          "jurisdiction": "eu"
-        }
+          "jurisdiction": "eu",
+        },
       ],
       "queues": {
         "producers": [
           {
             "binding": "TRANSFER_NOTIFICATIONS",
-            "queue": "tierarztpraxis-transfer-notifications-development"
-          }
+            "queue": "tierarztpraxis-transfer-notifications-development",
+          },
         ],
         "consumers": [
           {
             "queue": "tierarztpraxis-transfer-notifications-development",
-            "dead_letter_queue": "tierarztpraxis-transfer-notifications-dlq-development"
-          }
-        ]
+            "dead_letter_queue": "tierarztpraxis-transfer-notifications-dlq-development",
+            "max_retries": 5,
+          },
+        ],
       },
       "triggers": {
-        "crons": ["0 3 * * *"]
+        "crons": ["0 3 * * *"],
       },
       "ratelimits": [
         {
@@ -85,26 +86,24 @@
           "namespace_id": "984371",
           "simple": {
             "limit": 8,
-            "period": 60
-          }
-        }
+            "period": 60,
+          },
+        },
       ],
       "send_email": [
         {
           "name": "EMAIL",
-          "allowed_sender_addresses": [
-            "website@tierarztpraxis-schaffer.telacore.org"
-          ]
-        }
-      ]
+          "allowed_sender_addresses": ["website@tierarztpraxis-schaffer.telacore.org"],
+        },
+      ],
     },
     "production": {
       "name": "tierarztpraxis-schaffer-contact-production",
       "routes": [
         {
           "pattern": "api.tierarztpraxis-schaffer.telacore.org",
-          "custom_domain": true
-        }
+          "custom_domain": true,
+        },
       ],
       "vars": {
         "ENVIRONMENT": "production",
@@ -112,16 +111,16 @@
         "EXPECTED_HOSTNAMES": "tierarztpraxis-schaffer.telacore.org",
         "EXPECTED_TURNSTILE_ACTION": "contact_form",
         "CONTACT_RECIPIENT_KEY": "contact:recipient:production",
-        "MAIL_FROM": "website@tierarztpraxis-schaffer.telacore.org"
+        "MAIL_FROM": "website@tierarztpraxis-schaffer.telacore.org",
       },
       "secrets": {
-        "required": ["TURNSTILE_SECRET", "RATE_LIMIT_SALT"]
+        "required": ["TURNSTILE_SECRET", "RATE_LIMIT_SALT"],
       },
       "kv_namespaces": [
         {
           "binding": "CONTACT_CONFIG",
-          "id": "2f89ac0fb603446d9e4f43f3b938ea41"
-        }
+          "id": "2f89ac0fb603446d9e4f43f3b938ea41",
+        },
       ],
       "ratelimits": [
         {
@@ -129,18 +128,16 @@
           "namespace_id": "984372",
           "simple": {
             "limit": 8,
-            "period": 60
-          }
-        }
+            "period": 60,
+          },
+        },
       ],
       "send_email": [
         {
           "name": "EMAIL",
-          "allowed_sender_addresses": [
-            "website@tierarztpraxis-schaffer.telacore.org"
-          ]
-        }
-      ]
-    }
-  }
+          "allowed_sender_addresses": ["website@tierarztpraxis-schaffer.telacore.org"],
+        },
+      ],
+    },
+  },
 }

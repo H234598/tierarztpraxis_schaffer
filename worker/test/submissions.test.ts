@@ -72,9 +72,9 @@ class SubmissionStatement implements D1PreparedStatement {
 
   raw<T = unknown[]>(options: { columnNames: true }): Promise<[string[], ...T[]]>;
   raw<T = unknown[]>(options?: { columnNames?: false }): Promise<T[]>;
-  raw<T = unknown[]>(
-    _options?: { columnNames?: boolean },
-  ): Promise<T[] | [string[], ...T[]]> {
+  raw<T = unknown[]>(_options?: {
+    columnNames?: boolean;
+  }): Promise<T[] | [string[], ...T[]]> {
     return unusedBinding("D1 raw");
   }
 }
@@ -99,9 +99,7 @@ class SubmissionDatabase implements D1Database {
     return new SubmissionStatement(this, query);
   }
 
-  async batch<T = unknown>(
-    statements: D1PreparedStatement[],
-  ): Promise<D1Result<T>[]> {
+  async batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]> {
     this.batchCount += 1;
     this.lastBatchSize = statements.length;
     if (this.failBatch) throw new Error("simulated D1 batch failure");
@@ -144,8 +142,7 @@ function environment(database: D1Database): Cloudflare.DevelopmentEnv {
     ENVIRONMENT: "development",
     ALLOWED_ORIGINS:
       "https://tierarztpraxis-schaffer.telacore.org,https://h234598.github.io,http://localhost:4321",
-    EXPECTED_HOSTNAMES:
-      "tierarztpraxis-schaffer.telacore.org,h234598.github.io,test",
+    EXPECTED_HOSTNAMES: "tierarztpraxis-schaffer.telacore.org,h234598.github.io,test",
     EXPECTED_TURNSTILE_ACTION: "contact_form",
     CONTACT_RECIPIENT_KEY: "contact:recipient:development",
     TEST_CONTACT_RECIPIENT: "tierarztpraxis_schaffer@herr-der-mails.de",
@@ -212,6 +209,8 @@ async function sessionFixture(
     submission_count: 1,
     total_bytes: 200,
     expires_at: "2026-08-18T20:00:00.000Z",
+    token_expires_at: "2026-08-04T11:00:00.000Z",
+    token_revoked_at: null,
     ...overrides,
   };
   return { cookie, csrfToken: csrf.token };
@@ -262,7 +261,10 @@ describe("Berichtseingaben", () => {
       { ...validInput, links: [{ url: "https://user:pass@example.test" }] },
     ],
     ["Callback ohne Freigabe", { ...validInput, callbackRequested: true }],
-    ["zu viele Links", { ...validInput, links: Array(9).fill({ url: "https://example.test" }) }],
+    [
+      "zu viele Links",
+      { ...validInput, links: Array(9).fill({ url: "https://example.test" }) },
+    ],
   ])("weist %s ab", (_reason, input) => {
     expect(() => validateSubmissionInput(input, { allowCallback: false })).toThrow();
   });
@@ -308,7 +310,10 @@ describe("Berichtseingaben", () => {
     { name: "x.jpg", mediaType: "image/jpeg", size: 1.5 },
   ])("weist unsichere Dateimetadaten ab %#", (file) => {
     expect(() =>
-      validateSubmissionInput({ ...validInput, files: [file] }, { allowCallback: true }),
+      validateSubmissionInput(
+        { ...validInput, files: [file] },
+        { allowCallback: true },
+      ),
     ).toThrow();
   });
 
@@ -357,23 +362,13 @@ describe("Submission API", () => {
     expect(foreign.status).toBe(403);
 
     const missingSession = await execute(
-      apiRequest(
-        "/api/transfers/submissions",
-        "B".repeat(43),
-        csrfToken,
-        validInput,
-      ),
+      apiRequest("/api/transfers/submissions", "B".repeat(43), csrfToken, validInput),
       database,
     );
     expect(missingSession.status).toBe(401);
 
     const badCsrf = await execute(
-      apiRequest(
-        "/api/transfers/submissions",
-        cookie,
-        "B".repeat(43),
-        validInput,
-      ),
+      apiRequest("/api/transfers/submissions", cookie, "B".repeat(43), validInput),
       database,
     );
     expect(badCsrf.status).toBe(403);
@@ -402,11 +397,7 @@ describe("Submission API", () => {
     database.sessionMutationChanges = 0;
 
     const response = await execute(
-      apiRequest(
-        "/api/transfers/submissions/submission-1/finalize",
-        cookie,
-        csrfToken,
-      ),
+      apiRequest("/api/transfers/submissions/submission-1/finalize", cookie, csrfToken),
       database,
     );
 
@@ -441,7 +432,9 @@ describe("Submission API", () => {
         },
       ],
     });
-    expect(database.prepared.some((statement) => statement.query.includes("'draft'"))).toBe(true);
+    expect(
+      database.prepared.some((statement) => statement.query.includes("'draft'")),
+    ).toBe(true);
     const persisted = JSON.stringify(
       database.prepared.map(({ query, values }) => ({ query, values })),
     );
@@ -507,11 +500,7 @@ describe("Submission API", () => {
     const database = new SubmissionDatabase();
     const { cookie, csrfToken } = await sessionFixture(database);
     const response = await execute(
-      apiRequest(
-        "/api/transfers/submissions/submission-1/finalize",
-        cookie,
-        csrfToken,
-      ),
+      apiRequest("/api/transfers/submissions/submission-1/finalize", cookie, csrfToken),
       database,
     );
 
@@ -528,6 +517,13 @@ describe("Submission API", () => {
         statement.query.includes("UPDATE transfer_cases"),
       ),
     ).toHaveLength(0);
+    expect(database.lastBatchSize).toBe(3);
+    expect(
+      database.prepared.some((statement) =>
+        statement.query.includes("INSERT INTO transfer_notifications"),
+      ),
+    ).toBe(true);
+    await expect(response.json()).resolves.not.toHaveProperty("notificationId");
   });
 
   it.each(["pending file", "rejected file", "foreign case", "replay"])(

@@ -1,12 +1,5 @@
-import {
-  validateSubmissionLinks,
-  type SubmissionLinkInput,
-} from "./links";
-import {
-  isAllowedMediaType,
-  maximumMediaBytes,
-  type AllowedMediaType,
-} from "./limits";
+import { validateSubmissionLinks, type SubmissionLinkInput } from "./links";
+import { isAllowedMediaType, maximumMediaBytes, type AllowedMediaType } from "./limits";
 
 export type AllowedSubmissionMediaType = AllowedMediaType;
 
@@ -56,6 +49,10 @@ export interface CreatedSubmission {
   }[];
 }
 
+export interface FinalizedSubmission {
+  readonly notificationId: string;
+}
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -65,16 +62,12 @@ function optionalString(
   maximumLength: number,
 ): value is string | undefined {
   return (
-    value === undefined ||
-    (typeof value === "string" && value.length <= maximumLength)
+    value === undefined || (typeof value === "string" && value.length <= maximumLength)
   );
 }
 
 function validNotificationEmail(value: string): boolean {
-  return (
-    value.length <= 254 &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value)
-  );
+  return value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value);
 }
 
 function validateFiles(value: unknown): {
@@ -364,9 +357,10 @@ export async function finalizeSubmission(
   sessionId: string,
   submissionId: string,
   now: Date,
-): Promise<boolean | "unauthorized"> {
+): Promise<FinalizedSubmission | false | "unauthorized"> {
   const nowIso = now.toISOString();
-  const [sessionGate, finalization] = await database.batch([
+  const notificationId = crypto.randomUUID();
+  const [sessionGate, finalization, notification] = await database.batch([
     database
       .prepare(
         `UPDATE transfer_sessions
@@ -394,17 +388,22 @@ export async function finalizeSubmission(
             AND active_session.absolute_expires_at > ?
         )`,
       )
-      .bind(
-        nowIso,
-        nowIso,
-        submissionId,
-        caseId,
-        caseId,
-        sessionId,
-        nowIso,
-        nowIso,
-      ),
+      .bind(nowIso, nowIso, submissionId, caseId, caseId, sessionId, nowIso, nowIso),
+    database
+      .prepare(
+        `INSERT INTO transfer_notifications (
+          id, case_id, submission_id, reply_id, kind, state, attempts,
+          created_at, updated_at
+        )
+        SELECT ?, case_id, id, NULL, 'practice_submission', 'pending', 0, ?, ?
+        FROM transfer_submissions
+        WHERE id = ? AND case_id = ? AND status = 'submitted'
+          AND finalized_at = ?`,
+      )
+      .bind(notificationId, nowIso, nowIso, submissionId, caseId, nowIso),
   ]);
   if (sessionGate?.meta.changes !== 1) return "unauthorized";
-  return finalization?.meta.changes === 1;
+  if (finalization?.meta.changes !== 1) return false;
+  if (notification?.meta.changes !== 1) return false;
+  return { notificationId };
 }
