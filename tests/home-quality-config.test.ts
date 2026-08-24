@@ -41,8 +41,11 @@ describe("Playwright-Matrix", () => {
   });
 
   it("bewahrt Goldens und sammelt nur Fehlerartefakte", () => {
+    const snapshotEnvironmentSuffix =
+      process.env.CI === "true" ? "-ci-ubuntu-24.04" : "";
+
     expect(playwrightConfig.snapshotPathTemplate).toBe(
-      "{testDir}/{testFilePath}-snapshots/{arg}-{platform}{ext}",
+      `{testDir}/{testFilePath}-snapshots/{arg}-{platform}${snapshotEnvironmentSuffix}{ext}`,
     );
     expect(playwrightConfig.timeout).toBe(15_000);
     expect(playwrightConfig.retries).toBe(process.env.CI ? 2 : 0);
@@ -80,6 +83,7 @@ describe("Startseiten-Qualitätsgates", () => {
     expect(workflow).toContain("pull_request:");
     expect(workflow).toContain("branches:\n      - main");
     expect(workflow).toContain("contents: read");
+    expect(workflow).toContain("runs-on: ubuntu-24.04");
     expect(workflow).toContain("timeout-minutes: 20");
     expect(workflow).toContain("pnpm install --frozen-lockfile");
     expect(workflow).toContain("pnpm exec playwright install --with-deps chromium");
