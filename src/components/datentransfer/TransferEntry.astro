@@ -3,14 +3,25 @@ import { siteConfig } from "../../config/site";
 import { withBase } from "../../utils/paths";
 ---
 
-<aside class="transfer-warning" data-transfer-warning aria-labelledby="transfer-warning-heading">
+<aside
+  class="transfer-warning"
+  data-transfer-warning
+  aria-labelledby="transfer-warning-heading"
+>
   <h2 id="transfer-warning-heading">Wichtig vor dem Datentransfer</h2>
   <p>
-    Dieser Datentransfer ist <strong>kein Notfallkanal</strong>. Bei einem Notfall rufen Sie die Praxis sofort unter
+    Dieser Datentransfer ist <strong>kein Notfallkanal</strong>. Bei einem Notfall rufen
+    Sie die Praxis sofort unter
     <a href={siteConfig.phone.href}>{siteConfig.phone.display}</a> an.
   </p>
-  <p>Eine digitale Antwort ist nicht garantiert. Bitte warten Sie bei dringenden Beschwerden nicht auf eine Rückmeldung.</p>
-  <p>Pro Bild sind höchstens 12 MiB, pro Video höchstens 50 MiB und insgesamt höchstens acht Dateien erlaubt.</p>
+  <p>
+    Eine digitale Antwort ist nicht garantiert. Bitte warten Sie bei dringenden
+    Beschwerden nicht auf eine Rückmeldung.
+  </p>
+  <p>
+    Pro Bild sind höchstens 12 MiB, pro Video höchstens 50 MiB und insgesamt höchstens
+    acht Dateien erlaubt.
+  </p>
   <p><a href={withBase("datenschutz/")}>Datenschutzhinweise zum Datentransfer</a></p>
 </aside>
 
@@ -36,7 +47,8 @@ import { withBase } from "../../utils/paths";
       data-sitekey={siteConfig.turnstileSiteKey}
       data-action="datatransfer_session"
       data-theme="light"
-    ></div>
+    >
+    </div>
     <button class="button" type="submit">Sichere Sitzung starten</button>
   </form>
   <p class="transfer-status" role="status" aria-live="polite" data-transfer-status>
@@ -44,4 +56,8 @@ import { withBase } from "../../utils/paths";
   </p>
 </section>
 
-<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script
+  is:inline
+  src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+  async
+  defer></script>

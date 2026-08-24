@@ -125,7 +125,7 @@ export async function findCaseForTransferSession(
 ): Promise<TransferSessionCaseRow | null> {
   return database
     .prepare(
-    `SELECT
+      `SELECT
         s.id AS session_id,
         s.session_hmac,
         s.csrf_hmac,
@@ -157,16 +157,9 @@ export async function findCaseForTransferSession(
     .first<TransferSessionCaseRow>();
 }
 
-export function isOpenTransferCase(
-  row: TransferCaseRow,
-  now: Date,
-): boolean {
+export function isOpenTransferCase(row: TransferCaseRow, now: Date): boolean {
   const expiry = Date.parse(row.expires_at);
-  return (
-    row.status === "open" &&
-    Number.isFinite(expiry) &&
-    expiry > now.getTime()
-  );
+  return row.status === "open" && Number.isFinite(expiry) && expiry > now.getTime();
 }
 
 export function publicTransferCase(row: TransferCaseRow): PublicTransferCase {
@@ -175,10 +168,7 @@ export function publicTransferCase(row: TransferCaseRow): PublicTransferCase {
     petName: row.pet_name,
     publicReference: row.public_reference,
     expiresAt: row.expires_at,
-    remainingSubmissions: Math.max(
-      0,
-      row.max_submissions - row.submission_count,
-    ),
+    remainingSubmissions: Math.max(0, row.max_submissions - row.submission_count),
     remainingBytes: Math.max(0, row.max_total_bytes - row.total_bytes),
     allowReplies: row.allow_replies === 1,
     allowCallback: row.allow_callback === 1,
@@ -194,49 +184,48 @@ export async function loadPublicCaseData(
   readonly files: readonly Record<string, unknown>[];
   readonly replies: readonly Record<string, unknown>[];
 }> {
-  const [submissionResult, linkResult, fileResult, replyResult] =
-    await Promise.all([
-      database
-        .prepare(
-          `SELECT id, title, message, observed_since, urgency,
+  const [submissionResult, linkResult, fileResult, replyResult] = await Promise.all([
+    database
+      .prepare(
+        `SELECT id, title, message, observed_since, urgency,
             callback_requested, status, created_at, finalized_at
           FROM transfer_submissions
           WHERE case_id = ?
           ORDER BY created_at ASC`,
-        )
-        .bind(caseId)
-        .all<SubmissionRow>(),
-      database
-        .prepare(
-          `SELECT l.id, l.submission_id, l.url, l.label, l.created_at
+      )
+      .bind(caseId)
+      .all<SubmissionRow>(),
+    database
+      .prepare(
+        `SELECT l.id, l.submission_id, l.url, l.label, l.created_at
           FROM transfer_links AS l
           INNER JOIN transfer_submissions AS s ON s.id = l.submission_id
           WHERE s.case_id = ?
           ORDER BY l.created_at ASC`,
-        )
-        .bind(caseId)
-        .all<LinkRow>(),
-      database
-        .prepare(
-          `SELECT id, submission_id, original_name, declared_media_type,
+      )
+      .bind(caseId)
+      .all<LinkRow>(),
+    database
+      .prepare(
+        `SELECT id, submission_id, original_name, declared_media_type,
             verified_media_type, expected_size, stored_size, state,
             created_at, uploaded_at
           FROM transfer_files
           WHERE case_id = ?
           ORDER BY created_at ASC`,
-        )
-        .bind(caseId)
-        .all<FileRow>(),
-      database
-        .prepare(
-          `SELECT id, submission_id, body, created_at
+      )
+      .bind(caseId)
+      .all<FileRow>(),
+    database
+      .prepare(
+        `SELECT id, submission_id, body, created_at
           FROM transfer_replies
           WHERE case_id = ?
           ORDER BY created_at ASC`,
-        )
-        .bind(caseId)
-        .all<ReplyRow>(),
-    ]);
+      )
+      .bind(caseId)
+      .all<ReplyRow>(),
+  ]);
 
   return {
     submissions: submissionResult.results.map((row) => ({

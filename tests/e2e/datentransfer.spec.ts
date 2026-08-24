@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { e2eOrigin } from "./origin";
 
 const csrfToken = "csrf-session-only";
 const fragmentToken = "dt1_ABCD1234EFGH.geheim";
@@ -112,10 +113,7 @@ async function routeSessionApi(page: Page): Promise<{ logoutCalls: number }> {
       await route.fulfill({ json: transferCase() });
       return;
     }
-    if (
-      path === "/api/transfers/session/logout" &&
-      request.method() === "POST"
-    ) {
+    if (path === "/api/transfers/session/logout" && request.method() === "POST") {
       state.logoutCalls += 1;
       expect(request.headers()["x-datentransfer-csrf"]).toBe(csrfToken);
       await route.fulfill({ json: { ok: true } });
@@ -129,9 +127,9 @@ async function routeSessionApi(page: Page): Promise<{ logoutCalls: number }> {
 async function enterFragmentSession(page: Page): Promise<void> {
   await page.goto(`/datentransfer/#token=${encodeURIComponent(fragmentToken)}`);
   await expect(page).toHaveURL(/\/datentransfer\/$/u);
-  await expect(
-    page.locator("input[name='cf-turnstile-response']"),
-  ).toHaveValue("turnstile-test-token");
+  await expect(page.locator("input[name='cf-turnstile-response']")).toHaveValue(
+    "turnstile-test-token",
+  );
   await page.getByRole("button", { name: "Sichere Sitzung starten" }).click();
   await expect(page.getByRole("heading", { name: "Fall für Luna" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Fall für Luna" })).toBeFocused();
@@ -149,8 +147,8 @@ test("Warnung steht vor Token, Fragment verschwindet und Logout löscht Sitzung"
     const token = document.querySelector("[data-transfer-token]");
     return Boolean(
       warning &&
-        token &&
-        warning.compareDocumentPosition(token) & Node.DOCUMENT_POSITION_FOLLOWING,
+      token &&
+      warning.compareDocumentPosition(token) & Node.DOCUMENT_POSITION_FOLLOWING,
     );
   });
   expect(warningBeforeToken).toBe(true);
@@ -168,7 +166,7 @@ test("Warnung steht vor Token, Fragment verschwindet und Logout löscht Sitzung"
   ).toEqual({
     local: {},
     session: { "tierarztpraxis:datentransfer:csrf": csrfToken },
-    url: "http://127.0.0.1:4321/datentransfer/",
+    url: `${e2eOrigin}/datentransfer/`,
   });
 
   await page.getByRole("button", { name: "Sicher abmelden" }).click();
@@ -267,7 +265,9 @@ test("Draft, sequenzielle Uploads, Einzelretry, Finalisierung und Thread", async
   await page.getByRole("button", { name: "Bericht sicher senden" }).click();
 
   const failedRow = page.getByRole("listitem").filter({ hasText: "ohr.jpg" });
-  await expect(failedRow.getByRole("button", { name: "Erneut versuchen" })).toBeVisible();
+  await expect(
+    failedRow.getByRole("button", { name: "Erneut versuchen" }),
+  ).toBeVisible();
   await expect(
     page.getByRole("listitem").filter({ hasText: "profil.png" }),
   ).toContainText("Übertragen");
@@ -275,7 +275,9 @@ test("Draft, sequenzielle Uploads, Einzelretry, Finalisierung und Thread", async
 
   await failedRow.getByRole("button", { name: "Erneut versuchen" }).click();
   await expect(page.getByRole("heading", { name: "Bisheriger Verlauf" })).toBeFocused();
-  await expect(page.getByText("Bitte vereinbaren Sie telefonisch einen Termin.")).toBeVisible();
+  await expect(
+    page.getByText("Bitte vereinbaren Sie telefonisch einen Termin."),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: "Video" })).toHaveAttribute(
     "rel",
     "noopener noreferrer",
@@ -308,11 +310,15 @@ test("axe, Tastatur, Live-Status und 320-px-Reflow", async ({ page }) => {
   expect(severe).toEqual([]);
   expect(
     await page.evaluate(
-      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      () =>
+        document.documentElement.scrollWidth <= document.documentElement.clientWidth,
     ),
   ).toBe(true);
   await expect(page.locator("[data-case-heading]")).toHaveAttribute("tabindex", "-1");
-  await expect(page.locator("#transfer-report-heading")).toHaveAttribute("tabindex", "-1");
+  await expect(page.locator("#transfer-report-heading")).toHaveAttribute(
+    "tabindex",
+    "-1",
+  );
 
   const token = page.getByLabel("Datentransfer-Token");
   await token.focus();
@@ -392,16 +398,18 @@ test("behält CSRF nach Session-Erfolg und wiederholt nur den fehlgeschlagenen G
   });
 
   await page.goto(`/datentransfer/#token=${encodeURIComponent(fragmentToken)}`);
-  await expect(
-    page.locator("input[name='cf-turnstile-response']"),
-  ).toHaveValue("turnstile-test-token");
+  await expect(page.locator("input[name='cf-turnstile-response']")).toHaveValue(
+    "turnstile-test-token",
+  );
   await page.getByRole("button", { name: "Sichere Sitzung starten" }).click();
 
   await expect(
     page.getByRole("button", { name: "Fallansicht erneut laden" }),
   ).toBeVisible();
   expect(
-    await page.evaluate(() => sessionStorage.getItem("tierarztpraxis:datentransfer:csrf")),
+    await page.evaluate(() =>
+      sessionStorage.getItem("tierarztpraxis:datentransfer:csrf"),
+    ),
   ).toBe(csrfToken);
 
   await page.getByRole("button", { name: "Fallansicht erneut laden" }).click();
@@ -445,7 +453,9 @@ test("behält CSRF beim fehlgeschlagenen initialen Restore und wiederholt nur GE
     page.getByRole("button", { name: "Fallansicht erneut laden" }),
   ).toBeVisible();
   expect(
-    await page.evaluate(() => sessionStorage.getItem("tierarztpraxis:datentransfer:csrf")),
+    await page.evaluate(() =>
+      sessionStorage.getItem("tierarztpraxis:datentransfer:csrf"),
+    ),
   ).toBe(csrfToken);
 
   await page.getByRole("button", { name: "Fallansicht erneut laden" }).click();
@@ -477,7 +487,9 @@ for (const failure of ["Netzwerkfehler", "Protokollfehler"] as const) {
       page.getByRole("button", { name: "Fallansicht erneut laden" }),
     ).toBeVisible();
     expect(
-      await page.evaluate(() => sessionStorage.getItem("tierarztpraxis:datentransfer:csrf")),
+      await page.evaluate(() =>
+        sessionStorage.getItem("tierarztpraxis:datentransfer:csrf"),
+      ),
     ).toBe(csrfToken);
 
     await page.getByRole("button", { name: "Fallansicht erneut laden" }).click();
@@ -780,7 +792,9 @@ test("terminales Upload-4xx lässt Sitzung und neuen Bericht erreichbar", async 
     "korrigierten Dateien",
   );
   expect(
-    await page.evaluate(() => sessionStorage.getItem("tierarztpraxis:datentransfer:csrf")),
+    await page.evaluate(() =>
+      sessionStorage.getItem("tierarztpraxis:datentransfer:csrf"),
+    ),
   ).toBe(csrfToken);
 });
 
@@ -916,7 +930,9 @@ test("sperrt doppelten Sessiontausch und setzt Turnstile nach Fehler zurück", a
   await expect(page.getByRole("status")).toContainText("Vorgangskennung: req-session");
   expect(
     await page.evaluate(
-      () => (window as typeof window & { transferTurnstileResetCount: number }).transferTurnstileResetCount,
+      () =>
+        (window as typeof window & { transferTurnstileResetCount: number })
+          .transferTurnstileResetCount,
     ),
   ).toBe(1);
 });
@@ -986,13 +1002,15 @@ test("CSP und Laufzeitrequests bleiben auf Same-Origin und Turnstile begrenzt", 
   const externalHosts = new Set<string>();
   page.on("request", (request) => {
     const url = new URL(request.url());
-    if (url.origin !== "http://127.0.0.1:4321") externalHosts.add(url.hostname);
+    if (url.origin !== e2eOrigin) externalHosts.add(url.hostname);
   });
   await routeTurnstile(page);
   await page.goto("/datentransfer/");
 
   expect([...externalHosts]).toEqual(["challenges.cloudflare.com"]);
-  const csp = await page.locator("meta[http-equiv='Content-Security-Policy']").getAttribute("content");
+  const csp = await page
+    .locator("meta[http-equiv='Content-Security-Policy']")
+    .getAttribute("content");
   expect(csp).toContain("default-src 'self'");
   expect(csp).toContain("script-src 'self' https://challenges.cloudflare.com");
   expect(csp).toContain("connect-src 'self'");

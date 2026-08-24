@@ -3,7 +3,11 @@ import TransferEntry from "../../components/datentransfer/TransferEntry.astro";
 import TransferReportForm from "../../components/datentransfer/TransferReportForm.astro";
 import TransferThread from "../../components/datentransfer/TransferThread.astro";
 import TransferUploadList from "../../components/datentransfer/TransferUploadList.astro";
+import { siteConfig } from "../../config/site";
 import TransferLayout from "../../layouts/TransferLayout.astro";
+
+const transferEnabled =
+  siteConfig.isDevelopment || import.meta.env.PUBLIC_ENABLE_DATATRANSFER === "true";
 ---
 
 <TransferLayout>
@@ -11,29 +15,56 @@ import TransferLayout from "../../layouts/TransferLayout.astro";
     <div class="content">
       <p class="eyebrow">Datentransfer</p>
       <h1>Berichte und Dateien sicher übermitteln</h1>
-      <p>Für einen bereits von der Praxis angelegten Fall. Kein allgemeines Kontakt- oder Notfallformular.</p>
+      <p>
+        Für einen bereits von der Praxis angelegten Fall. Kein allgemeines Kontakt- oder
+        Notfallformular.
+      </p>
     </div>
   </header>
 
-  <div class="transfer-shell content" data-transfer-root data-state="entry">
-    <TransferEntry />
-    <div class="transfer-session" data-transfer-session hidden>
-      <div class="transfer-session__actions">
-        <p>Diese Sitzung ist nur auf diesem Gerät geöffnet.</p>
-        <button class="button button--secondary" type="button" data-transfer-case-retry hidden>
-          Fallansicht erneut laden
-        </button>
-        <button class="button button--secondary" type="button" data-transfer-logout>Sicher abmelden</button>
+  {
+    transferEnabled ? (
+      <div class="transfer-shell content" data-transfer-root data-state="entry">
+        <TransferEntry />
+        <div class="transfer-session" data-transfer-session hidden>
+          <div class="transfer-session__actions">
+            <p>Diese Sitzung ist nur auf diesem Gerät geöffnet.</p>
+            <button
+              class="button button--secondary"
+              type="button"
+              data-transfer-case-retry
+              hidden
+            >
+              Fallansicht erneut laden
+            </button>
+            <button class="button button--secondary" type="button" data-transfer-logout>
+              Sicher abmelden
+            </button>
+          </div>
+          <TransferThread />
+          <TransferReportForm />
+          <TransferUploadList />
+        </div>
       </div>
-      <TransferThread />
-      <TransferReportForm />
-      <TransferUploadList />
-    </div>
-  </div>
+    ) : (
+      <section class="content section section--white">
+        <article class="card">
+          <h2>Datentransfer derzeit nicht freigegeben</h2>
+          <p>
+            Die rechtliche und betriebliche Freigabe steht noch aus. Bitte wenden Sie
+            sich telefonisch an die Praxis.
+          </p>
+        </article>
+      </section>
+    )
+  }
 </TransferLayout>
 
-<script>
-  import { setupTransferClient } from "../../scripts/transfer-client";
-
-  setupTransferClient();
-</script>
+{
+  transferEnabled && (
+    <script>
+      import {setupTransferClient} from "../../scripts/transfer-client";
+      setupTransferClient();
+    </script>
+  )
+}

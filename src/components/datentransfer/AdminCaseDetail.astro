@@ -1,4 +1,13 @@
-<section class="admin-transfer-card admin-case-detail" data-admin-case-detail hidden aria-labelledby="admin-detail-heading">
+---
+import AdminReplyForm from "./AdminReplyForm.astro";
+---
+
+<section
+  class="admin-transfer-card admin-case-detail"
+  data-admin-case-detail
+  hidden
+  aria-labelledby="admin-detail-heading"
+>
   <header>
     <p class="eyebrow">Falldetail</p>
     <h2 id="admin-detail-heading" tabindex="-1" data-admin-detail-heading>Fall</h2>
@@ -9,10 +18,18 @@
     <p data-admin-internal-note></p>
   </section>
   <div class="admin-case-actions" data-admin-case-actions>
-    <button class="button button--secondary" type="button" data-admin-new-token>Neuen Token erstellen</button>
-    <button class="button button--secondary" type="button" data-admin-rotate-token>Token rotieren</button>
-    <button class="button button--secondary" type="button" data-admin-toggle-status>Fall schließen</button>
-    <button class="button button--secondary" type="button" data-admin-mark-exported>Als exportiert markieren</button>
+    <button class="button button--secondary" type="button" data-admin-new-token
+      >Neuen Token erstellen</button
+    >
+    <button class="button button--secondary" type="button" data-admin-rotate-token
+      >Token rotieren</button
+    >
+    <button class="button button--secondary" type="button" data-admin-toggle-status
+      >Fall schließen</button
+    >
+    <button class="button button--secondary" type="button" data-admin-mark-exported
+      >Als exportiert markieren</button
+    >
   </div>
   <section>
     <h3>Tokens</h3>
@@ -34,6 +51,7 @@
     <h3>Antworten</h3>
     <ul class="admin-reply-list" data-admin-reply-list></ul>
   </section>
+  <AdminReplyForm />
   <section>
     <h3>Audit</h3>
     <ul class="admin-audit-list" data-admin-audit-list></ul>

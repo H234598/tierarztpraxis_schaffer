@@ -14,7 +14,8 @@ import { withBase } from "../../utils/paths";
     </label>
     <label>
       <span>Beobachtung und Bericht <span aria-hidden="true">*</span></span>
-      <textarea name="message" rows="8" minlength="20" maxlength="8000" required></textarea>
+      <textarea name="message" rows="8" minlength="20" maxlength="8000" required
+      ></textarea>
       <small>20 bis 8.000 Zeichen. Bitte nur Angaben zu diesem Fall eintragen.</small>
     </label>
     <label>
@@ -41,8 +42,15 @@ import { withBase } from "../../utils/paths";
     </label>
     <label>
       <span>E-Mail für Antwortbenachrichtigung</span>
-      <input name="notificationEmail" type="email" autocomplete="email" maxlength="254" />
-      <small>Optional. Die E-Mail enthält keine medizinischen Inhalte und keinen Token.</small>
+      <input
+        name="notificationEmail"
+        type="email"
+        autocomplete="email"
+        maxlength="254"
+      />
+      <small
+        >Optional. Die E-Mail enthält keine medizinischen Inhalte und keinen Token.</small
+      >
     </label>
     <label>
       <span>Links</span>
@@ -57,12 +65,18 @@ import { withBase } from "../../utils/paths";
         multiple
         accept="image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/webm"
       />
-      <small>JPEG, PNG, WebP, HEIC, HEIF bis 12 MiB; MP4, QuickTime, WebM bis 50 MiB.</small>
+      <small
+        >JPEG, PNG, WebP, HEIC, HEIF bis 12 MiB; MP4, QuickTime, WebM bis 50 MiB.</small
+      >
     </label>
 
     <label class="transfer-choice">
       <input name="privacyAccepted" type="checkbox" value="true" required />
-      <span>Datenschutzhinweise gelesen. <a href={withBase("datenschutz/")}>Datenschutzhinweise öffnen</a></span>
+      <span
+        >Datenschutzhinweise gelesen. <a href={withBase("datenschutz/")}
+          >Datenschutzhinweise öffnen</a
+        ></span
+      >
     </label>
     <label class="transfer-choice transfer-choice--emergency">
       <input name="notEmergencyConfirmed" type="checkbox" value="true" required />
@@ -72,7 +86,12 @@ import { withBase } from "../../utils/paths";
     <button class="button" type="submit">Bericht sicher senden</button>
   </form>
   <p class="transfer-final-status" aria-live="polite" data-transfer-final-status></p>
-  <button class="button button--secondary" type="button" data-transfer-finalize-retry hidden>
+  <button
+    class="button button--secondary"
+    type="button"
+    data-transfer-finalize-retry
+    hidden
+  >
     Abschluss erneut versuchen
   </button>
 </section>

@@ -8,9 +8,12 @@ import {
 describe("Admin-Datentransfer-Client", () => {
   it("ruft die Access-geschützte API same-origin ohne Assertion-Eigenbau auf", async () => {
     const fetcher = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ ok: true, admin: { email: "admin@example.test" } }), {
-        headers: { "content-type": "application/json" },
-      }),
+      new Response(
+        JSON.stringify({ ok: true, admin: { email: "admin@example.test" } }),
+        {
+          headers: { "content-type": "application/json" },
+        },
+      ),
     );
 
     await expect(requestAdminJson("/api/admin/session", {}, fetcher)).resolves.toEqual({
@@ -24,11 +27,17 @@ describe("Admin-Datentransfer-Client", () => {
   });
 
   it("weist fremde Pfade ab und sendet nur JSON mit festen Optionen", async () => {
-    const fetcher = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    await expect(
+      requestAdminJson("https://evil.test/api/admin/cases", {}, fetcher),
+    ).rejects.toThrow("same-origin");
+    await requestAdminJson(
+      "/api/admin/cases",
+      { method: "POST", body: { petName: "Luna" } },
+      fetcher,
     );
-    await expect(requestAdminJson("https://evil.test/api/admin/cases", {}, fetcher)).rejects.toThrow("same-origin");
-    await requestAdminJson("/api/admin/cases", { method: "POST", body: { petName: "Luna" } }, fetcher);
     expect(fetcher).toHaveBeenLastCalledWith("/api/admin/cases", {
       method: "POST",
       credentials: "same-origin",
@@ -39,13 +48,20 @@ describe("Admin-Datentransfer-Client", () => {
 
   it("liefert Status und Vorgangskennung ohne Serverdetails", async () => {
     const fetcher = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({
-        ok: false,
-        error: { code: "invalid_request", message: "intern", requestId: "request-7" },
-      }), { status: 400 }),
+      new Response(
+        JSON.stringify({
+          ok: false,
+          error: { code: "invalid_request", message: "intern", requestId: "request-7" },
+        }),
+        { status: 400 },
+      ),
     );
     await expect(requestAdminJson("/api/admin/cases", {}, fetcher)).rejects.toEqual(
-      new AdminRequestError("Anfrage fehlgeschlagen. Vorgangskennung: request-7", 400, "request-7"),
+      new AdminRequestError(
+        "Anfrage fehlgeschlagen. Vorgangskennung: request-7",
+        400,
+        "request-7",
+      ),
     );
   });
 });

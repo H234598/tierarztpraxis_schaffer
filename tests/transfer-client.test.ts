@@ -106,11 +106,7 @@ describe("Datentransfer-Client", () => {
         history,
       ),
     ).toBe("dt1_geheim/wert");
-    expect(history.replaceState).toHaveBeenCalledWith(
-      null,
-      "",
-      "/datentransfer/",
-    );
+    expect(history.replaceState).toHaveBeenCalledWith(null, "", "/datentransfer/");
     expect(storage.writes).toEqual([]);
 
     storeCsrfToken(storage, "csrf-session");
@@ -127,9 +123,7 @@ describe("Datentransfer-Client", () => {
       { url: "https://example.org/video" },
       { url: "https://example.org/bild" },
     ]);
-    expect(() => parseHttpsLinks("http://example.org/unsicher")).toThrow(
-      "HTTPS",
-    );
+    expect(() => parseHttpsLinks("http://example.org/unsicher")).toThrow("HTTPS");
     expect(() =>
       parseHttpsLinks(
         Array.from({ length: 9 }, (_, index) => `https://example.org/${index}`).join(
@@ -167,19 +161,14 @@ describe("Datentransfer-Client", () => {
       ),
     ).toThrow("12 MiB");
     expect(() =>
-      validateTransferFiles(
-        [file("falsch.pdf", "application/pdf", 10)],
-        100,
-      ),
+      validateTransferFiles([file("falsch.pdf", "application/pdf", 10)], 100),
     ).toThrow("Dateityp");
     expect(() =>
       validateTransferFiles([file("foto.jpg", "image/jpeg", 11)], 10),
     ).toThrow("Restkontingent");
     expect(() =>
       validateTransferFiles(
-        Array.from({ length: 9 }, (_, index) =>
-          file(`${index}.jpg`, "image/jpeg", 1),
-        ),
+        Array.from({ length: 9 }, (_, index) => file(`${index}.jpg`, "image/jpeg", 1)),
         100,
       ),
     ).toThrow("acht");
@@ -217,9 +206,7 @@ describe("Datentransfer-Client", () => {
     );
     data.set("callbackPhone", "0911 123456");
     data.delete("notEmergencyConfirmed");
-    expect(() => buildSubmissionPayload(data, [], 1_000, true)).toThrow(
-      "Kein Notfall",
-    );
+    expect(() => buildSubmissionPayload(data, [], 1_000, true)).toThrow("Kein Notfall");
   });
 
   it("lädt rohe Dateien per XHR mit CSRF, MIME und Fortschritt", async () => {
@@ -235,10 +222,7 @@ describe("Datentransfer-Client", () => {
       () => xhr as unknown as XMLHttpRequest,
     );
 
-    expect(xhr.open).toHaveBeenCalledWith(
-      "PUT",
-      "/api/transfers/uploads/file-1",
-    );
+    expect(xhr.open).toHaveBeenCalledWith("PUT", "/api/transfers/uploads/file-1");
     expect(xhr.headers).toEqual(
       new Map([
         ["Content-Type", "image/jpeg"],
@@ -335,10 +319,7 @@ describe("Datentransfer-Client", () => {
     const attempts: number[] = [];
     const upload = vi.fn(async (_file: File, _slot: unknown, index: number) => {
       attempts.push(index);
-      if (
-        index === 0 &&
-        attempts.filter((attempt) => attempt === 0).length === 1
-      ) {
+      if (index === 0 && attempts.filter((attempt) => attempt === 0).length === 1) {
         throw new TransferUploadError(true);
       }
     });
@@ -354,27 +335,26 @@ describe("Datentransfer-Client", () => {
 
     expect(await uploadPendingFiles(files, slots, completed, upload)).toEqual([]);
     expect(attempts).toEqual([0, 1, 0]);
-    expect(await finalizeWhenAllUploaded(files.length, completed, finalize)).toBe(
-      true,
-    );
+    expect(await finalizeWhenAllUploaded(files.length, completed, finalize)).toBe(true);
     expect(finalize).toHaveBeenCalledOnce();
   });
 
   it("löscht CSRF bei 401 und zeigt nur generischen Fehler samt Vorgangskennung", async () => {
     const storage = new RecordingStorage();
     storeCsrfToken(storage, "csrf-session");
-    const fetchImpl = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          ok: false,
-          error: {
-            code: "unauthorized",
-            message: "dt1_geheim und patientenakte.jpg",
-            requestId: "req-401",
-          },
-        }),
-        { status: 401, headers: { "content-type": "application/json" } },
-      ),
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            ok: false,
+            error: {
+              code: "unauthorized",
+              message: "dt1_geheim und patientenakte.jpg",
+              requestId: "req-401",
+            },
+          }),
+          { status: 401, headers: { "content-type": "application/json" } },
+        ),
     ) as unknown as typeof fetch;
 
     await expect(
@@ -391,11 +371,12 @@ describe("Datentransfer-Client", () => {
   });
 
   it("weist eine HTTP-200-Antwort ohne ok=true als generischen API-Fehler ab", async () => {
-    const fetchImpl = vi.fn(async () =>
-      new Response(JSON.stringify({ ok: false, secret: "nicht anzeigen" }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      }),
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ ok: false, secret: "nicht anzeigen" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
     ) as unknown as typeof fetch;
 
     await expect(
@@ -446,11 +427,12 @@ describe("Datentransfer-Client", () => {
   it("meldet sich mit CSRF ab und löscht lokalen Sitzungszustand", async () => {
     const storage = new RecordingStorage();
     storeCsrfToken(storage, "csrf-session");
-    const fetchImpl = vi.fn(async () =>
-      new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      }),
+    const fetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
     ) as unknown as typeof fetch;
 
     await logoutTransferSession(storage, fetchImpl);

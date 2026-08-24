@@ -137,15 +137,11 @@ export async function requestTransferJson<T = Record<string, unknown>>(
     method: options.method ?? "GET",
     credentials: "same-origin",
     headers,
-    ...(options.body === undefined
-      ? {}
-      : { body: JSON.stringify(options.body) }),
+    ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
   });
   const result: unknown = await response.json().catch(() => null);
   const error = isRecord(result) && isRecord(result.error) ? result.error : null;
-  const requestId = typeof error?.requestId === "string"
-    ? error.requestId
-    : undefined;
+  const requestId = typeof error?.requestId === "string" ? error.requestId : undefined;
   if (!response.ok || !isRecord(result) || result.ok !== true) {
     if (response.status === 401 && options.storage) {
       clearTransferSession(options.storage);
@@ -247,9 +243,7 @@ export function buildSubmissionPayload(
   const observedSince = String(data.get("observedSince") ?? "").trim();
   const urgency = String(data.get("urgency") ?? "");
   const callbackPhone = String(data.get("callbackPhone") ?? "").trim();
-  const notificationEmail = String(
-    data.get("notificationEmail") ?? "",
-  ).trim();
+  const notificationEmail = String(data.get("notificationEmail") ?? "").trim();
 
   if (title.length < 3 || title.length > 120) {
     throw new TypeError("Überschrift muss 3 bis 120 Zeichen lang sein.");
@@ -334,15 +328,10 @@ export function uploadTransferFile(
         resolve();
         return;
       }
-      const error = isRecord(result) && isRecord(result.error)
-        ? result.error
-        : null;
-      const requestId = typeof error?.requestId === "string"
-        ? error.requestId
-        : undefined;
-      reject(
-        new TransferUploadError(xhr.status >= 500, xhr.status, requestId),
-      );
+      const error = isRecord(result) && isRecord(result.error) ? result.error : null;
+      const requestId =
+        typeof error?.requestId === "string" ? error.requestId : undefined;
+      reject(new TransferUploadError(xhr.status >= 500, xhr.status, requestId));
     });
     const rejectTransport = () => reject(new TransferUploadError(true));
     xhr.addEventListener("error", rejectTransport);
@@ -356,11 +345,7 @@ export async function uploadPendingFiles(
   files: readonly File[],
   slots: readonly TransferUploadSlot[],
   completed: Set<number>,
-  upload: (
-    file: File,
-    slot: TransferUploadSlot,
-    index: number,
-  ) => Promise<void>,
+  upload: (file: File, slot: TransferUploadSlot, index: number) => Promise<void>,
 ): Promise<readonly TransferUploadFailure[]> {
   const failures: TransferUploadFailure[] = [];
   for (const [index, file] of files.entries()) {
@@ -376,8 +361,7 @@ export async function uploadPendingFiles(
     } catch (error) {
       failures.push({
         index,
-        retryable:
-          error instanceof TransferUploadError && error.retryable,
+        retryable: error instanceof TransferUploadError && error.retryable,
         ...(error instanceof TransferUploadError && error.status !== undefined
           ? { status: error.status }
           : {}),
@@ -548,9 +532,7 @@ function isPublicReply(value: unknown): value is PublicReply {
   );
 }
 
-export function parseTransferSessionResponse(
-  value: unknown,
-): TransferSessionResponse {
+export function parseTransferSessionResponse(value: unknown): TransferSessionResponse {
   if (
     !isRecord(value) ||
     value.ok !== true ||
@@ -605,7 +587,8 @@ export function parseTransferCaseSnapshot(value: unknown): TransferCaseSnapshot 
 
 function formatTransferBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
-  if (bytes < MEBIBYTE) return `${(bytes / 1024).toLocaleString("de-DE", { maximumFractionDigits: 1 })} KiB`;
+  if (bytes < MEBIBYTE)
+    return `${(bytes / 1024).toLocaleString("de-DE", { maximumFractionDigits: 1 })} KiB`;
   return `${(bytes / MEBIBYTE).toLocaleString("de-DE", { maximumFractionDigits: 1 })} MiB`;
 }
 
@@ -614,6 +597,23 @@ function formatTransferDate(value: string): string {
   return Number.isNaN(date.getTime())
     ? "–"
     : date.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+}
+
+function publicSubmissionStatus(status: string): string {
+  switch (status) {
+    case "submitted":
+      return "Eingegangen";
+    case "reviewing":
+      return "In Prüfung";
+    case "callback_planned":
+      return "Rückruf geplant";
+    case "replied":
+      return "Antwort der Praxis";
+    case "closed":
+      return "Abgeschlossen";
+    default:
+      return "In Bearbeitung";
+  }
 }
 
 function appendTextElement(
@@ -652,18 +652,12 @@ export function setupTransferClient(): void {
   const sessionRegion = root?.querySelector<HTMLElement>("[data-transfer-session]");
   const sessionStatus = root?.querySelector<HTMLElement>("[data-transfer-status]");
   const reportForm = root?.querySelector<HTMLFormElement>("[data-transfer-report]");
-  const finalStatus = root?.querySelector<HTMLElement>(
-    "[data-transfer-final-status]",
-  );
+  const finalStatus = root?.querySelector<HTMLElement>("[data-transfer-final-status]");
   const finalizeRetryButton = root?.querySelector<HTMLButtonElement>(
     "[data-transfer-finalize-retry]",
   );
-  const uploadSection = root?.querySelector<HTMLElement>(
-    "[data-transfer-uploads]",
-  );
-  const uploadList = root?.querySelector<HTMLElement>(
-    "[data-transfer-upload-list]",
-  );
+  const uploadSection = root?.querySelector<HTMLElement>("[data-transfer-uploads]");
+  const uploadList = root?.querySelector<HTMLElement>("[data-transfer-upload-list]");
   const uploadStatus = root?.querySelector<HTMLElement>(
     "[data-transfer-upload-status]",
   );
@@ -726,17 +720,12 @@ export function setupTransferClient(): void {
       state !== "recovering" &&
       state !== "finalize_retry";
     for (const control of entryForm.elements) {
-      if (
-        control instanceof HTMLInputElement ||
-        control instanceof HTMLButtonElement
-      ) {
+      if (control instanceof HTMLInputElement || control instanceof HTMLButtonElement) {
         control.disabled = state === "loading";
       }
     }
     const sessionBusy =
-      state === "submitting" ||
-      state === "recovering" ||
-      state === "finalize_retry";
+      state === "submitting" || state === "recovering" || state === "finalize_retry";
     for (const control of reportForm.elements) {
       if (
         control instanceof HTMLInputElement ||
@@ -787,7 +776,8 @@ export function setupTransferClient(): void {
       !caseBytes ||
       !threadEmpty ||
       !thread
-    ) return;
+    )
+      return;
 
     currentCase = snapshot.case;
     caseHeading.textContent = `Fall für ${snapshot.case.petName}`;
@@ -808,11 +798,25 @@ export function setupTransferClient(): void {
       item.className = "transfer-thread-item";
       appendTextElement(item, "h3", submission.title);
       appendTextElement(item, "p", submission.message);
-      if (submission.observedSince) appendTextElement(item, "p", `Beobachtet: ${submission.observedSince}`);
-      appendTextElement(item, "p", `Eingereicht: ${formatTransferDate(submission.finalizedAt ?? submission.createdAt)}`);
-      appendTextElement(item, "p", submission.callbackRequested ? "Status: Rückruf erwünscht" : "Status: normale Bearbeitung");
+      if (submission.observedSince)
+        appendTextElement(item, "p", `Beobachtet: ${submission.observedSince}`);
+      appendTextElement(
+        item,
+        "p",
+        `Eingereicht: ${formatTransferDate(submission.finalizedAt ?? submission.createdAt)}`,
+      );
+      appendTextElement(
+        item,
+        "p",
+        `Status: ${publicSubmissionStatus(submission.status)}`,
+      );
+      if (submission.callbackRequested) {
+        appendTextElement(item, "p", "Rückrufwunsch: erfasst");
+      }
 
-      const links = snapshot.links.filter((link) => link.submissionId === submission.id);
+      const links = snapshot.links.filter(
+        (link) => link.submissionId === submission.id,
+      );
       if (links.length > 0) {
         const section = document.createElement("div");
         section.className = "transfer-thread-links";
@@ -829,7 +833,9 @@ export function setupTransferClient(): void {
         item.append(section);
       }
 
-      const files = snapshot.files.filter((file) => file.submissionId === submission.id);
+      const files = snapshot.files.filter(
+        (file) => file.submissionId === submission.id,
+      );
       if (files.length > 0) {
         const section = document.createElement("div");
         section.className = "transfer-thread-files";
@@ -847,7 +853,9 @@ export function setupTransferClient(): void {
         item.append(section);
       }
 
-      const replies = snapshot.replies.filter((reply) => reply.submissionId === submission.id);
+      const replies = snapshot.replies.filter(
+        (reply) => reply.submissionId === submission.id,
+      );
       if (replies.length > 0) {
         const section = document.createElement("div");
         section.className = "transfer-thread-replies";
@@ -857,6 +865,12 @@ export function setupTransferClient(): void {
           appendTextElement(section, "p", formatTransferDate(reply.createdAt));
         }
         item.append(section);
+      } else if (submission.status === "callback_planned") {
+        appendTextElement(
+          item,
+          "p",
+          "Die Praxis plant einen Rückruf; eine Textantwort ist nicht erforderlich.",
+        );
       }
       thread.append(item);
     }
@@ -886,7 +900,12 @@ export function setupTransferClient(): void {
       const item = document.createElement("li");
       item.className = "transfer-upload-item";
       appendTextElement(item, "h3", file.name);
-      appendTextElement(item, "p", formatTransferBytes(file.size), "transfer-upload-meta");
+      appendTextElement(
+        item,
+        "p",
+        formatTransferBytes(file.size),
+        "transfer-upload-meta",
+      );
       const progress = document.createElement("progress");
       progress.max = 100;
       progress.value = 0;
@@ -929,12 +948,12 @@ export function setupTransferClient(): void {
     }
   };
 
-  const uploadFailureMessage = (
-    retryable: boolean,
-    requestId?: string,
-  ): string => `${retryable
-    ? "Übertragung fehlgeschlagen. Erneuter Versuch ist möglich."
-    : "Übertragung wurde abgelehnt."}${requestSuffix(requestId)}`;
+  const uploadFailureMessage = (retryable: boolean, requestId?: string): string =>
+    `${
+      retryable
+        ? "Übertragung fehlgeschlagen. Erneuter Versuch ist möglich."
+        : "Übertragung wurde abgelehnt."
+    }${requestSuffix(requestId)}`;
 
   const abandonRejectedDraft = (): void => {
     activeDraft = null;
@@ -980,9 +999,10 @@ export function setupTransferClient(): void {
         expireSession(error.message);
         return;
       }
-      const message = error instanceof TransferRequestError
-        ? error.message
-        : "Die Fallansicht konnte nicht geladen werden.";
+      const message =
+        error instanceof TransferRequestError
+          ? error.message
+          : "Die Fallansicht konnte nicht geladen werden.";
       if (recovery === "finalized") finalStatus.textContent = message;
       else sessionStatus.textContent = message;
       caseRetryButton.disabled = false;
@@ -1000,18 +1020,17 @@ export function setupTransferClient(): void {
       if (activeDraft !== draft || draft.phase !== "finalized") return;
       caseRecovery = "finalized";
       setState("recovering");
-      finalStatus.textContent = error instanceof TransferRequestError
-        ? error.message
-        : "Die Einreichung wurde bestätigt, aber die Fallansicht konnte nicht geladen werden.";
+      finalStatus.textContent =
+        error instanceof TransferRequestError
+          ? error.message
+          : "Die Einreichung wurde bestätigt, aber die Fallansicht konnte nicht geladen werden.";
     }
   };
 
   const finishDraft = async (): Promise<void> => {
     const draft = activeDraft;
-    if (
-      !draft ||
-      (draft.phase !== "uploading" && draft.phase !== "finalize_failed")
-    ) return;
+    if (!draft || (draft.phase !== "uploading" && draft.phase !== "finalize_failed"))
+      return;
     if (draft.completed.size !== draft.files.length) return;
     draft.phase = "finalizing";
     setState("submitting");
@@ -1033,9 +1052,10 @@ export function setupTransferClient(): void {
       }
       draft.phase = "finalize_failed";
       setState("finalize_retry");
-      finalStatus.textContent = error instanceof TransferRequestError
-        ? error.message
-        : "Die Einreichung konnte nicht abgeschlossen werden.";
+      finalStatus.textContent =
+        error instanceof TransferRequestError
+          ? error.message
+          : "Die Einreichung konnte nicht abgeschlossen werden.";
       return;
     }
     if (activeDraft !== draft) return;
@@ -1052,7 +1072,8 @@ export function setupTransferClient(): void {
       draft.phase !== "uploading" ||
       draft.retryInFlight ||
       draft.completed.has(index)
-    ) return;
+    )
+      return;
     draft.retryInFlight = true;
     setRetryButtonsDisabled(true);
     try {
@@ -1062,15 +1083,12 @@ export function setupTransferClient(): void {
       await finishDraft();
     } catch (error) {
       if (error instanceof TransferUploadError && error.status === 401) {
-        expireSession(
-          `Die Sitzung ist abgelaufen.${requestSuffix(error.requestId)}`,
-        );
+        expireSession(`Die Sitzung ist abgelaufen.${requestSuffix(error.requestId)}`);
         return;
       }
       const retryable = error instanceof TransferUploadError && error.retryable;
-      const requestId = error instanceof TransferUploadError
-        ? error.requestId
-        : undefined;
+      const requestId =
+        error instanceof TransferUploadError ? error.requestId : undefined;
       row.status.textContent = uploadFailureMessage(retryable, requestId);
       row.retry.hidden = !retryable;
       if (!retryable) abandonRejectedDraft();
@@ -1101,20 +1119,18 @@ export function setupTransferClient(): void {
     sessionStatus.textContent = "Sichere Sitzung wird aufgebaut …";
     let session: TransferSessionResponse;
     try {
-      const sessionValue = await requestTransferJson(
-        "/api/transfers/session",
-        {
-          method: "POST",
-          body: { token, turnstileToken },
-          storage: sessionStorage,
-        },
-      );
+      const sessionValue = await requestTransferJson("/api/transfers/session", {
+        method: "POST",
+        body: { token, turnstileToken },
+        storage: sessionStorage,
+      });
       session = parseTransferSessionResponse(sessionValue);
     } catch (error) {
       setState("entry");
-      sessionStatus.textContent = error instanceof TransferRequestError
-        ? error.message
-        : "Die sichere Sitzung konnte nicht aufgebaut werden.";
+      sessionStatus.textContent =
+        error instanceof TransferRequestError
+          ? error.message
+          : "Die sichere Sitzung konnte nicht aufgebaut werden.";
       window.turnstile?.reset(
         entryForm.querySelector<HTMLElement>(".cf-turnstile") ?? undefined,
       );
@@ -1135,9 +1151,10 @@ export function setupTransferClient(): void {
       }
       caseRecovery = "session";
       setState("recovering");
-      sessionStatus.textContent = error instanceof TransferRequestError
-        ? error.message
-        : "Die Fallansicht konnte nicht geladen werden.";
+      sessionStatus.textContent =
+        error instanceof TransferRequestError
+          ? error.message
+          : "Die Fallansicht konnte nicht geladen werden.";
     }
   });
 
@@ -1160,9 +1177,8 @@ export function setupTransferClient(): void {
         currentCase.allowCallback,
       );
     } catch (error) {
-      finalStatus.textContent = error instanceof Error
-        ? error.message
-        : "Bitte prüfen Sie die Eingaben.";
+      finalStatus.textContent =
+        error instanceof Error ? error.message : "Bitte prüfen Sie die Eingaben.";
       return;
     }
 
@@ -1170,15 +1186,12 @@ export function setupTransferClient(): void {
     finalStatus.textContent = "Berichtsentwurf wird sicher angelegt …";
     createUploadRows(files);
     try {
-      const draftValue = await requestTransferJson(
-        "/api/transfers/submissions",
-        {
-          method: "POST",
-          body: payload,
-          csrfToken: readCsrfToken(sessionStorage),
-          storage: sessionStorage,
-        },
-      );
+      const draftValue = await requestTransferJson("/api/transfers/submissions", {
+        method: "POST",
+        body: payload,
+        csrfToken: readCsrfToken(sessionStorage),
+        storage: sessionStorage,
+      });
       const draftResponse = parseTransferDraftResponse(draftValue);
       if (draftResponse.uploads.length !== files.length) {
         throw new TransferProtocolError();
@@ -1219,8 +1232,10 @@ export function setupTransferClient(): void {
         return;
       }
       if (failures.length > 0) {
-        uploadStatus.textContent = "Mindestens eine Datei konnte nicht übertragen werden.";
-        finalStatus.textContent = "Die Einreichung wird erst nach allen erfolgreichen Uploads abgeschlossen.";
+        uploadStatus.textContent =
+          "Mindestens eine Datei konnte nicht übertragen werden.";
+        finalStatus.textContent =
+          "Die Einreichung wird erst nach allen erfolgreichen Uploads abgeschlossen.";
       }
       await finishDraft();
     } catch (error) {
@@ -1228,9 +1243,10 @@ export function setupTransferClient(): void {
         expireSession(error.message);
         return;
       }
-      finalStatus.textContent = error instanceof TransferRequestError
-        ? error.message
-        : "Der Bericht konnte nicht gesendet werden.";
+      finalStatus.textContent =
+        error instanceof TransferRequestError
+          ? error.message
+          : "Der Bericht konnte nicht gesendet werden.";
       activeDraft = null;
       setState("ready");
     }
@@ -1239,7 +1255,9 @@ export function setupTransferClient(): void {
   uploadList.addEventListener("click", (event) => {
     const button = event.target;
     if (!(button instanceof HTMLButtonElement)) return;
-    const index = [...uploadRows.entries()].find(([, row]) => row.retry === button)?.[0];
+    const index = [...uploadRows.entries()].find(
+      ([, row]) => row.retry === button,
+    )?.[0];
     if (index !== undefined) void retryUpload(index);
   });
 
@@ -1255,7 +1273,8 @@ export function setupTransferClient(): void {
       currentCase = null;
       activeDraft = null;
       setState("expired");
-      sessionStatus.textContent = "Sicher abgemeldet. Sie können einen neuen Token eingeben.";
+      sessionStatus.textContent =
+        "Sicher abgemeldet. Sie können einen neuen Token eingeben.";
       tokenInput.focus();
     } catch (error) {
       expireSession(
@@ -1285,9 +1304,10 @@ export function setupTransferClient(): void {
         }
         caseRecovery = "session";
         setState("recovering");
-        sessionStatus.textContent = error instanceof TransferRequestError
-          ? error.message
-          : "Die Fallansicht konnte nicht geladen werden.";
+        sessionStatus.textContent =
+          error instanceof TransferRequestError
+            ? error.message
+            : "Die Fallansicht konnte nicht geladen werden.";
       });
   }
 }
