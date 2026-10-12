@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { homeVariants } from "../src/content/home-variants";
 import {
   buildAssetPath,
   executableInlineScriptCount,
@@ -13,6 +14,11 @@ import {
 const distDirectory = resolve("dist");
 const htmlPath = resolve(distDirectory, "index.html");
 const html = await readFile(htmlPath, "utf8");
+const sitemapIndex = await readFile(
+  resolve(distDirectory, "sitemap-index.xml"),
+  "utf8",
+);
+const sitemap = await readFile(resolve(distDirectory, "sitemap-0.xml"), "utf8");
 
 const csp = html.match(
   /<meta\b(?=[^>]*\bhttp-equiv=["']Content-Security-Policy["'])[^>]*\bcontent=(["'])(.*?)\1[^>]*>/iu,
@@ -77,8 +83,48 @@ if (!startVariantMenuHandlerFound) {
   );
 }
 
+const sitemapPageUrl = sitemapIndex.match(/<loc>([^<]+)<\/loc>/u)?.[1];
+if (!sitemapPageUrl) {
+  throw new Error("Sitemap-Index enthält keine Sitemap-URL.");
+}
+
+const sitemapBaseUrl = new URL(".", sitemapPageUrl);
+const sitemapUrls = new Set(
+  [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/gu)].map((match) =>
+    new URL(match[1] ?? "").toString(),
+  ),
+);
+const sitemapUrl = (pathname: string) =>
+  new URL(pathname.replace(/^\/+/, ""), sitemapBaseUrl).toString();
+const excludedSitemapPaths = [
+  "/admin/datentransfer/",
+  "/todo/",
+  ...homeVariants.map((variant) => variant.route),
+];
+const publishedExcludedPaths = excludedSitemapPaths.filter((pathname) =>
+  sitemapUrls.has(sitemapUrl(pathname)),
+);
+if (publishedExcludedPaths.length > 0) {
+  throw new Error(
+    `Sitemap enthält dauerhaft ausgeschlossene Routen: ${publishedExcludedPaths.join(
+      ", ",
+    )}`,
+  );
+}
+
+const requiredSitemapPaths = ["/", "/kontakt/", "/leistungen/"];
+const missingRequiredPaths = requiredSitemapPaths.filter(
+  (pathname) => !sitemapUrls.has(sitemapUrl(pathname)),
+);
+if (missingRequiredPaths.length > 0) {
+  throw new Error(
+    `Sitemap enthält indexierbare Routen nicht: ${missingRequiredPaths.join(", ")}`,
+  );
+}
+
 console.log(`HTML: ${htmlPath}`);
 console.log(`CSP: ${csp}`);
+console.log(`Sitemap: ${sitemapUrls.size} indexierbare Routen`);
 console.log(
   "Startseiten-Build enthält nur CSP-konforme First-Party-Styles und Menü-JavaScript.",
 );

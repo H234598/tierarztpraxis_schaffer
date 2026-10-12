@@ -1,5 +1,7 @@
 import sitemap from "@astrojs/sitemap";
 import { defineConfig } from "astro/config";
+import { homeVariants } from "./src/content/home-variants";
+import { joinBasePath } from "./src/utils/paths";
 
 const mode = process.env.SITE_DEPLOYMENT_MODE ?? "development";
 const production = mode === "production";
@@ -10,13 +12,25 @@ const site =
     : "https://h234598.github.io");
 const base =
   process.env.PUBLIC_BASE_PATH ?? (production ? "/" : "/tierarztpraxis_schaffer");
+const sitemapBase = `${base.replace(/\/+$/u, "")}/`;
+const excludedSitemapUrls = new Set(
+  [
+    "/admin/datentransfer/",
+    "/todo/",
+    ...homeVariants.map((variant) => variant.route),
+  ].map((pathname) => new URL(joinBasePath(sitemapBase, pathname), site).href),
+);
 
 export default defineConfig({
   site,
   base,
   output: "static",
   trailingSlash: "always",
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({
+      filter: (page) => !excludedSitemapUrls.has(new URL(page).href),
+    }),
+  ],
   build: {
     assets: "_assets",
     inlineStylesheets: "never",
