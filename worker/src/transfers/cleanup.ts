@@ -6,6 +6,13 @@ import {
 
 const BATCH_SIZE = 100;
 const DRAFT_RETENTION_MS = 24 * 60 * 60 * 1_000;
+const EXPIRED_FILE_CONDITION = `EXISTS (
+  SELECT 1 FROM transfer_submissions AS s
+  INNER JOIN transfer_cases AS c ON c.id = s.case_id
+  WHERE s.id = f.submission_id AND s.case_id = f.case_id
+    AND ((s.status = 'draft' AND f.delete_after <= ?)
+      OR (s.status <> 'draft' AND c.delete_after <= ?))
+)`;
 
 type Database = D1Database;
 interface CleanupBindings {
@@ -54,6 +61,47 @@ export async function cleanupExpired(
     notifications: 0,
   };
 
+  const expiredCaseIds = await ids(
+    database,
+    "SELECT id FROM transfer_cases WHERE status = 'open' AND expires_at <= ? LIMIT 100",
+    timestamp,
+  );
+  if (expiredCaseIds.length) {
+    const expiration = await database.batch(
+      expiredCaseIds.flatMap((id) => [
+        database
+          .prepare(
+            "UPDATE transfer_cases SET status = 'expired', updated_at = ? WHERE id = ? AND status = 'open' AND expires_at <= ?",
+          )
+          .bind(timestamp, id, timestamp),
+        database
+          .prepare(
+            `UPDATE transfer_tokens SET revoked_at = ?
+            WHERE case_id = ? AND revoked_at IS NULL
+              AND EXISTS (SELECT 1 FROM transfer_cases
+                WHERE id = transfer_tokens.case_id AND status = 'expired' AND expires_at <= ?)`,
+          )
+          .bind(timestamp, id, timestamp),
+        database
+          .prepare(
+            `UPDATE transfer_sessions SET revoked_at = ?
+            WHERE case_id = ? AND revoked_at IS NULL
+              AND EXISTS (SELECT 1 FROM transfer_cases
+                WHERE id = transfer_sessions.case_id AND status = 'expired' AND expires_at <= ?)`,
+          )
+          .bind(timestamp, id, timestamp),
+      ]),
+    );
+    result.tokens += expiration.reduce(
+      (count, row, index) => count + (index % 3 === 1 ? row.meta.changes : 0),
+      0,
+    );
+    result.sessions += expiration.reduce(
+      (count, row, index) => count + (index % 3 === 2 ? row.meta.changes : 0),
+      0,
+    );
+  }
+
   const sessionIds = await ids(
     database,
     "SELECT id FROM transfer_sessions WHERE (expires_at <= ? OR absolute_expires_at <= ?) AND revoked_at IS NULL LIMIT 100",
@@ -70,7 +118,7 @@ export async function cleanupExpired(
           .bind(timestamp, id),
       ),
     );
-    result.sessions = sessionIds.length;
+    result.sessions += sessionIds.length;
   }
   const tokenIds = await ids(
     database,
@@ -87,7 +135,7 @@ export async function cleanupExpired(
           .bind(timestamp, id),
       ),
     );
-    result.tokens = tokenIds.length;
+    result.tokens += tokenIds.length;
   }
 
   const draftIds = await ids(
@@ -96,23 +144,39 @@ export async function cleanupExpired(
     draftBefore,
   );
   if (draftIds.length) {
-    await database.batch(
-      draftIds.map((id) =>
+    const cleanup = await database.batch(
+      draftIds.flatMap((id) => [
         database
           .prepare(
-            "DELETE FROM transfer_submissions WHERE id = ? AND status = 'draft' AND updated_at <= ?",
+            `UPDATE transfer_cases
+            SET submission_count = MAX(0, submission_count - 1),
+              total_bytes = MAX(0, total_bytes - COALESCE((
+                SELECT SUM(expected_size) FROM transfer_files
+                WHERE submission_id = ? AND case_id = transfer_cases.id
+              ), 0)), updated_at = ?
+            WHERE id = (SELECT case_id FROM transfer_submissions
+              WHERE id = ? AND status = 'draft' AND updated_at <= ?)`,
+          )
+          .bind(id, timestamp, id, draftBefore),
+        database
+          .prepare(
+            "DELETE FROM transfer_submissions WHERE id = ? AND status = 'draft' AND updated_at <= ? AND changes() = 1",
           )
           .bind(id, draftBefore),
-      ),
+      ]),
     );
-    result.drafts = draftIds.length;
+    result.drafts = cleanup.reduce(
+      (count, row, index) => count + (index % 2 === 1 ? row.meta.changes : 0),
+      0,
+    );
   }
 
   const files = await database
     .prepare(
-      "SELECT id, r2_key FROM transfer_files WHERE delete_after <= ? AND state <> 'deleted' LIMIT 100",
+      `SELECT id, r2_key FROM transfer_files AS f
+      WHERE f.state <> 'deleted' AND ${EXPIRED_FILE_CONDITION} LIMIT 100`,
     )
-    .bind(timestamp)
+    .bind(timestamp, timestamp)
     .all<{ id: string; r2_key: string }>();
   for (const file of files.results) {
     if (
@@ -122,14 +186,24 @@ export async function cleanupExpired(
     )
       continue;
     try {
-      await env.TRANSFER_FILES.delete(file.r2_key);
-      await database
+      // Claim the expired state before R2 deletion. A concurrent finalization
+      // either extends retention first or sees this non-stored state and fails.
+      const claim = await database
         .prepare(
-          "UPDATE transfer_files SET state = 'deleted' WHERE id = ? AND delete_after <= ? AND state <> 'deleted'",
+          `UPDATE transfer_files AS f SET state = 'rejected'
+          WHERE id = ? AND state <> 'deleted' AND ${EXPIRED_FILE_CONDITION}`,
         )
-        .bind(file.id, timestamp)
+        .bind(file.id, timestamp, timestamp)
         .run();
-      result.files++;
+      if (claim.meta.changes !== 1) continue;
+      await env.TRANSFER_FILES.delete(file.r2_key);
+      const deleted = await database
+        .prepare(
+          "UPDATE transfer_files SET state = 'deleted' WHERE id = ? AND state = 'rejected'",
+        )
+        .bind(file.id)
+        .run();
+      result.files += deleted.meta.changes;
     } catch {
       // Deliberately no key or error details: cleanup is fail-closed and retryable.
     }

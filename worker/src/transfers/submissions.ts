@@ -378,7 +378,12 @@ export async function finalizeSubmission(
           SELECT 1 FROM transfer_files AS f
           WHERE f.submission_id = transfer_submissions.id
             AND f.case_id = ?
-            AND (f.state <> 'stored' OR f.stored_size IS NULL)
+            AND (f.state <> 'stored' OR f.stored_size IS NULL OR f.delete_after <= ?)
+        )
+        AND EXISTS (
+          SELECT 1 FROM transfer_cases AS c
+          WHERE c.id = transfer_submissions.case_id
+            AND c.status = 'open' AND c.expires_at > ?
         )
         AND EXISTS (
           SELECT 1 FROM transfer_sessions AS active_session
@@ -388,7 +393,18 @@ export async function finalizeSubmission(
             AND active_session.absolute_expires_at > ?
         )`,
       )
-      .bind(nowIso, nowIso, submissionId, caseId, caseId, sessionId, nowIso, nowIso),
+      .bind(
+        nowIso,
+        nowIso,
+        submissionId,
+        caseId,
+        caseId,
+        nowIso,
+        nowIso,
+        sessionId,
+        nowIso,
+        nowIso,
+      ),
     database
       .prepare(
         `INSERT INTO transfer_notifications (
@@ -398,9 +414,21 @@ export async function finalizeSubmission(
         SELECT ?, case_id, id, NULL, 'practice_submission', 'pending', 0, ?, ?
         FROM transfer_submissions
         WHERE id = ? AND case_id = ? AND status = 'submitted'
-          AND finalized_at = ?`,
+          AND finalized_at = ? AND changes() = 1`,
       )
       .bind(notificationId, nowIso, nowIso, submissionId, caseId, nowIso),
+    database
+      .prepare(
+        `UPDATE transfer_files
+        SET delete_after = (SELECT delete_after FROM transfer_cases WHERE id = ?)
+        WHERE submission_id = ? AND case_id = ? AND state = 'stored'
+          AND EXISTS (
+            SELECT 1 FROM transfer_notifications
+            WHERE id = ? AND submission_id = transfer_files.submission_id
+              AND case_id = transfer_files.case_id
+          )`,
+      )
+      .bind(caseId, submissionId, caseId, notificationId),
   ]);
   if (sessionGate?.meta.changes !== 1) return "unauthorized";
   if (finalization?.meta.changes !== 1) return false;

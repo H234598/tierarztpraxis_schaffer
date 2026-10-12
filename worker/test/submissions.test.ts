@@ -517,7 +517,7 @@ describe("Submission API", () => {
         statement.query.includes("UPDATE transfer_cases"),
       ),
     ).toHaveLength(0);
-    expect(database.lastBatchSize).toBe(3);
+    expect(database.lastBatchSize).toBe(4);
     expect(
       database.prepared.some((statement) =>
         statement.query.includes("INSERT INTO transfer_notifications"),
