@@ -61,6 +61,10 @@ jobs:
           pnpm check
           pnpm test
           pnpm build
+          pnpm check:home-budgets
+          pnpm inspect:home-build
+          pnpm exec tsx scripts/inspect-transfer-build.ts
+          pnpm exec tsx scripts/inspect-contact-build.ts
 
       - name: Pages konfigurieren
         uses: actions/configure-pages@v5

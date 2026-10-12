@@ -96,4 +96,39 @@ describe("GitHub-Pages-Konfiguration", () => {
       workflow.indexOf("pnpm exec tsx scripts/inspect-contact-build.ts"),
     ).toBeGreaterThan(workflow.indexOf("pnpm inspect:home-build"));
   });
+
+  it.each([
+    "pnpm check:home-budgets",
+    "pnpm inspect:home-build",
+    "pnpm exec tsx scripts/inspect-transfer-build.ts",
+    "pnpm exec tsx scripts/inspect-contact-build.ts",
+  ])(
+    "erzwingt das CI-Gate %s nach dem Pages-Build und vor dem Upload",
+    async (gate) => {
+      const [pagesWorkflow, ciWorkflow] = await Promise.all([
+        readFile(".github/workflows/deploy-pages.yml", "utf8"),
+        readFile(".github/workflows/ci.yml", "utf8"),
+      ]);
+      const buildRun =
+        [
+          ...pagesWorkflow.matchAll(/^        run: \|\n((?:          [^\n]*\n)+)/gm),
+        ].find(([, run]) =>
+          run?.split("\n").some((line) => line.trim() === "pnpm build"),
+        )?.[1] ?? "";
+      const lines = buildRun.split("\n").map((line) => line.trim());
+      const build = lines.indexOf("pnpm build");
+      const validation = lines.indexOf(gate);
+      const failFast = lines.indexOf("set -euo pipefail");
+      const upload = pagesWorkflow.indexOf("uses: actions/upload-pages-artifact@v4");
+
+      expect(ciWorkflow.split("\n").map((line) => line.trim())).toContain(
+        `run: ${gate}`,
+      );
+      expect(build).toBeGreaterThanOrEqual(0);
+      expect(failFast).toBeGreaterThanOrEqual(0);
+      expect(failFast).toBeLessThan(build);
+      expect(validation).toBeGreaterThan(build);
+      expect(upload).toBeGreaterThan(pagesWorkflow.indexOf(buildRun) + buildRun.length);
+    },
+  );
 });
