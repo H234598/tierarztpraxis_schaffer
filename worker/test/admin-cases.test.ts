@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DevelopmentRouteContext } from "../src/env";
 import type { VerifiedAdminIdentity } from "../src/security/access-jwt";
@@ -95,6 +95,15 @@ function context(
     },
   } as unknown as DevelopmentRouteContext;
 }
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-12T10:00:00.000Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe("Admin-Fallvertrag", () => {
   it.each([
@@ -270,7 +279,7 @@ describe("Admin-Fallvertrag", () => {
       id: "case-1",
       public_id: "ABCDEFGHIJKLMNOP",
       status: "open",
-      expires_at: "2026-08-30T10:00:00.000Z",
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
     });
     const response = await handleAdminCaseApi(
       context(database, "/api/admin/cases/case-1/tokens", "POST", {
@@ -286,6 +295,42 @@ describe("Admin-Fallvertrag", () => {
     expect(queries).toContain("UPDATE transfer_tokens");
     expect(queries).toContain("UPDATE transfer_sessions");
     expect(JSON.stringify(database.batches[0])).not.toContain(payload.token);
+  });
+
+  it.each([
+    ["eine Millisekunde vor Ablauf", 1, 201],
+    ["genau bei Ablauf", 0, 409],
+    ["eine Millisekunde nach Ablauf", -1, 409],
+  ])("prüft die Tokenanlage %s", async (_label, remainingMs, status) => {
+    const database = new RecordingDatabase();
+    const expiresAt = new Date(Date.now() + remainingMs).toISOString();
+    database.firstRows.push({
+      id: "case-1",
+      public_id: "ABCDEFGHIJKLMNOP",
+      status: "open",
+      expires_at: expiresAt,
+    });
+    const response = await handleAdminCaseApi(
+      context(database, "/api/admin/cases/case-1/tokens", "POST", {
+        revokeExisting: true,
+      }),
+      admin,
+    );
+
+    expect(response!.status).toBe(status);
+    if (status === 201) {
+      await expect(response!.json()).resolves.toMatchObject({
+        ok: true,
+        expiresAt,
+        token: expect.stringMatching(/^dt1_/u),
+      });
+      expect(database.batches).toHaveLength(1);
+    } else {
+      await expect(response!.json()).resolves.toMatchObject({
+        error: { code: "invalid_state" },
+      });
+      expect(database.batches).toHaveLength(0);
+    }
   });
 
   it("widerruft Token und Sitzungen idempotent und erlaubt nur explizite Statuswechsel", async () => {
