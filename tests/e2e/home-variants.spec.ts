@@ -4,6 +4,59 @@ import { e2eOrigin } from "./origin";
 
 const variants = ["1", "2", "3", "4"] as const;
 
+const contrastRatio = (foreground: string, background: string): number => {
+  const luminance = (color: string): number => {
+    const channels = color
+      .match(/[\d.]+/gu)
+      ?.slice(0, 3)
+      .map(Number);
+    if (!channels || channels.length !== 3) throw new TypeError("Ungültige Farbe");
+    const [red, green, blue] = channels.map((channel) => {
+      const normalized = channel / 255;
+      return normalized <= 0.04045
+        ? normalized / 12.92
+        : ((normalized + 0.055) / 1.055) ** 2.4;
+    }) as [number, number, number];
+    return red * 0.2126 + green * 0.7152 + blue * 0.0722;
+  };
+  const foregroundLuminance = luminance(foreground);
+  const backgroundLuminance = luminance(background);
+  return (
+    (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) /
+    (Math.min(foregroundLuminance, backgroundLuminance) + 0.05)
+  );
+};
+
+for (const { name, path, label } of [
+  { name: "generischen Seiten", path: "/todo/", label: "Filter zurücksetzen" },
+  {
+    name: "Startseitenvariante 3",
+    path: "/startseiten/3/",
+    label: "Sprechzeiten ansehen",
+  },
+]) {
+  test(`Sekundäre Schaltflächen erfüllen beim Hover auf ${name} 4,5:1`, async ({
+    page,
+  }) => {
+    await page.goto(path);
+    const control = page.locator(".button.button--secondary", { hasText: label });
+
+    await control.hover();
+    const colors = await control.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        foreground: style.color,
+        background: style.backgroundColor,
+      };
+    });
+
+    expect(
+      contrastRatio(colors.foreground, colors.background),
+      `${path}: ${colors.foreground} auf ${colors.background}`,
+    ).toBeGreaterThanOrEqual(4.5);
+  });
+}
+
 test("rendert Root mit Standardvariante 4", async ({ page }) => {
   await page.goto("/");
 

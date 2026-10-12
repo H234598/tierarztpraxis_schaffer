@@ -305,6 +305,7 @@ export function uploadTransferFile(
   return new Promise((resolve, reject) => {
     const xhr = createXhr();
     xhr.open("PUT", slot.uploadUrl);
+    xhr.timeout = 1_800_000;
     xhr.setRequestHeader("Content-Type", file.type);
     xhr.setRequestHeader("X-Datentransfer-CSRF", csrfToken);
     xhr.upload.addEventListener("progress", (event) => {

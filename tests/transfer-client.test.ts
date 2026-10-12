@@ -78,10 +78,11 @@ class FakeXhr extends FakeEventSource {
   });
   responseText = JSON.stringify({ ok: true });
   sentBody: Document | XMLHttpRequestBodyInit | null = null;
+  timeout = 0;
 
   constructor(
     readonly status: number,
-    private readonly event: "load" | "error" = "load",
+    private readonly event: "load" | "error" | "timeout" = "load",
   ) {
     super();
   }
@@ -270,6 +271,22 @@ describe("Datentransfer-Client", () => {
         () => malformedSuccess as unknown as XMLHttpRequest,
       ),
     ).rejects.toMatchObject({ retryable: false, status: 200 });
+  });
+
+  it("begrenzt einen Datei-Upload auf 30 Minuten und macht Timeout retrybar", async () => {
+    const xhr = new FakeXhr(0, "timeout");
+    const upload = uploadTransferFile(
+      { name: "clip.mp4", type: "video/mp4", size: 50 * 1024 * 1024 } as File,
+      { fileId: "file-1", uploadUrl: "/api/transfers/uploads/file-1" },
+      "csrf-session",
+      vi.fn(),
+      () => xhr as unknown as XMLHttpRequest,
+    ).catch((reason: unknown) => reason);
+
+    expect(xhr.timeout).toBe(1_800_000);
+    const error = await upload;
+    expect(error).toBeInstanceOf(TransferUploadError);
+    expect(error).toMatchObject({ retryable: true });
   });
 
   it.each([
