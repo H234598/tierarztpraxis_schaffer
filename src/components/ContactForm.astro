@@ -3,14 +3,18 @@ import { siteConfig } from "../config/site";
 import { withBase } from "../utils/paths";
 ---
 
-<section id="kontaktformular" class="contact-form-section" aria-labelledby="contact-form-heading">
+<section
+  id="kontaktformular"
+  class="contact-form-section"
+  aria-labelledby="contact-form-heading"
+>
   <header class="section-heading">
     <p class="eyebrow">Schreiben Sie uns</p>
     <h2 id="contact-form-heading">Kontaktformular</h2>
     <p>
       Für Notfälle rufen Sie bitte unmittelbar unter
-      <a href={siteConfig.phone.href}>{siteConfig.phone.display}</a> an.
-      Datei-Uploads, Befunde und Röntgenbilder werden nicht angenommen.
+      <a href={siteConfig.phone.href}>{siteConfig.phone.display}</a> an. Datei-Uploads, Befunde
+      und Röntgenbilder werden nicht angenommen.
     </p>
   </header>
 
@@ -18,7 +22,14 @@ import { withBase } from "../utils/paths";
     <div class="form-grid">
       <label>
         <span>Name <span aria-hidden="true">*</span></span>
-        <input name="name" type="text" autocomplete="name" minlength="2" maxlength="120" required />
+        <input
+          name="name"
+          type="text"
+          autocomplete="name"
+          minlength="2"
+          maxlength="120"
+          required
+        />
       </label>
       <label>
         <span>E-Mail-Adresse</span>
@@ -43,31 +54,51 @@ import { withBase } from "../utils/paths";
 
     <label>
       <span>Nachricht <span aria-hidden="true">*</span></span>
-      <textarea name="message" rows="7" minlength="10" maxlength="2000" required></textarea>
-      <small>Maximal 2.000 Zeichen. Bitte keine sensiblen medizinischen Dokumente einfügen.</small>
+      <textarea name="message" rows="7" minlength="10" maxlength="2000" required
+      ></textarea>
+      <small
+        >Maximal 2.000 Zeichen. Bitte keine sensiblen medizinischen Dokumente einfügen.</small
+      >
     </label>
 
     <div class="bot-field" aria-hidden="true">
       <label for="company-website">Website</label>
-      <input id="company-website" name="companyWebsite" type="text" tabindex="-1" autocomplete="off" />
+      <input
+        id="company-website"
+        name="companyWebsite"
+        type="text"
+        tabindex="-1"
+        autocomplete="off"
+      />
     </div>
     <input type="hidden" name="startedAt" value="" data-started-at />
 
     <label class="checkbox-label">
       <input name="privacyAccepted" type="checkbox" value="true" required />
       <span>
-        Ich habe die <a href={withBase("datenschutz/")}>Datenschutzhinweise</a> zur Kenntnis genommen.
+        Ich habe die <a href={withBase("datenschutz/")}>Datenschutzhinweise</a> zur Kenntnis
+        genommen.
         <span aria-hidden="true">*</span>
       </span>
     </label>
 
-    <div class="cf-turnstile" data-sitekey={siteConfig.turnstileSiteKey} data-action="contact_form" data-theme="light"></div>
+    <div
+      class="cf-turnstile"
+      data-sitekey={siteConfig.turnstileSiteKey}
+      data-action="contact_form"
+      data-theme="light"
+    >
+    </div>
     <button class="button" type="submit">Nachricht senden</button>
     <p class="form-status" role="status" aria-live="polite" data-form-status></p>
   </form>
 </section>
 
-<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script
+  is:inline
+  src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+  async
+  defer></script>
 <script>
   import { setupContactForm } from "../scripts/contact-form";
 

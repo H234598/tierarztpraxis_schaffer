@@ -1,0 +1,19 @@
+---
+import HomePage from "../../components/home/HomePage.astro";
+import { homeVariants } from "../../content/home-variants";
+
+export function getStaticPaths() {
+  return homeVariants.map((variant) => ({
+    params: { variant: variant.id },
+    props: { variant },
+  }));
+}
+
+const { variant } = Astro.props;
+---
+
+<HomePage
+  variant={variant.id}
+  canonicalPath={variant.canonicalPath}
+  robots={variant.robots}
+/>

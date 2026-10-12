@@ -1,7 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { buildAssetPath } from "./inspect-home-build-utils";
 
-const htmlPath = resolve("dist/kontakt/index.html");
+const distDirectory = resolve("dist");
+const htmlPath = resolve(distDirectory, "kontakt/index.html");
 const html = await readFile(htmlPath, "utf8");
 
 const cspMeta = html.match(
@@ -9,13 +11,13 @@ const cspMeta = html.match(
 )?.[0];
 const csp = cspMeta?.match(/\bcontent="([^"]*)"/iu)?.[1] ?? "MISSING";
 
-const scripts = [
-  ...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/giu),
-].map((match) => ({
-  attributes: match[1] ?? "",
-  body: match[2] ?? "",
-  inlineBytes: Buffer.byteLength(match[2] ?? "", "utf8"),
-}));
+const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/giu)].map(
+  (match) => ({
+    attributes: match[1] ?? "",
+    body: match[2] ?? "",
+    inlineBytes: Buffer.byteLength(match[2] ?? "", "utf8"),
+  }),
+);
 
 console.log(`HTML: ${htmlPath}`);
 console.log(`CSP: ${csp}`);
@@ -40,23 +42,17 @@ if (executableInlineScripts.length > 0) {
 }
 
 const firstPartySources = scripts
-  .map(({ attributes }) =>
-    attributes.match(/\bsrc=["']([^"']+)["']/iu)?.[1],
-  )
+  .map(({ attributes }) => attributes.match(/\bsrc=["']([^"']+)["']/iu)?.[1])
   .filter((source): source is string => Boolean(source))
   .filter((source) => !source.startsWith("https://"));
 
 if (firstPartySources.length === 0) {
-  throw new Error(
-    "Kein First-Party-JavaScript-Asset auf der Kontaktseite gefunden.",
-  );
+  throw new Error("Kein First-Party-JavaScript-Asset auf der Kontaktseite gefunden.");
 }
 
 let handlerFound = false;
 for (const source of firstPartySources) {
-  const relativePath = source.replace(/^\//u, "");
-  const assetPath = resolve("dist", relativePath);
-  const asset = await readFile(assetPath, "utf8");
+  const asset = await readFile(buildAssetPath(distDirectory, source), "utf8");
   const hasFormSelector = asset.includes("data-contact-form");
   const hasPendingMessage = asset.includes("Nachricht wird sicher versendet");
   const hasSubmitListener = asset.includes("addEventListener");
@@ -69,10 +65,7 @@ for (const source of firstPartySources) {
   );
 
   handlerFound ||=
-    hasFormSelector &&
-    hasPendingMessage &&
-    hasSubmitListener &&
-    hasPreventDefault;
+    hasFormSelector && hasPendingMessage && hasSubmitListener && hasPreventDefault;
 }
 
 if (!handlerFound) {
@@ -85,6 +78,4 @@ if (!csp.includes("script-src 'self'")) {
   throw new Error("Die CSP erlaubt First-Party-JavaScript nicht.");
 }
 
-console.log(
-  "Kontaktformular-Build enthält einen CSP-kompatiblen First-Party-Handler.",
-);
+console.log("Kontaktformular-Build enthält einen CSP-kompatiblen First-Party-Handler.");

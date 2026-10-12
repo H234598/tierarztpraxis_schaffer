@@ -1,0 +1,59 @@
+---
+import AdminReplyForm from "./AdminReplyForm.astro";
+---
+
+<section
+  class="admin-transfer-card admin-case-detail"
+  data-admin-case-detail
+  hidden
+  aria-labelledby="admin-detail-heading"
+>
+  <header>
+    <p class="eyebrow">Falldetail</p>
+    <h2 id="admin-detail-heading" tabindex="-1" data-admin-detail-heading>Fall</h2>
+  </header>
+  <dl class="admin-case-facts" data-admin-case-facts></dl>
+  <section class="admin-internal-note" data-admin-internal-note-section hidden>
+    <h3>Interne Notiz</h3>
+    <p data-admin-internal-note></p>
+  </section>
+  <div class="admin-case-actions" data-admin-case-actions>
+    <button class="button button--secondary" type="button" data-admin-new-token
+      >Neuen Token erstellen</button
+    >
+    <button class="button button--secondary" type="button" data-admin-rotate-token
+      >Token rotieren</button
+    >
+    <button class="button button--secondary" type="button" data-admin-toggle-status
+      >Fall schließen</button
+    >
+    <button class="button button--secondary" type="button" data-admin-mark-exported
+      >Als exportiert markieren</button
+    >
+  </div>
+  <section>
+    <h3>Tokens</h3>
+    <ul class="admin-token-list" data-admin-token-list></ul>
+  </section>
+  <section>
+    <h3>Einsendungen</h3>
+    <ul class="admin-submission-list" data-admin-submission-list></ul>
+  </section>
+  <section>
+    <h3>Dateien</h3>
+    <ul class="admin-file-list" data-admin-file-list></ul>
+  </section>
+  <section>
+    <h3>Links</h3>
+    <ul class="admin-link-list" data-admin-link-list></ul>
+  </section>
+  <section>
+    <h3>Antworten</h3>
+    <ul class="admin-reply-list" data-admin-reply-list></ul>
+  </section>
+  <AdminReplyForm />
+  <section>
+    <h3>Audit</h3>
+    <ul class="admin-audit-list" data-admin-audit-list></ul>
+  </section>
+</section>

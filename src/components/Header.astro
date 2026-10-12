@@ -1,9 +1,10 @@
 ---
 import { siteConfig } from "../config/site";
+import { homeVariants } from "../content/home-variants";
 import { withBase } from "../utils/paths";
+import StartVariantMenu from "./StartVariantMenu.astro";
 
 const navigation = [
-  ["Start", ""],
   ["Leistungen", "leistungen/"],
   ["Praxis", "praxis/"],
   ["Sprechzeiten", "sprechzeiten/"],
@@ -12,6 +13,8 @@ const navigation = [
   ["Stellenangebote", "stellenangebote/"],
   ["Kontakt", "kontakt/"],
 ] as const;
+const currentPath = Astro.url.pathname;
+const isCurrent = (path: string) => currentPath === path;
 ---
 
 <header class="site-header">
@@ -42,14 +45,52 @@ const navigation = [
       <summary>Menü</summary>
       <nav aria-label="Hauptnavigation mobil">
         <ul>
-          {navigation.map(([label, path]) => <li><a href={withBase(path)}>{label}</a></li>)}
+          <li>
+            <a href={withBase("")}>Start</a>
+            <ul data-start-variants>
+              {
+                homeVariants.map((variant) => (
+                  <li>
+                    <a
+                      href={withBase(variant.route)}
+                      aria-current={
+                        isCurrent(withBase(variant.route)) ||
+                        (variant.isDefault && isCurrent(withBase("")))
+                          ? "page"
+                          : undefined
+                      }
+                    >
+                      {variant.label}
+                      {variant.isDefault && (
+                        <span class="start-variant-menu__standard">Standard</span>
+                      )}
+                    </a>
+                  </li>
+                ))
+              }
+            </ul>
+          </li>
+          {
+            navigation.map(([label, path]) => (
+              <li>
+                <a href={withBase(path)}>{label}</a>
+              </li>
+            ))
+          }
         </ul>
       </nav>
     </details>
 
     <nav class="desktop-nav" aria-label="Hauptnavigation">
       <ul>
-        {navigation.map(([label, path]) => <li><a href={withBase(path)}>{label}</a></li>)}
+        <StartVariantMenu currentPath={currentPath} />
+        {
+          navigation.map(([label, path]) => (
+            <li>
+              <a href={withBase(path)}>{label}</a>
+            </li>
+          ))
+        }
       </ul>
     </nav>
   </div>

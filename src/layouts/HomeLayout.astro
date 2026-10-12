@@ -1,0 +1,20 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import type { RequestedRobots } from "../config/robots";
+
+interface Props {
+  readonly canonicalPath: "/";
+  readonly robots: RequestedRobots;
+}
+
+const { canonicalPath, robots } = Astro.props;
+---
+
+<BaseLayout
+  title="Tierarztpraxis Dr. Schäffer in Fürth"
+  description="Telefonnummer, Sprechzeiten, Notfallhinweise, Leistungen und Anfahrt der Tierarztpraxis Dr. Schäffer in Fürth."
+  canonicalPath={canonicalPath}
+  robots={robots}
+>
+  <slot />
+</BaseLayout>

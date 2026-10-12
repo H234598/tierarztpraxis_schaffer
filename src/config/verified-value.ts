@@ -1,7 +1,4 @@
-export type VerificationStatus =
-  | "todo"
-  | "legacy-unverified"
-  | "verified";
+export type VerificationStatus = "todo" | "legacy-unverified" | "verified";
 
 export interface VerifiedValue<T> {
   readonly value: T;
@@ -24,10 +21,7 @@ export function verified<T>(
   };
 }
 
-export function todo<T>(
-  value: T,
-  note: string,
-): VerifiedValue<T> {
+export function todo<T>(value: T, note: string): VerifiedValue<T> {
   return {
     value,
     status: "todo",

@@ -1,30 +1,26 @@
+import { sharedHomeFacts } from "../content/home-content";
 import { accessibilityFaqAnswer, practiceAccessibility } from "./practice";
 import { resolveTurnstileSiteKey } from "./turnstile";
 
 const deploymentMode = import.meta.env.SITE_DEPLOYMENT_MODE ?? "development";
-const allowTurnstileTestKeys =
-  import.meta.env.ALLOW_TURNSTILE_TEST_KEYS === "true";
+const allowTurnstileTestKeys = import.meta.env.ALLOW_TURNSTILE_TEST_KEYS === "true";
 
 export const siteConfig = {
   deploymentMode,
   isDevelopment: deploymentMode !== "production",
   canonicalUrl:
-    import.meta.env.PUBLIC_SITE_URL ??
-    "https://tierarztpraxis-schaffer.telacore.org",
+    import.meta.env.PUBLIC_SITE_URL ?? "https://tierarztpraxis-schaffer.telacore.org",
   contactApiUrl:
     import.meta.env.PUBLIC_CONTACT_API_URL ??
     "https://api.tierarztpraxis-schaffer.telacore.org/v1/contact",
-  turnstileSiteKey: resolveTurnstileSiteKey(
-    import.meta.env.PUBLIC_TURNSTILE_SITE_KEY,
-    { allowTestKeys: allowTurnstileTestKeys },
-  ),
+  turnstileSiteKey: resolveTurnstileSiteKey(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY, {
+    allowTestKeys: allowTurnstileTestKeys,
+  }),
   name: "Tierarztpraxis Dr. Michael Schäffer",
   shortName: "Tierarztpraxis Dr. Schäffer",
-  claim: "Mit Herz, Kompetenz und moderner Tiermedizin.",
-  subclaim: "Aus Leidenschaft für Ihren Liebling – persönlich für Sie da.",
   phone: {
-    display: "0911 63 29 29 83",
-    href: "tel:+4991163292983",
+    display: sharedHomeFacts.phoneDisplay,
+    href: sharedHomeFacts.phoneHref,
   },
   address: {
     street: "Friedrich-Ebert-Straße 17",
@@ -37,7 +33,7 @@ export const siteConfig = {
     longitude: 10.970583333333334,
   },
   publicEmail: "TODO: Öffentliche Praxis-E-Mail bestätigen",
-  appointmentNote: "Wir bitten stets um telefonische Voranmeldung.",
+  appointmentNote: sharedHomeFacts.appointmentNote,
   openingHours: [
     { day: "Montag", time: "08:00–19:00" },
     { day: "Dienstag", time: "09:00–19:00" },

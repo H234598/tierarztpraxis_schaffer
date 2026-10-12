@@ -1,0 +1,115 @@
+---
+import OpeningHours from "../OpeningHours.astro";
+import {
+  sharedServicePlaceholderCards,
+  variant1HomeCopy,
+} from "../../content/home-content";
+import { siteConfig } from "../../config/site";
+import { withBase } from "../../utils/paths";
+---
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow">{variant1HomeCopy.hero.eyebrow}</p>
+      <h1>{variant1HomeCopy.hero.title}</h1>
+      <p>{variant1HomeCopy.hero.intro}</p>
+      <div class="button-row">
+        <a class="button" href={siteConfig.phone.href}
+          >Anrufen: {siteConfig.phone.display}</a
+        >
+        <a class="button button--secondary" href={withBase("sprechzeiten/")}
+          >Sprechzeiten ansehen</a
+        >
+      </div>
+      <p class="callout">
+        {siteConfig.appointmentNote} In einem Notfall rufen Sie uns bitte unmittelbar an.
+      </p>
+    </div>
+    <div class="hero-logo">
+      <img
+        src={withBase("logo.svg")}
+        alt="Logo der Tierarztpraxis Dr. Schäffer"
+        width="640"
+        height="640"
+      />
+    </div>
+  </div>
+</section>
+
+<section class="section section--white">
+  <div class="container split">
+    <article class="card emergency">
+      <p class="eyebrow">Im Notfall</p>
+      <h2>Bitte sofort anrufen</h2>
+      <p>
+        Das Kontaktformular und Nachrichten über soziale Netzwerke sind keine
+        Notfallkanäle. Kündigen Sie Ihr Kommen telefonisch an.
+      </p>
+      <div class="button-row">
+        <a class="button button--danger" href={siteConfig.phone.href}
+          >{siteConfig.phone.display} anrufen</a
+        >
+        <a class="button button--secondary" href={withBase("notfall/")}
+          >Notfallhinweise</a
+        >
+      </div>
+    </article>
+    <article class="card">
+      <p class="eyebrow">Anfahrt</p>
+      <h2>{siteConfig.address.street}</h2>
+      <p>{siteConfig.address.postalCode} {siteConfig.address.city}</p>
+      <p>
+        Die Praxis liegt vollständig im Erdgeschoss. Geeignete Parkplätze befinden sich
+        unmittelbar vor der Tür.
+      </p>
+      <a href={withBase("kontakt/#anfahrt")}>Karte und Route öffnen</a>
+    </article>
+  </div>
+</section>
+
+<section class="section section--soft">
+  <div class="container split">
+    <div>
+      <header class="section-heading">
+        <p class="eyebrow">Sprechzeiten</p>
+        <h2>Wann Sie uns erreichen</h2>
+        <p>Bitte melden Sie jeden Besuch vorher telefonisch an.</p>
+      </header>
+      <OpeningHours />
+    </div>
+    <div class="cards">
+      {
+        sharedServicePlaceholderCards.map((card) => (
+          <article class="card">
+            <h3>{card.title}</h3>
+            <p>{card.text}</p>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<section class="section section--white">
+  <div class="container cards cards--three">
+    <article class="card">
+      <h2>Häufige Fragen</h2>
+      <p>Antworten zu Terminen, Notfällen, Anfahrt, Dokumenten und Barrierefreiheit.</p>
+      <a href={withBase("faq/")}>FAQ öffnen</a>
+    </article>
+    <article class="card">
+      <h2>Barrierefreiheit</h2>
+      <p>
+        Wir beschreiben die Zugänglichkeit der Praxis konkret und entwickeln die Website
+        nach WCAG 2.2 AA.
+      </p>
+      <a href={withBase("barrierefreiheit/")}>Erklärung lesen</a>
+    </article>
+    <article class="card">
+      <h2>Stellenangebote</h2>
+      <p>Aktuelle Ausschreibungen und der künftige sichere Bewerbungsweg.</p>
+      <a href={withBase("stellenangebote/")}>Stellenangebote ansehen</a>
+    </article>
+  </div>
+</section>

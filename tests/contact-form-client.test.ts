@@ -4,8 +4,7 @@ import { setupContactForm } from "../src/scripts/contact-form";
 
 class FakeForm {
   readonly dataset = {
-    endpoint:
-      "https://api.tierarztpraxis-schaffer.telacore.org/v1/contact",
+    endpoint: "https://api.tierarztpraxis-schaffer.telacore.org/v1/contact",
   };
   readonly status = { textContent: "" };
   readonly startedAt = { value: "" };
@@ -23,14 +22,9 @@ class FakeForm {
     return (elements[selector] ?? null) as T | null;
   }
 
-  addEventListener(
-    type: string,
-    handler: EventListenerOrEventListenerObject,
-  ): void {
+  addEventListener(type: string, handler: EventListenerOrEventListenerObject): void {
     if (type !== "submit" || typeof handler !== "function") return;
-    this.submitHandler = handler as (
-      event: SubmitEvent,
-    ) => void | Promise<void>;
+    this.submitHandler = handler as (event: SubmitEvent) => void | Promise<void>;
   }
 
   async submit(): Promise<void> {
@@ -46,9 +40,7 @@ class FakeDocument {
   constructor(private readonly form: FakeForm) {}
 
   querySelector<T>(selector: string): T | null {
-    return selector === "[data-contact-form]"
-      ? (this.form as unknown as T)
-      : null;
+    return selector === "[data-contact-form]" ? (this.form as unknown as T) : null;
   }
 }
 
@@ -66,23 +58,20 @@ function validFormData(): FormData {
   return data;
 }
 
-function rejectedFetch(
-  error: string,
-  requestId: string,
-  status: number,
-): typeof fetch {
-  return vi.fn(async () =>
-    new Response(
-      JSON.stringify({
-        accepted: false,
-        error,
-        requestId,
-      }),
-      {
-        status,
-        headers: { "content-type": "application/json" },
-      },
-    ),
+function rejectedFetch(error: string, requestId: string, status: number): typeof fetch {
+  return vi.fn(
+    async () =>
+      new Response(
+        JSON.stringify({
+          accepted: false,
+          error,
+          requestId,
+        }),
+        {
+          status,
+          headers: { "content-type": "application/json" },
+        },
+      ),
   ) as unknown as typeof fetch;
 }
 

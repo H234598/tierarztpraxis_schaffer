@@ -3,18 +3,38 @@ import DevelopmentBanner from "../components/DevelopmentBanner.astro";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
 import { siteConfig } from "../config/site";
+import { resolveRobots, type RequestedRobots } from "../config/robots";
 import { withBase } from "../utils/paths";
 import "../styles/global.css";
+import "../styles/reset.css";
+import "../styles/tokens.css";
+import "../styles/base.css";
+import "../styles/layout.css";
+import "../styles/navigation.css";
+import "../styles/home-shared.css";
+import "../styles/home-1.css";
+import "../styles/home-2.css";
+import "../styles/home-3.css";
+import "../styles/home-4.css";
+import "../styles/forms.css";
 
 interface Props {
   title: string;
   description: string;
   canonicalPath?: string;
+  robots?: RequestedRobots;
+  referrerPolicy?: ReferrerPolicy;
 }
 
-const { title, description, canonicalPath = Astro.url.pathname } = Astro.props;
+const {
+  title,
+  description,
+  canonicalPath = Astro.url.pathname,
+  robots: requestedRobots = "index,follow",
+  referrerPolicy = "strict-origin-when-cross-origin",
+} = Astro.props;
 const canonicalUrl = new URL(canonicalPath, siteConfig.canonicalUrl).toString();
-const robots = siteConfig.isDevelopment ? "noindex,nofollow" : "index,follow";
+const robots = resolveRobots(siteConfig.isDevelopment, requestedRobots);
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -36,7 +56,7 @@ const contentSecurityPolicy = [
     <meta name="description" content={description} />
     <meta name="robots" content={robots} />
     <meta name="theme-color" content="#245b43" />
-    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="referrer" content={referrerPolicy} />
     <meta http-equiv="Content-Security-Policy" content={contentSecurityPolicy} />
     <link rel="canonical" href={canonicalUrl} />
     <link rel="icon" href={withBase("favicon.svg")} type="image/svg+xml" />

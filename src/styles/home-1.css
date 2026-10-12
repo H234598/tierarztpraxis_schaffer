@@ -1,0 +1,47 @@
+@layer components {
+  [data-home-variant="1"] .hero {
+    padding-block: clamp(4rem, 8vw, 7rem);
+    background:
+      radial-gradient(circle at 84% 16%, rgb(133 203 176 / 52%), transparent 27rem),
+      linear-gradient(145deg, #fbfdf9, #e5f2e6);
+  }
+
+  [data-home-variant="1"] .hero-grid {
+    gap: clamp(2.5rem, 5vw, 4.5rem);
+  }
+
+  [data-home-variant="1"] .hero-copy {
+    gap: 1.5rem;
+  }
+
+  [data-home-variant="1"] .hero-copy h1 {
+    max-width: 12ch;
+    font-size: clamp(2.7rem, 6vw, 5rem);
+  }
+
+  [data-home-variant="1"] .hero-logo {
+    width: min(100%, 25rem);
+    padding: 1.5rem;
+  }
+
+  [data-home-variant="1"] .section {
+    padding-block: clamp(3.5rem, 7vw, 6.5rem);
+  }
+
+  [data-home-variant="1"] .section-heading {
+    margin-bottom: 2.25rem;
+  }
+
+  [data-home-variant="1"] .card {
+    gap: 1rem;
+    padding: clamp(1.4rem, 3vw, 2.15rem);
+  }
+
+  [data-home-variant="1"] .cards {
+    gap: 1.5rem;
+  }
+
+  [data-home-variant="1"] .callout {
+    margin-top: 0.5rem;
+  }
+}

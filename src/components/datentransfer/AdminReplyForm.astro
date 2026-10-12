@@ -1,0 +1,46 @@
+<section
+  class="admin-reply-editor"
+  data-admin-reply-editor
+  hidden
+  aria-labelledby="admin-reply-heading"
+>
+  <h3 id="admin-reply-heading">Antwort oder Rückrufstatus</h3>
+  <p>
+    Eine Textantwort ist optional. Eine interne Rückrufnotiz wird nicht an Tierhalter
+    übertragen.
+  </p>
+  <form data-admin-reply-form>
+    <label>
+      <span>Bezug</span>
+      <select name="submissionId" data-admin-reply-submission></select>
+    </label>
+    <label>
+      <span>Antwort an Tierhalter</span>
+      <textarea name="body" rows="6" maxlength="8000" data-admin-reply-body></textarea>
+      <small>Optional; höchstens 8.000 Zeichen.</small>
+    </label>
+    <label class="admin-transfer-choice">
+      <input
+        name="callbackPlanned"
+        type="checkbox"
+        value="true"
+        data-admin-callback-planned
+      />
+      <span>Rückruf geplant (auch ohne Textantwort)</span>
+    </label>
+    <label>
+      <span>Interne Rückrufnotiz</span>
+      <textarea name="callbackNote" rows="3" maxlength="4000" data-admin-callback-note
+      ></textarea>
+      <small>Nur für die Praxis; höchstens 4.000 Zeichen.</small>
+    </label>
+    <button class="button" type="submit">Antwort/Status speichern</button>
+  </form>
+  <p
+    class="admin-transfer-status"
+    role="status"
+    aria-live="polite"
+    data-admin-reply-status
+  >
+  </p>
+</section>
