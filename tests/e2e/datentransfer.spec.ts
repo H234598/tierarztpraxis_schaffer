@@ -1015,3 +1015,45 @@ test("CSP und Laufzeitrequests bleiben auf Same-Origin und Turnstile begrenzt", 
   expect(csp).toContain("script-src 'self' https://challenges.cloudflare.com");
   expect(csp).toContain("connect-src 'self'");
 });
+
+test("Transfer- und Adminseiten senden Cross-Origin-Requests ohne Referrer", async ({
+  page,
+}) => {
+  const policies: Array<string | null> = [];
+  const referrers: Array<string | null> = [];
+  await routeTurnstile(page);
+  await page.route(
+    "https://challenges.cloudflare.com/referrer-probe**",
+    async (route) => {
+      referrers.push(route.request().headers().referer ?? null);
+      await route.fulfill({
+        status: 204,
+        headers: { "Access-Control-Allow-Origin": "*" },
+      });
+    },
+  );
+
+  for (const path of ["/datentransfer/", "/admin/datentransfer/"]) {
+    await page.goto(path);
+    policies.push(await page.locator("meta[name='referrer']").getAttribute("content"));
+    await page.evaluate(
+      async (probeUrl) => {
+        await fetch(probeUrl);
+      },
+      `https://challenges.cloudflare.com/referrer-probe?path=${encodeURIComponent(path)}`,
+    );
+  }
+
+  expect(referrers).toEqual([null, null]);
+  expect(policies).toEqual(["no-referrer", "no-referrer"]);
+});
+
+test("öffentliche Standardseiten behalten die strikte Origin-Policy", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("meta[name='referrer']")).toHaveAttribute(
+    "content",
+    "strict-origin-when-cross-origin",
+  );
+});

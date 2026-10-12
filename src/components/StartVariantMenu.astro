@@ -17,7 +17,6 @@ const isCurrent = (path: string) => currentPath === path;
     class="start-variant-menu__trigger"
     type="button"
     aria-label="Startseiten auswählen"
-    aria-haspopup="menu"
     aria-expanded="false"
     aria-controls="start-variant-menu"
   >
@@ -26,16 +25,14 @@ const isCurrent = (path: string) => currentPath === path;
   <ul
     id="start-variant-menu"
     class="start-variant-menu__list"
-    role="menu"
     aria-label="Startseiten auswählen"
     hidden
   >
     {
       homeVariants.map((variant) => (
-        <li role="none">
+        <li>
           <a
             href={withBase(variant.route)}
-            role="menuitem"
             aria-current={
               isCurrent(withBase(variant.route)) ||
               (variant.isDefault && isCurrent(withBase("")))

@@ -6,11 +6,13 @@ export function setupStartVariantMenu(root: Document): void {
   if (!container || !trigger || !menu) return;
 
   let suppressFocusOpen = false;
+  let activated = false;
   const open = () => {
     menu.hidden = false;
     trigger.setAttribute("aria-expanded", "true");
   };
   const close = (restoreFocus = false) => {
+    activated = false;
     menu.hidden = true;
     trigger.setAttribute("aria-expanded", "false");
     if (restoreFocus) {
@@ -30,14 +32,15 @@ export function setupStartVariantMenu(root: Document): void {
     if (suppressFocusOpen) return;
     open();
   });
-  container.addEventListener("focusout", () => {
-    queueMicrotask(() => {
-      if (!container.contains(root.activeElement)) close();
-    });
+  container.addEventListener("focusout", (event) => {
+    if (!container.contains(event.relatedTarget as Node | null)) close();
   });
   trigger.addEventListener("click", () => {
-    if (menu.hidden) open();
-    else close();
+    if (activated) close();
+    else {
+      open();
+      activated = true;
+    }
   });
   root.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !menu.hidden) {
