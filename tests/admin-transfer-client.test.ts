@@ -41,6 +41,7 @@ describe("Admin-Datentransfer-Client", () => {
     expect(fetcher).toHaveBeenLastCalledWith("/api/admin/cases", {
       method: "POST",
       credentials: "same-origin",
+      redirect: "manual",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ petName: "Luna" }),
     });
@@ -63,5 +64,107 @@ describe("Admin-Datentransfer-Client", () => {
         "request-7",
       ),
     );
+  });
+
+  it.each([
+    {
+      name: "403",
+      response: () =>
+        new Response(JSON.stringify({ ok: false }), {
+          status: 403,
+          headers: { "content-type": "application/json" },
+        }),
+      status: 403,
+    },
+    {
+      name: "HTML-200",
+      response: () =>
+        new Response("<!doctype html><title>Access login</title>", {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        }),
+      status: 200,
+    },
+  ])(
+    "klassifiziert $name als verlorene Access-Sitzung",
+    async ({ response, status }) => {
+      const fetcher = vi.fn().mockResolvedValue(response());
+
+      await expect(
+        requestAdminJson("/api/admin/cases", {}, fetcher),
+      ).rejects.toMatchObject({
+        message: "Admin-Zugang erforderlich.",
+        status,
+        authenticationLost: true,
+      });
+    },
+  );
+
+  it("klassifiziert Redirectziele trotz JSON-200 als verlorene Access-Sitzung", async () => {
+    const response = new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+    Object.defineProperties(response, {
+      redirected: { value: true },
+      url: { value: "https://access.example.test/cdn-cgi/access/login" },
+    });
+    const fetcher = vi.fn().mockResolvedValue(response);
+
+    await expect(
+      requestAdminJson("/api/admin/cases", {}, fetcher),
+    ).rejects.toMatchObject({
+      message: "Admin-Zugang erforderlich.",
+      status: 200,
+      authenticationLost: true,
+    });
+  });
+
+  it("klassifiziert unerwartete Antwortziele als verlorene Access-Sitzung", async () => {
+    const response = new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+    Object.defineProperty(response, "url", {
+      value: "https://access.example.test/cdn-cgi/access/login",
+    });
+    const fetcher = vi.fn().mockResolvedValue(response);
+
+    await expect(
+      requestAdminJson("/api/admin/cases", {}, fetcher),
+    ).rejects.toMatchObject({
+      message: "Admin-Zugang erforderlich.",
+      status: 200,
+      authenticationLost: true,
+    });
+  });
+
+  it("klassifiziert Transportabbrüche als verlorene Access-Sitzung", async () => {
+    const fetcher = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+
+    await expect(
+      requestAdminJson("/api/admin/cases", {}, fetcher),
+    ).rejects.toMatchObject({
+      message: "Admin-Zugang erforderlich.",
+      status: 0,
+      authenticationLost: true,
+    });
+  });
+
+  it("behält echte API-Konflikte im normalen Fehlerpfad", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: false, error: { code: "conflict" } }), {
+        status: 409,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    await expect(
+      requestAdminJson("/api/admin/cases", {}, fetcher),
+    ).rejects.toMatchObject({
+      message: "Anfrage fehlgeschlagen.",
+      status: 409,
+      authenticationLost: false,
+    });
   });
 });

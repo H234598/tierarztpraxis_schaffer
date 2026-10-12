@@ -3,6 +3,7 @@ export class AdminRequestError extends Error {
     message: string,
     readonly status: number,
     readonly requestId?: string,
+    readonly authenticationLost = false,
   ) {
     super(message);
     this.name = "AdminRequestError";
@@ -25,24 +26,37 @@ export async function requestAdminJson<T = Record<string, unknown>>(
 ): Promise<T> {
   if (!path.startsWith("/api/admin/") || path.startsWith("//"))
     throw new TypeError("Admin-API-Pfad muss same-origin sein.");
-  const response = await fetchImpl(path, {
-    method: options.method ?? "GET",
-    credentials: "same-origin",
-    headers: options.body === undefined ? {} : { "Content-Type": "application/json" },
-    ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
-  });
+  let response: Response;
+  try {
+    response = await fetchImpl(path, {
+      method: options.method ?? "GET",
+      credentials: "same-origin",
+      redirect: "manual",
+      headers: options.body === undefined ? {} : { "Content-Type": "application/json" },
+      ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
+    });
+  } catch {
+    throw new AdminRequestError("Admin-Zugang erforderlich.", 0, undefined, true);
+  }
   const payload: unknown = await response.json().catch(() => null);
   const error = isRecord(payload) && isRecord(payload.error) ? payload.error : null;
   const requestId = typeof error?.requestId === "string" ? error.requestId : undefined;
-  if (!response.ok || !isRecord(payload) || payload.ok !== true) {
-    const base =
-      response.status === 401
-        ? "Admin-Zugang erforderlich."
-        : "Anfrage fehlgeschlagen.";
+  const authenticationLost =
+    response.status === 401 ||
+    response.status === 403 ||
+    response.redirected ||
+    response.type === "opaqueredirect" ||
+    (!!response.url && !response.url.endsWith(path)) ||
+    !isRecord(payload);
+  if (authenticationLost || !response.ok || !isRecord(payload) || payload.ok !== true) {
+    const base = authenticationLost
+      ? "Admin-Zugang erforderlich."
+      : "Anfrage fehlgeschlagen.";
     throw new AdminRequestError(
       `${base}${requestId ? ` Vorgangskennung: ${requestId}` : ""}`,
       response.status,
       requestId,
+      authenticationLost,
     );
   }
   return payload as T;
@@ -84,6 +98,9 @@ export function setupAdminTransferClient(): void {
     root,
     "[data-admin-submission-list]",
   );
+  const fileList = element<HTMLUListElement>(root, "[data-admin-file-list]");
+  const linkList = element<HTMLUListElement>(root, "[data-admin-link-list]");
+  const replyList = element<HTMLUListElement>(root, "[data-admin-reply-list]");
   const auditList = element<HTMLUListElement>(root, "[data-admin-audit-list]");
   const replyEditor = element<HTMLElement>(root, "[data-admin-reply-editor]");
   const replyForm = element<HTMLFormElement>(root, "[data-admin-reply-form]");
@@ -110,25 +127,42 @@ export function setupAdminTransferClient(): void {
   let total = 0;
   let selectedCaseId = "";
   let selectedStatus = "";
+  let authInvalidated = false;
 
   const setStatus = (message: string): void => {
-    status.textContent = message;
+    if (!authInvalidated) status.textContent = message;
+  };
+  const clearOneTimeToken = (): void => {
+    shareUrl.value = "";
+    for (const target of [tokenExpiry, tokenCaseId, tokenPetName])
+      target.textContent = "";
   };
   const failClosed = (error: unknown): void => {
-    if (error instanceof AdminRequestError && error.status === 401) {
-      workspace.hidden = true;
+    setStatus(error instanceof Error ? error.message : "Anfrage fehlgeschlagen.");
+    if (error instanceof AdminRequestError && error.authenticationLost) {
+      authInvalidated = true;
+      for (const target of [workspace, detail, noteSection, replyEditor])
+        target.hidden = true;
       authRequired.hidden = false;
-      detail.hidden = true;
-      list.replaceChildren();
-      facts.replaceChildren();
-      tokenList.replaceChildren();
-      identity.textContent = "";
-      selectedCaseId = "";
-      selectedStatus = "";
-      shareUrl.value = "";
+      for (const target of [createForm, filterForm, replyForm]) target.reset();
+      for (const target of [
+        list,
+        facts,
+        tokenList,
+        submissionList,
+        fileList,
+        linkList,
+        replyList,
+        auditList,
+        replySubmission,
+      ])
+        target.replaceChildren();
+      for (const target of [detailHeading, note, replyStatus, identity])
+        target.textContent = "";
+      selectedCaseId = selectedStatus = "";
+      clearOneTimeToken();
       if (dialog.open) dialog.close();
     }
-    setStatus(error instanceof Error ? error.message : "Anfrage fehlgeschlagen.");
   };
   const setBusy = (control: HTMLButtonElement, busy: boolean): void => {
     control.disabled = busy;
@@ -169,6 +203,7 @@ export function setupAdminTransferClient(): void {
     if (selected) query.set("status", selected);
     if (search) query.set("q", search);
     const payload = await requestAdminJson(`/api/admin/cases?${query}`);
+    if (authInvalidated) return;
     const cases = records(payload.cases);
     total = Number(payload.total) || 0;
     list.replaceChildren();
@@ -208,6 +243,7 @@ export function setupAdminTransferClient(): void {
       const payload = await requestAdminJson(
         `/api/admin/cases/${encodeURIComponent(caseId)}`,
       );
+      if (authInvalidated) return;
       if (!isRecord(payload.case)) throw new Error("Falldaten fehlen.");
       const transferCase = payload.case;
       selectedCaseId = string(transferCase.id);
@@ -268,7 +304,6 @@ export function setupAdminTransferClient(): void {
         text(option, `${string(submission.title)} · ${string(submission.status)}`);
         replySubmission.append(option);
       }
-      const fileList = element<HTMLUListElement>(root, "[data-admin-file-list]");
       fileList.replaceChildren();
       for (const file of records(payload.files)) {
         const item = document.createElement("li");
@@ -278,14 +313,12 @@ export function setupAdminTransferClient(): void {
         item.append(link);
         fileList.append(item);
       }
-      const linkList = element<HTMLUListElement>(root, "[data-admin-link-list]");
       linkList.replaceChildren();
       for (const external of records(payload.links)) {
         const item = document.createElement("li");
         text(item, `${string(external.label) || "Link"}: ${string(external.url)}`);
         linkList.append(item);
       }
-      const replyList = element<HTMLUListElement>(root, "[data-admin-reply-list]");
       replyList.replaceChildren();
       for (const reply of records(payload.replies)) {
         const item = document.createElement("li");
@@ -320,10 +353,12 @@ export function setupAdminTransferClient(): void {
     setBusy(button, true);
     try {
       const payload = await requestAdminJson(path, { method, body });
+      if (authInvalidated) return null;
       setStatus("Änderung gespeichert.");
       if (refreshDetail && selectedCaseId) await loadDetail(selectedCaseId);
+      if (authInvalidated) return null;
       await loadCases();
-      return payload;
+      return authInvalidated ? null : payload;
     } catch (error) {
       failClosed(error);
       return null;
@@ -352,6 +387,7 @@ export function setupAdminTransferClient(): void {
           allowCallback: data.has("allowCallback"),
         },
       });
+      if (authInvalidated) return;
       showToken(payload);
       createForm.reset();
       await loadCases();
@@ -378,11 +414,6 @@ export function setupAdminTransferClient(): void {
       void loadCases().catch(failClosed);
     }
   });
-  const clearOneTimeToken = (): void => {
-    shareUrl.value = "";
-    tokenCaseId.textContent = "";
-    tokenPetName.textContent = "";
-  };
   dialog.addEventListener("close", clearOneTimeToken);
   element<HTMLButtonElement>(dialog, "[data-admin-close-token]").addEventListener(
     "click",
@@ -476,6 +507,7 @@ export function setupAdminTransferClient(): void {
 
   void requestAdminJson("/api/admin/session")
     .then((payload) => {
+      if (authInvalidated) return;
       if (!isRecord(payload.admin)) throw new Error("Admin-Sitzung unvollständig.");
       text(identity, `Angemeldet als ${string(payload.admin.email)}`);
       authRequired.hidden = true;

@@ -45,13 +45,41 @@ function caseDetail(status = "open") {
   };
 }
 
-async function routeAdmin(
-  page: Page,
-): Promise<{ methods: string[]; urls: string[]; bodies: unknown[] }> {
+async function routeAdmin(page: Page): Promise<{
+  methods: string[];
+  urls: string[];
+  bodies: unknown[];
+  expireNextCaseList(mode: "html" | "abort"): void;
+  beginCaseListRace(): {
+    firstStarted: Promise<void>;
+    releaseFirst(): void;
+  };
+}> {
+  let nextCaseListFailure: "html" | "abort" | null = null;
+  let caseListRace: {
+    requests: number;
+    markFirstStarted(): void;
+    release: Promise<void>;
+  } | null = null;
   const state = {
     methods: [] as string[],
     urls: [] as string[],
     bodies: [] as unknown[],
+    expireNextCaseList(mode: "html" | "abort"): void {
+      nextCaseListFailure = mode;
+    },
+    beginCaseListRace() {
+      let markFirstStarted!: () => void;
+      let releaseFirst!: () => void;
+      const firstStarted = new Promise<void>((resolve) => {
+        markFirstStarted = resolve;
+      });
+      const release = new Promise<void>((resolve) => {
+        releaseFirst = resolve;
+      });
+      caseListRace = { requests: 0, markFirstStarted, release };
+      return { firstStarted, releaseFirst };
+    },
   };
   await page.route("**/api/admin/**", async (route) => {
     const request = route.request();
@@ -65,6 +93,35 @@ async function routeAdmin(
       return route.fulfill({
         json: { ok: true, admin: { email: "admin@example.test" } },
       });
+    if (
+      url.pathname === "/api/admin/cases" &&
+      request.method() === "GET" &&
+      caseListRace
+    ) {
+      const race = caseListRace;
+      race.requests += 1;
+      if (race.requests === 1) {
+        race.markFirstStarted();
+        await race.release;
+        caseListRace = null;
+      } else if (race.requests === 2) {
+        return route.abort("connectionfailed");
+      }
+    }
+    if (
+      url.pathname === "/api/admin/cases" &&
+      request.method() === "GET" &&
+      nextCaseListFailure
+    ) {
+      const failure = nextCaseListFailure;
+      nextCaseListFailure = null;
+      if (failure === "abort") return route.abort("connectionfailed");
+      return route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<!doctype html><title>Access login</title>",
+      });
+    }
     if (url.pathname === "/api/admin/cases" && request.method() === "GET")
       return route.fulfill({
         json: {
@@ -128,6 +185,84 @@ test("401 bleibt fail-closed und lädt keine Falldaten", async ({ page }) => {
   await expect(page.getByText(/Vorgangskennung: request-401/u)).toBeVisible();
   expect(calls).toEqual(["/api/admin/session"]);
   expect(await page.locator("body").textContent()).not.toContain("dt1_");
+});
+
+for (const failure of ["html", "abort"] as const) {
+  test(`verwirft sensible Admininhalte fail-closed nach Access-${failure}`, async ({
+    page,
+  }) => {
+    const state = await routeAdmin(page);
+    await page.goto("/admin/datentransfer/");
+    await page.getByRole("button", { name: "Details öffnen" }).click();
+    await expect(page.getByText("Nur intern")).toBeVisible();
+    await page.getByRole("button", { name: "Neuen Token erstellen" }).click();
+    const dialog = page.getByRole("dialog", { name: "Token einmalig sichern" });
+    await expect(dialog).toBeVisible();
+    await expect(page.getByLabel("Freigabelink")).toHaveValue(
+      `/datentransfer/#token=${clearToken}`,
+    );
+
+    state.expireNextCaseList(failure);
+    await page
+      .locator("[data-admin-filter-form]")
+      .evaluate((form: HTMLFormElement) => form.requestSubmit());
+
+    await expect(
+      page.getByRole("heading", { name: "Admin-Zugang erforderlich" }),
+    ).toBeVisible();
+    await expect(page.getByRole("status")).toHaveText("Admin-Zugang erforderlich.");
+    await expect(page.locator("[data-admin-workspace]")).toBeHidden();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByLabel("Freigabelink")).toHaveValue("");
+    const body = await page.locator("body").textContent();
+    expect(body).not.toContain("Luna");
+    expect(body).not.toContain("Nur intern");
+    expect(body).not.toContain("P-12");
+    expect(body).not.toContain("Ohr");
+    expect(body).not.toContain("case_created");
+    expect(body).not.toContain(clearToken);
+  });
+}
+
+test("verspäteter Listenerfolg befüllt den DOM nach Authverlust nicht erneut", async ({
+  page,
+}) => {
+  const state = await routeAdmin(page);
+  await page.goto("/admin/datentransfer/");
+  await page.getByRole("button", { name: "Details öffnen" }).click();
+  await page.getByRole("button", { name: "Neuen Token erstellen" }).click();
+  const dialog = page.getByRole("dialog", { name: "Token einmalig sichern" });
+  await expect(dialog).toBeVisible();
+
+  const race = state.beginCaseListRace();
+  const filterForm = page.locator("[data-admin-filter-form]");
+  await filterForm.evaluate((form: HTMLFormElement) => form.requestSubmit());
+  await race.firstStarted;
+  await filterForm.evaluate((form: HTMLFormElement) => form.requestSubmit());
+
+  await expect(page.locator("[data-admin-workspace]")).toBeHidden();
+  await expect(page.getByRole("status")).toHaveText("Admin-Zugang erforderlich.");
+  await expect(dialog).toBeHidden();
+  expect(await page.locator("body").textContent()).not.toContain("Luna");
+
+  const delayedResponse = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/admin/cases" && response.ok(),
+  );
+  race.releaseFirst();
+  await (await delayedResponse).finished();
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+
+  await expect(page.locator("[data-admin-workspace]")).toBeHidden();
+  await expect(page.getByRole("status")).toHaveText("Admin-Zugang erforderlich.");
+  await expect(dialog).toBeHidden();
+  await expect(page.getByLabel("Freigabelink")).toHaveValue("");
+  expect(await page.locator("body").textContent()).not.toContain("Luna");
 });
 
 test("Fallanlage zeigt Token einmalig, kopiert Link und verliert ihn beim Reload", async ({
